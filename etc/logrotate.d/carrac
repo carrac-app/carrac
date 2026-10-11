@@ -1,0 +1,16 @@
+# Carrac logrotate configuration
+# Install: sudo cp etc/logrotate.d/carrac /etc/logrotate.d/carrac
+# Test:    sudo logrotate -d /etc/logrotate.d/carrac
+# Force:   sudo logrotate -f /etc/logrotate.d/carrac
+
+# Matches the per-job logs written by deploy/crontab.example.
+/var/log/carrac/*.log
+{
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

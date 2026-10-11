@@ -1,0 +1,19 @@
+{
+  "classification": "ignore",
+  "components": {
+    "cpr": 15,
+    "divergence": 20,
+    "freshness": 0,
+    "volume": 20
+  },
+  "direction": "bullish",
+  "patterns": [
+    "low_position_bull",
+    "unknown",
+    "volume_confirmed",
+    "cpr_aligned",
+    "ranging_market"
+  ],
+  "regime": "ranging",
+  "score": 27
+}

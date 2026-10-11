@@ -1,0 +1,269 @@
+{% set admin_page = 'users' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Users</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px;
+        }
+        .page-header h1 { font-size: 22px; font-weight: 600; }
+
+        .search-box {
+            padding: 8px 14px; font-size: 14px; width: 260px;
+            background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+            color: #c9d1d9;
+        }
+        .search-box:focus { outline: none; border-color: #58a6ff; }
+        .search-box::placeholder { color: #484f58; }
+
+        .section {
+            background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 24px; margin-bottom: 24px;
+        }
+
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #21262d; }
+        .table th { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #8b949e; }
+        .table tr:last-child td { border-bottom: none; }
+        .table tr:hover { background: #21262d; }
+        .table tr.hidden { display: none; }
+
+        .badge { display: inline-block; padding: 2px 8px; font-size: 12px; font-weight: 500; border-radius: 12px; }
+        .badge-green { background: rgba(35,134,54,0.2); color: #3fb950; }
+        .badge-red { background: rgba(248,81,73,0.2); color: #f85149; }
+        .badge-blue { background: rgba(88,166,255,0.2); color: #58a6ff; }
+        .badge-yellow { background: rgba(210,153,34,0.2); color: #d29922; }
+
+        .btn {
+            padding: 8px 16px; font-size: 14px; font-weight: 500;
+            border: 1px solid #30363d; border-radius: 6px; cursor: pointer;
+            transition: all 0.2s; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn-primary { background: #238636; color: #fff; border-color: #238636; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-secondary { background: #21262d; color: #c9d1d9; }
+        .btn-secondary:hover { background: #30363d; }
+        .btn-danger { background: #da3633; color: #fff; border-color: #da3633; }
+        .btn-small { padding: 4px 10px; font-size: 12px; }
+
+        .actions-cell { display: flex; gap: 8px; }
+
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+        .status-dot.online { background: #3fb950; box-shadow: 0 0 4px #3fb950; }
+        .status-dot.recent { background: #d29922; }
+        .status-dot.away { background: #8b949e; }
+        .status-dot.offline { background: #484f58; }
+        .activity-sub { font-size: 0.8em; color: #8b949e; margin-top: 2px; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+            padding: 24px; width: 100%; max-width: 400px;
+        }
+        .modal h3 { margin-bottom: 16px; font-size: 18px; }
+        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500; color: #8b949e; }
+        .form-group input {
+            width: 100%; padding: 8px 12px; font-size: 14px;
+            background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;
+        }
+        .form-group input:focus { outline: none; border-color: #58a6ff; }
+
+        .empty-state { text-align: center; padding: 40px; color: #8b949e; }
+
+        .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+        .alert-success { background: rgba(35,134,54,0.1); border: 1px solid rgba(35,134,54,0.4); color: #3fb950; }
+        .alert-error { background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.4); color: #f85149; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% include 'admin_nav.html' %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-header">
+            <h1>Users ({{ users|length }})</h1>
+            <input type="text" class="search-box" id="userSearch" placeholder="Search by email or name...">
+        </div>
+
+        <div class="section">
+            {% if users %}
+            <table class="table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Display Name</th>
+                        <th>Status</th>
+                        <th>Role</th>
+                        <th>Tier</th>
+                        <th>Last Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr data-search="{{ user.email|lower }} {{ (user.display_name or '')|lower }}">
+                        <td><a href="{{ url_for('admin.admin_user_detail', user_id=user.id) }}" style="color:#58a6ff;text-decoration:none;">{{ user.email }}</a></td>
+                        <td>{{ user.display_name or '-' }}</td>
+                        <td>
+                            {% if user.is_active %}<span class="badge badge-green">Active</span>
+                            {% else %}<span class="badge badge-red">Inactive</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}<span class="badge badge-yellow">Admin</span>
+                            {% else %}<span class="badge badge-blue">User</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}<span class="badge badge-yellow">Admin</span>
+                            {% elif user.tier == 'premium' %}<span class="badge badge-green">Premium</span>
+                            {% elif user.tier == 'member' %}<span class="badge" style="background:rgba(163,113,247,0.2);color:#a371f7;">Member</span>
+                            {% elif user.tier == 'tester' %}<span class="badge" style="background:rgba(38,166,154,0.2);color:#26a69a;">Tester</span>
+                            {% else %}<span class="badge badge-blue">Free</span>{% endif %}
+                            {% if not user.is_admin %}
+                            <form method="POST" action="{{ url_for('admin.admin_set_tier', user_id=user.id) }}" style="display:inline;margin-left:6px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <select name="tier" data-change="submitForm" aria-label="Change user tier for {{ user.email }}" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:2px 6px;font-size:12px;cursor:pointer;">
+                                    <option value="free" {% if user.tier == 'free' or not user.tier %}selected{% endif %}>Free</option>
+                                    <option value="member" {% if user.tier == 'member' %}selected{% endif %}>Member</option>
+                                    <option value="tester" {% if user.tier == 'tester' %}selected{% endif %}>Tester</option>
+                                    <option value="premium" {% if user.tier == 'premium' %}selected{% endif %}>Premium</option>
+                                </select>
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td class="activity-cell" data-last-active="{{ user.last_active or '' }}" data-last-login="{{ user.last_login or '' }}"></td>
+                        <td class="actions-cell">
+                            {% if not user.is_admin %}
+                            <form method="POST" action="{{ url_for('admin.admin_toggle_user', user_id=user.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% if user.is_active %}
+                                <button type="submit" class="btn btn-secondary btn-small">Disable</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-primary btn-small">Enable</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
+                            <button type="button" class="btn btn-secondary btn-small" data-action="showResetModal" data-user-id="{{ user.id }}" data-email="{{ user.email }}">Reset Password</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No users registered yet</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal">
+            <h3>Reset Password</h3>
+            <p style="color:#8b949e;margin-bottom:16px;">Set new password for <strong id="resetUserEmail"></strong></p>
+            <form method="POST" id="resetForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Enter new password" required minlength="8">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" data-action="hideResetModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script nonce="{{ csp_nonce }}">
+        // Form auto-submit on select change
+        document.addEventListener('change', function(e) {
+            var el = e.target.closest('[data-change]');
+            if (el && el.dataset.change === 'submitForm') el.form.submit();
+        });
+
+        // Action buttons
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            if (btn.dataset.action === 'showResetModal') {
+                showResetModal(parseInt(btn.dataset.userId), btn.dataset.email);
+            } else if (btn.dataset.action === 'hideResetModal') {
+                hideResetModal();
+            }
+        });
+
+        function showResetModal(userId, email) {
+            document.getElementById('resetUserEmail').textContent = email;
+            document.getElementById('resetForm').action = '/admin/user/' + userId + '/reset-password';
+            document.getElementById('resetModal').classList.add('active');
+        }
+        function hideResetModal() {
+            document.getElementById('resetModal').classList.remove('active');
+        }
+        document.getElementById('resetModal').addEventListener('click', function(e) {
+            if (e.target === this) hideResetModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') hideResetModal();
+        });
+
+        // Search filter
+        document.getElementById('userSearch').addEventListener('input', function() {
+            var q = this.value.toLowerCase();
+            document.querySelectorAll('#usersTable tbody tr').forEach(function(row) {
+                var match = !q || row.dataset.search.indexOf(q) >= 0;
+                row.classList.toggle('hidden', !match);
+            });
+        });
+
+        // Activity status rendering
+        function renderActivityCells() {
+            var now = Date.now();
+            document.querySelectorAll('.activity-cell').forEach(function(cell) {
+                var la = cell.dataset.lastActive, ll = cell.dataset.lastLogin;
+                var ts = la || ll;
+                if (!ts) { cell.innerHTML = '<span class="status-dot offline"></span>Never'; return; }
+                var d = new Date(ts.replace(' ', 'T') + (ts.indexOf('Z') < 0 && ts.indexOf('+') < 0 ? 'Z' : ''));
+                var diffMin = Math.round((now - d.getTime()) / 60000);
+                var cls, label;
+                if (la && diffMin <= 12) { cls = 'online'; label = 'Online'; }
+                else if (la && diffMin <= 30) { cls = 'recent'; label = diffMin + 'm ago'; }
+                else if (la && diffMin <= 60) { cls = 'away'; label = diffMin + 'm ago'; }
+                else {
+                    cls = 'offline';
+                    if (diffMin < 1440) label = Math.floor(diffMin / 60) + 'h ago';
+                    else label = Math.floor(diffMin / 1440) + 'd ago';
+                }
+                var sub = ll ? '<div class="activity-sub">Login: ' + ll.substring(0, 16).replace('T', ' ') + '</div>' : '';
+                cell.innerHTML = '<span class="status-dot ' + cls + '"></span>' + label + sub;
+            });
+        }
+        renderActivityCells();
+        setInterval(renderActivityCells, 30000);
+    </script>
+</body>
+</html>

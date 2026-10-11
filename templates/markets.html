@@ -1,0 +1,139 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block extra_head %}<style>
+  .quote blockquote .accent { color: var(--accent); }
+</style>{% endblock %}
+
+{% block title %}Markets — Carrac{% endblock %}
+{% block description %}Curated assets across crypto, US stocks, ETFs, forex, commodities, and indices. Multi-venue fallback so the chart never goes blank — every source named.{% endblock %}
+{% block canonical %}{{ site_url }}/markets{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Markets — Carrac","url":"{{ site_url }}/markets","description":"Curated assets across crypto, US stocks, ETFs, forex, commodities, and indices."}</script>{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Markets · every source named</span>
+    <h1>No black-box data.<br><span class="accent">Every number auditable.</span></h1>
+    <p class="lede">Multi-venue crypto with a fallback chain. Live US stocks via Finnhub. FRED macro. Sentiment &amp; on-chain. <strong>If we can't name the source, we don't ship it.</strong></p>
+  </div>
+
+  <div class="wrap" style="margin-top:48px">
+    <div class="venues reveal">
+      <div class="venue"><div class="vn">Binance</div><div class="vh">Spot + perps · primary</div></div>
+      <div class="venue"><div class="vn">Hyperliquid</div><div class="vh">14 HL-only coins + fallback</div></div>
+      <div class="venue"><div class="vn">Bybit</div><div class="vh">Browser-direct WS</div></div>
+      <div class="venue"><div class="vn">MEXC</div><div class="vh">Via CCXT auto-discovery</div></div>
+      <div class="venue"><div class="vn">Gate.io</div><div class="vh">Via CCXT auto-discovery</div></div>
+      <div class="venue"><div class="vn">KuCoin</div><div class="vh">Via CCXT (REST + WS)</div></div>
+      <div class="venue"><div class="vn">Finnhub</div><div class="vh">Live US stocks &amp; ETFs</div></div>
+      <div class="venue"><div class="vn">FRED</div><div class="vh">Macro: M2, DXY, yields</div></div>
+      <div class="venue"><div class="vn">Yahoo Finance</div><div class="vh">TradFi daily</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CRYPTO ============================ -->
+<section class="section" id="crypto">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:24px">Crypto</span>
+    <div class="statrow reveal">
+      <div class="big">6<span class="u">Venues · fallback chain</span></div>
+      <div>
+        <h2>The chart never goes blank.</h2>
+        <p>Primary data from Binance with Hyperliquid and CCXT-routed exchanges as fallbacks. Every venue has its own kill-switch so problems are easy to isolate fast.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Fallback chain: <code>Binance → Hyperliquid → CCXT</code></li>
+          <li><span class="mk"></span> Browser-direct WebSocket to Bybit, MEXC, Gate.io</li>
+          <li><span class="mk"></span> Hyperliquid for 14 HL-only coins with WS live candles</li>
+          <li><span class="mk"></span> Thousands of auto-discovered symbols via per-venue kill switches</li>
+          <li><span class="mk"></span> Volume tagging: every dataframe carries its source venue</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TRADFI ============================ -->
+<section class="section" id="tradfi" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:24px">TradFi</span>
+    <div class="statrow reveal">
+      <div class="big">Live<span class="u">US stocks &amp; ETFs, real-time</span></div>
+      <div>
+        <h2>Live during market hours. Region-aware.</h2>
+        <p>Finnhub WebSocket for US stocks and ETFs with real-time ticks during market hours. Yahoo Finance for daily OHLCV on TradFi, forex, and commodities.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Finnhub: live trade ticks during market hours</li>
+          <li><span class="mk"></span> Yahoo Finance: daily data for everything TradFi-shaped</li>
+          <li><span class="mk"></span> Market status dots next to every TradFi symbol</li>
+          <li><span class="mk"></span> Region-aware: US · EU · JP · HK · KR open/closed states</li>
+          <li><span class="mk"></span> 30-second refresh on status indicators</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MACRO ============================ -->
+<section class="section" id="macro" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Macro</span>
+    <h2 class="mega-head">Fed data. <span class="accent">Fed speed.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p>FRED API integrated directly — high request capacity, intelligent caching (1h daily / 4h weekly), every series available as a formula variable.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> In-memory cache: 1h daily, 4h weekly — minimal API hits</li>
+          <li><span class="mk"></span> Direct use in formulas via <code>m2</code>, <code>dxy</code>, and more</li>
+          <li><span class="mk"></span> Lead-lag analysis baked into the Quant engine</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> <strong>M2 money supply</strong> — global liquidity</li>
+          <li><span class="mk"></span> <strong>Net liquidity</strong> — Fed balance − TGA − RRP</li>
+          <li><span class="mk"></span> <strong>DXY</strong> — dollar index</li>
+          <li><span class="mk"></span> <strong>Treasury yields</strong> — 2Y, 10Y, spread</li>
+          <li><span class="mk"></span> <strong>Credit spreads</strong> — HY, IG</li>
+          <li><span class="mk"></span> <strong>Fed balance sheet</strong> — WALCL series</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ SENTIMENT ============================ -->
+<section class="section" id="sentiment" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Sentiment &amp; on-chain</span>
+    <ul class="checklist" style="max-width:62ch">
+      <li><span class="mk"></span> <strong>Alternative.me Fear &amp; Greed</strong> — canonical sentiment index</li>
+      <li><span class="mk"></span> <strong>Google Trends</strong> — search volume for major asset queries</li>
+      <li><span class="mk"></span> <strong>Altseason index</strong> — BTC dominance + alt outperformance</li>
+      <li><span class="mk"></span> <strong>Stablecoin supply</strong> — liquidity proxy</li>
+      <li><span class="mk"></span> <strong>ETF flows</strong> — net daily in/out across spot BTC ETFs</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================ QUOTE ============================ -->
+<section class="quote" id="data">
+  <div class="wrap">
+    <blockquote>Every source named. Every number auditable. <span class="accent">Your data is yours — export anytime.</span></blockquote>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-center">
+  <div class="wrap">
+    <h2 class="mega-head" style="margin-top:14px">Every asset, every source named. <span class="accent">One audit trail.</span></h2>
+    <p class="section-desc">Information &amp; analysis, never advice.</p>
+    <div class="cta-row">
+      <a href="/register" class="btn btn-primary btn-lg">Create account <i data-lucide="arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

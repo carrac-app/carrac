@@ -1,0 +1,19 @@
+{
+  "bc": 63.0927,
+  "cpr_width_pct": 1.77,
+  "current_price": 61.0932,
+  "extreme_level": null,
+  "is_extreme": false,
+  "is_v_cpr": true,
+  "pivot": 62.5529,
+  "price_level": "BC-S1",
+  "price_position": "below",
+  "r1": 64.5837,
+  "r2": 67.694,
+  "r3": 72.8351,
+  "s1": 59.4427,
+  "s2": 57.4119,
+  "s3": 52.2708,
+  "tc": 62.0132,
+  "timeframe": "monthly"
+}

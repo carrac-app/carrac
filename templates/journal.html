@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Journal — Carrac</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style nonce="{{ csp_nonce }}">
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#0d1117;color:#3fb950;z-index:9999}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid #3fb950;outline-offset:2px}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0d1117; color: #d1d4dc;
+            min-height: 100vh;
+        }
+
+        /* ── Scrollbar (matches dashboard) ── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3fb950; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #56d364; }
+        * { scrollbar-width: thin; scrollbar-color: #3fb950 transparent; }
+
+        /* ── Layout ── */
+        .j-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; border-bottom: 1px solid #21262d;
+            position: sticky; top: 0; z-index: 100; background: #0d1117;
+        }
+        .j-header-left { display: flex; align-items: center; gap: 16px; }
+        .j-header h1 { font-size: 0.85rem; font-weight: 600; color: #e6edf3; letter-spacing: 0.02em; }
+        .j-back {
+            font-size: 0.72rem; color: #8b949e; text-decoration: none;
+            transition: color 0.15s;
+        }
+        .j-back:hover { color: #3fb950; }
+        .j-header-right { display: flex; align-items: center; gap: 8px; }
+
+        .j-tabs {
+            display: flex; gap: 0; padding: 0 20px;
+            border-bottom: 1px solid #21262d; background: #0d1117;
+            position: sticky; top: 45px; z-index: 99;
+        }
+        .j-tab {
+            padding: 10px 16px; font-size: 0.7rem; font-weight: 500;
+            background: none; border: none; border-bottom: 2px solid transparent;
+            color: #8b949e; cursor: pointer; font-family: inherit;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .j-tab:hover { color: #d1d4dc; }
+        .j-tab.active { color: #e6edf3; border-bottom-color: #3fb950; }
+
+        .j-content { padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
+        .j-panel { display: none; }
+        .j-panel.active { display: block; }
+
+        /* ── KPI Bar ── */
+        .j-kpi-bar {
+            display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .j-kpi {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 10px 14px; min-width: 110px; flex: 1;
+            border-left: 2px solid #30363d;
+            transition: border-color 0.15s;
+        }
+        .j-kpi:hover { border-color: #484f58; }
+        .j-kpi-label { font-size: 0.58rem; color: #484f58; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+        .j-kpi-value { font-size: 1rem; font-weight: 600; color: #e6edf3; }
+        .j-kpi-value.positive { color: #3fb950; }
+        .j-kpi-value.negative { color: #ef5350; }
+        .j-kpi-accent-green { border-left-color: #3fb95066; }
+        .j-kpi-accent-red { border-left-color: #ef535066; }
+
+        /* ── Filter Bar ── */
+        .j-filters {
+            display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;
+        }
+        .j-filter-input, .j-filter-select {
+            font-family: inherit; font-size: 0.68rem;
+            background: #161b22; border: 1px solid #30363d; border-radius: 4px;
+            color: #d1d4dc; padding: 5px 8px; outline: none;
+        }
+        .j-filter-input:focus, .j-filter-select:focus { border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.08); }
+        .j-filter-select { cursor: pointer; }
+        .j-filter-btn {
+            font-family: inherit; font-size: 0.65rem; font-weight: 500;
+            background: #21262d; border: 1px solid #30363d; border-radius: 4px;
+            color: #8b949e; padding: 5px 10px; cursor: pointer;
+        }
+        .j-filter-btn:hover { color: #d1d4dc; border-color: #484f58; }
+        .j-filter-btn.active { background: #1f6feb22; border-color: #58a6ff; color: #58a6ff; }
+
+        /* ── Actions Bar ── */
+        .j-actions {
+            display: flex; gap: 8px; margin-bottom: 14px; align-items: center;
+        }
+        .j-btn {
+            font-family: inherit; font-size: 0.68rem; font-weight: 500;
+            border-radius: 5px; padding: 6px 12px; cursor: pointer; border: 1px solid;
+            transition: all 0.15s;
+        }
+        .j-btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
+        .j-btn-primary:hover { background: #2ea043; box-shadow: 0 0 8px rgba(46, 160, 67, 0.2); }
+        .j-btn-secondary { background: #21262d; border-color: #30363d; color: #d1d4dc; }
+        .j-btn-secondary:hover { background: #30363d; }
+        .j-btn-danger { background: #21262d; border-color: #30363d; color: #ef5350; }
+        .j-btn-danger:hover { background: #da363322; border-color: #da3633; }
+        .j-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .j-spacer { flex: 1; }
+
+        /* ── Trade Table ── */
+        .j-table-wrap { overflow-x: auto; }
+        .j-table {
+            width: 100%; border-collapse: collapse; font-size: 0.68rem;
+        }
+        .j-table th {
+            text-align: left; padding: 8px 10px; font-weight: 600; font-size: 0.6rem;
+            color: #484f58; text-transform: uppercase; letter-spacing: 0.06em;
+            border-bottom: 2px solid #21262d; cursor: pointer; user-select: none;
+            white-space: nowrap; transition: color 0.15s;
+        }
+        .j-table th:hover { color: #8b949e; }
+        .j-table th .sort-arrow { margin-left: 4px; font-size: 0.55rem; }
+        .j-table td {
+            padding: 7px 10px; border-bottom: 1px solid #161b22;
+            white-space: nowrap; vertical-align: middle;
+        }
+        .j-table tbody tr:nth-child(even) { background: rgba(22, 27, 34, 0.4); }
+        .j-table tr:hover { background: #1c2129; }
+        .j-table tr.open-trade { border-left: 2px solid #58a6ff; }
+        .j-table tr.selected { background: #1f6feb22; }
+
+        .j-dir { font-weight: 600; font-size: 0.6rem; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.03em; }
+        .j-dir.long { background: #3fb95015; color: #3fb950; border: 1px solid #3fb95030; }
+        .j-dir.short { background: #ef535015; color: #ef5350; border: 1px solid #ef535030; }
+
+        .j-rr { font-weight: 600; }
+        .j-rr.positive { color: #3fb950; }
+        .j-rr.negative { color: #ef5350; }
+
+        .j-tag {
+            display: inline-block; font-size: 0.56rem; padding: 2px 6px;
+            border-radius: 10px; background: #21262d; color: #8b949e; margin: 1px 2px;
+        }
+        .j-tag.mistake { background: #da363318; color: #f07070; border: 1px solid #da363330; }
+        .j-tag.setup { background: #1f6feb18; color: #58a6ff; border: 1px solid #1f6feb30; }
+
+        .j-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: #58a6ff; }
+
+        .j-grade-dots { display: flex; gap: 2px; }
+        .j-grade-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #21262d;
+        }
+        .j-grade-dot.filled { background: #58a6ff; box-shadow: 0 0 3px rgba(88, 166, 255, 0.3); }
+        .j-grade-dot.high { background: #3fb950; box-shadow: 0 0 3px rgba(63, 185, 80, 0.3); }
+        .j-grade-dot.low { background: #ef5350; box-shadow: 0 0 3px rgba(239, 83, 80, 0.3); }
+
+        /* ── Row Actions ── */
+        .j-row-actions { display: flex; gap: 4px; }
+        .j-row-btn {
+            font-family: inherit; font-size: 0.6rem;
+            background: none; border: 1px solid #21262d; border-radius: 3px;
+            color: #8b949e; padding: 2px 7px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .j-row-btn:hover { color: #d1d4dc; border-color: #484f58; background: #21262d; }
+        .j-row-btn.close-btn:hover { color: #3fb950; border-color: #3fb95066; background: #3fb95010; }
+        .j-row-btn.delete-btn:hover { color: #ef5350; border-color: #ef535066; background: #ef535010; }
+
+        /* ── Expanded Row Detail ── */
+        .j-detail-row td { padding: 14px 14px; background: #0f1318; border-bottom: 1px solid #30363d; border-top: 1px solid #21262d; }
+        .j-detail-content {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        @media (max-width: 768px) { .j-detail-content { grid-template-columns: 1fr; } }
+        .j-detail-section { }
+        .j-detail-label { font-size: 0.6rem; color: #484f58; text-transform: uppercase; margin-bottom: 4px; }
+        .j-detail-text { font-size: 0.7rem; color: #d1d4dc; white-space: pre-wrap; }
+        .j-screenshots { display: flex; gap: 8px; flex-wrap: wrap; }
+        .j-screenshot-thumb {
+            width: 160px; height: 90px; object-fit: cover; border-radius: 4px;
+            border: 1px solid #30363d; cursor: pointer;
+        }
+        .j-screenshot-thumb:hover { border-color: #58a6ff; }
+
+        .j-mfe-mae-bar { display: flex; gap: 16px; margin-top: 8px; }
+        .j-mfe-mae-item { font-size: 0.65rem; }
+        .j-mfe-mae-item span { font-weight: 600; }
+
+        /* ── Score Snapshot Card ── */
+        .j-snapshot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 4px; }
+        .j-snapshot-item { display: flex; justify-content: space-between; padding: 2px 6px; border-radius: 3px; font-size: 0.6rem; background: rgba(255,255,255,0.02); }
+        .j-snap-label { color: #787b86; text-transform: capitalize; }
+        .j-snap-score { font-weight: 600; color: #d1d4dc; }
+        .j-snap-high .j-snap-score { color: #3fb950; }
+        .j-snap-mid .j-snap-score { color: #d29922; }
+        .j-snap-low .j-snap-score { color: #f85149; }
+        .j-snapshot-total { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.65rem; }
+        .j-snap-verdict-strong { color: #00ff88; font-weight: 600; }
+        .j-snap-verdict-good { color: #4dabf7; font-weight: 600; }
+        .j-snap-verdict-neutral { color: #ffd43b; font-weight: 600; }
+        .j-snap-verdict-weak { color: #ff922b; font-weight: 600; }
+        .j-snap-verdict-avoid { color: #ff6b6b; font-weight: 600; }
+        .j-snap-regime { font-size: 0.55rem; color: #484f58; }
+
+        /* ── AI Review ── */
+        .j-ai-review-text { font-size: 0.65rem; color: #d1d4dc; line-height: 1.6; margin-bottom: 8px; }
+        .j-ai-review-text strong { color: #58a6ff; }
+        .j-ai-review-btn {
+            background: rgba(88, 166, 255, 0.08) !important; border-color: rgba(88, 166, 255, 0.2) !important;
+            color: #58a6ff !important; margin-top: 8px;
+        }
+        .j-ai-review-btn:hover { background: rgba(88, 166, 255, 0.15) !important; }
+        .j-grade-detail {
+            display: flex; gap: 12px; margin-top: 8px;
+            font-size: 0.6rem; color: #8b949e;
+        }
+        .j-grade-detail span { color: #d1d4dc; font-weight: 600; }
+        .j-ai-summary { border-left: 2px solid #58a6ff; padding-left: 10px; }
+        .j-ai-summary strong { color: #58a6ff; }
+        #j-nl-output { background: #0f1318; border: 1px solid #21262d; border-radius: 6px; padding: 12px 14px; }
+        #j-nl-output strong { color: #58a6ff; }
+
+        /* ── Playbooks ── */
+        .j-pb-card {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 14px 16px; margin-bottom: 10px;
+            transition: border-color 0.15s;
+        }
+        .j-pb-card:hover { border-color: #30363d; }
+        .j-pb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .j-pb-name { font-size: 0.75rem; font-weight: 600; color: #e6edf3; }
+        .j-pb-setup {
+            font-size: 0.56rem; padding: 2px 8px; background: #1f6feb15;
+            border-radius: 10px; color: #58a6ff; border: 1px solid #1f6feb25;
+        }
+        .j-pb-body { font-size: 0.65rem; color: #8b949e; line-height: 1.6; }
+        .j-pb-body strong { color: #d1d4dc; display: block; margin-top: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .j-pb-stats {
+            display: flex; gap: 14px; margin-top: 10px; padding-top: 10px;
+            border-top: 1px solid #21262d; font-size: 0.6rem; color: #8b949e;
+            min-height: 28px; align-items: center;
+        }
+        .j-pb-stats span { font-weight: 600; color: #d1d4dc; }
+
+        /* ── Goals ── */
+        .j-goal-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; font-size: 0.65rem; color: #d1d4dc;
+            border-bottom: 1px solid #161b22;
+        }
+        .j-goal-row:last-child { border-bottom: none; }
+        .j-goal-label { flex: 1; min-width: 0; }
+        .j-goal-target { color: #8b949e; min-width: 70px; text-align: right; }
+        .j-goal-actual { font-weight: 600; min-width: 80px; text-align: right; }
+        .j-goal-bar { width: 60px; height: 4px; background: #21262d; border-radius: 2px; overflow: hidden; }
+        .j-goal-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+        .j-goal-ok { color: #3fb950; }
+        .j-goal-warn { color: #d29922; }
+        .j-goal-fail { color: #ef5350; }
+
+        /* ── Modal ── */
+        .j-modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(1, 4, 9, 0.8);
+            z-index: 200; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        .j-modal-overlay.active { display: flex; }
+        .j-modal {
+            background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+            padding: 24px; max-width: 500px; width: 90%; max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(48, 54, 61, 0.5);
+        }
+        .j-modal h2 {
+            font-size: 0.82rem; font-weight: 600; color: #e6edf3; margin-bottom: 18px;
+            padding-bottom: 12px; border-bottom: 1px solid #21262d;
+        }
+        .j-modal-field { margin-bottom: 12px; }
+        .j-modal-label { font-size: 0.62rem; color: #484f58; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .j-modal-input {
+            width: 100%; font-family: inherit; font-size: 0.72rem;
+            background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+            color: #d1d4dc; padding: 7px 10px; outline: none;
+        }
+        .j-modal-input:focus { border-color: #58a6ff; box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1); }
+        textarea.j-modal-input { min-height: 60px; resize: vertical; }
+        .j-modal-row { display: flex; gap: 10px; }
+        .j-modal-row > .j-modal-field { flex: 1; }
+        .j-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+        /* ── Direction Toggle ── */
+        .j-dir-toggle { display: flex; border: 1px solid #30363d; border-radius: 5px; overflow: hidden; }
+        .j-dir-toggle-btn {
+            font-family: inherit; font-size: 0.68rem; font-weight: 600;
+            padding: 6px 18px; border: none; cursor: pointer;
+            background: #0d1117; color: #8b949e;
+            transition: all 0.15s;
+        }
+        .j-dir-toggle-btn:hover:not(.active) { background: #161b22; }
+        .j-dir-toggle-btn.active.long { background: #3fb95018; color: #3fb950; }
+        .j-dir-toggle-btn.active.short { background: #ef535018; color: #ef5350; }
+
+        /* ── Slider ── */
+        .j-slider-group { display: flex; align-items: center; gap: 8px; }
+        .j-slider {
+            flex: 1; accent-color: #58a6ff; height: 4px;
+        }
+        .j-slider-val { font-size: 0.68rem; font-weight: 600; color: #d1d4dc; min-width: 16px; text-align: center; }
+
+        /* ── Checklist ── */
+        .j-checklist-item {
+            display: flex; align-items: center; gap: 6px; padding: 3px 0;
+            font-size: 0.68rem; color: #d1d4dc;
+        }
+        .j-checklist-item input { accent-color: #3fb950; }
+
+        /* ── Mistake tag pills ── */
+        .j-mistake-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+        .j-mistake-pill {
+            font-family: inherit; font-size: 0.6rem; padding: 3px 10px;
+            border: 1px solid #30363d; border-radius: 12px;
+            background: none; color: #8b949e; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .j-mistake-pill:hover { border-color: #484f58; color: #d1d4dc; }
+        .j-mistake-pill.selected { background: #da363318; border-color: #da363388; color: #f07070; }
+
+        /* ── R:R live calc ── */
+        .j-rr-preview {
+            font-size: 0.72rem; font-weight: 600; padding: 4px 0;
+        }
+
+        /* ── Empty State ── */
+        .j-empty {
+            text-align: center; padding: 60px 20px; color: #484f58;
+        }
+        .j-empty-icon { font-size: 2rem; margin-bottom: 12px; opacity: 0.3; }
+        .j-empty-text { font-size: 0.72rem; line-height: 1.5; max-width: 320px; margin: 0 auto; }
+
+        /* ── Equity Curve / Chart Panels ── */
+        .j-equity-wrap {
+            margin-bottom: 16px; background: #161b22; border: 1px solid #21262d;
+            border-radius: 6px; padding: 14px; position: relative;
+        }
+        .j-equity-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .j-equity-header h3 { font-size: 0.68rem; font-weight: 600; color: #8b949e; letter-spacing: 0.02em; }
+        .j-equity-canvas { width: 100%; height: 180px; }
+
+        /* ── Calendar ── */
+        .j-cal-nav {
+            display: flex; align-items: center; justify-content: center; gap: 16px;
+            margin-bottom: 16px;
+        }
+        .j-cal-nav button {
+            font-family: inherit; font-size: 0.7rem; background: #21262d;
+            border: 1px solid #30363d; border-radius: 4px; color: #d1d4dc;
+            padding: 4px 10px; cursor: pointer;
+        }
+        .j-cal-nav button:hover { background: #30363d; }
+        .j-cal-month { font-size: 0.82rem; font-weight: 600; color: #e6edf3; min-width: 160px; text-align: center; }
+        .j-cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+        }
+        .j-cal-header {
+            font-size: 0.6rem; color: #484f58; text-align: center;
+            padding: 4px 0; text-transform: uppercase; font-weight: 600;
+        }
+        .j-cal-day {
+            background: #161b22; border: 1px solid #21262d; border-radius: 4px;
+            padding: 6px; min-height: 72px; cursor: pointer; transition: all 0.15s;
+        }
+        .j-cal-day:hover { border-color: #484f58; background: #1c2129; }
+        .j-cal-day.empty { background: transparent; border-color: transparent; cursor: default; }
+        .j-cal-day.today { border-color: #58a6ff; box-shadow: inset 0 0 0 1px rgba(88, 166, 255, 0.15); }
+        .j-cal-day.has-trades { border-color: #30363d; }
+        .j-cal-day.positive-day { background: rgba(63, 185, 80, 0.04); }
+        .j-cal-day.negative-day { background: rgba(239, 83, 80, 0.04); }
+        .j-cal-day-num { font-size: 0.6rem; color: #484f58; margin-bottom: 4px; }
+        .j-cal-day-r {
+            font-size: 0.75rem; font-weight: 700; text-align: center; padding: 3px 0;
+        }
+        .j-cal-day-r.positive { color: #3fb950; }
+        .j-cal-day-r.negative { color: #ef5350; }
+        .j-cal-day-meta { font-size: 0.55rem; color: #484f58; text-align: center; }
+        .j-cal-summary {
+            display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;
+        }
+
+        /* ── Calendar Drill-down ── */
+        .j-cal-drill {
+            margin-top: 16px; background: #0f1318; border: 1px solid #21262d;
+            border-radius: 6px; padding: 16px;
+            border-left: 2px solid #58a6ff;
+        }
+        .j-cal-drill-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #21262d;
+        }
+        .j-cal-drill-header h3 { font-size: 0.75rem; font-weight: 600; color: #e6edf3; }
+        .j-cal-drill-close {
+            font-family: inherit; font-size: 0.65rem; background: none;
+            border: 1px solid #30363d; border-radius: 4px; color: #8b949e;
+            padding: 3px 8px; cursor: pointer; transition: color 0.15s;
+        }
+
+        /* ── Sessions ── */
+        .j-session-card {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 16px; margin-bottom: 10px;
+            border-left: 2px solid #30363d;
+            transition: border-color 0.15s;
+        }
+        .j-session-card:hover { border-color: #484f58; border-left-color: #3fb950; }
+        .j-session-card.positive-session { border-left-color: #3fb95066; }
+        .j-session-card.negative-session { border-left-color: #ef535066; }
+        .j-session-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px;
+        }
+        .j-session-date { font-size: 0.75rem; font-weight: 600; color: #e6edf3; }
+        .j-session-label {
+            font-size: 0.58rem; color: #58a6ff; margin-left: 8px;
+            padding: 1px 6px; background: #1f6feb15; border-radius: 8px;
+        }
+        .j-session-stats {
+            display: flex; gap: 12px; font-size: 0.65rem; color: #8b949e;
+        }
+        .j-session-stats span { font-weight: 600; }
+        .j-session-notes { font-size: 0.68rem; color: #d1d4dc; white-space: pre-wrap; margin-top: 8px; }
+        .j-session-notes-label { font-size: 0.6rem; color: #484f58; text-transform: uppercase; margin-top: 8px; margin-bottom: 4px; }
+        .j-session-trades { margin-top: 10px; }
+        .j-session-trade {
+            display: flex; gap: 10px; align-items: center; padding: 4px 0;
+            font-size: 0.65rem; border-bottom: 1px solid #21262d;
+        }
+        .j-session-actions { display: flex; gap: 4px; }
+
+        /* ── Breakdown Bars ── */
+        .j-bd-row {
+            display: flex; align-items: center; gap: 8px; padding: 5px 0;
+            border-bottom: 1px solid #21262d; font-size: 0.65rem;
+        }
+        .j-bd-row:last-child { border-bottom: none; }
+        .j-bd-label { min-width: 60px; color: #d1d4dc; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .j-bd-bar-wrap { flex: 1; height: 16px; background: #21262d; border-radius: 3px; position: relative; overflow: hidden; }
+        .j-bd-bar { height: 100%; border-radius: 3px; min-width: 2px; transition: width 0.4s ease-out; }
+        .j-bd-bar.positive { background: linear-gradient(90deg, #3fb95044, #3fb95088); }
+        .j-bd-bar.negative { background: linear-gradient(90deg, #ef535044, #ef535088); }
+        .j-bd-stats { min-width: 160px; display: flex; gap: 6px; font-size: 0.6rem; color: #8b949e; justify-content: flex-end; }
+        .j-bd-stats span { font-weight: 600; }
+        .j-bd-stats .positive { color: #3fb950; }
+        .j-bd-stats .negative { color: #ef5350; }
+        .j-bd-empty { font-size: 0.65rem; color: #484f58; padding: 8px 0; }
+
+        /* ── Playbook Analytics ── */
+        .j-pb-locked {
+            text-align: center; padding: 28px 20px; border: 1px dashed #30363d;
+            border-radius: 8px; background: #11151c;
+        }
+        .j-pb-locked-title { font-size: 0.75rem; color: #e6edf3; font-weight: 600; margin-bottom: 6px; }
+        .j-pb-locked-text { font-size: 0.65rem; color: #8b949e; line-height: 1.6; max-width: 460px; margin: 0 auto 14px; }
+        .j-pb-dim-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .j-pb-dim-tab {
+            font-size: 0.62rem; padding: 5px 12px; border-radius: 14px; cursor: pointer;
+            background: #161b22; border: 1px solid #21262d; color: #8b949e;
+        }
+        .j-pb-dim-tab.active { background: #1f6feb22; border-color: #1f6feb55; color: #58a6ff; }
+        .j-pb-basis-note { font-size: 0.6rem; color: #8b949e; margin-bottom: 8px; }
+        .j-pb-mini-bars { display: flex; align-items: flex-end; gap: 1px; height: 22px; width: 84px; }
+        .j-pb-mini-bar { flex: 1; background: #30363d; border-radius: 1px; min-height: 2px; }
+        .j-pb-mini-bar.pos { background: #3fb95099; }
+        .j-pb-mini-bar.neg { background: #ef535099; }
+        .j-pb-small-flag { color: #d29922; font-size: 0.58rem; margin-left: 3px; cursor: help; }
+
+        /* ── Streak ── */
+        .j-streak-bars { display: flex; gap: 2px; align-items: flex-end; height: 60px; padding: 0 2px; }
+        .j-streak-bar {
+            flex: 1; min-width: 6px; max-width: 20px; border-radius: 2px 2px 0 0;
+            transition: opacity 0.15s;
+        }
+        .j-streak-bar:hover { opacity: 0.8; }
+        .j-streak-bar.win { background: linear-gradient(to top, #3fb95044, #3fb950aa); }
+        .j-streak-bar.loss { background: linear-gradient(to top, #ef535044, #ef5350aa); }
+        .j-streak-meta { display: flex; gap: 16px; margin-top: 8px; font-size: 0.62rem; color: #8b949e; }
+        .j-streak-meta span { font-weight: 600; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .j-header { padding: 10px 12px; }
+            .j-tabs { padding: 0 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .j-tab { padding: 8px 12px; white-space: nowrap; }
+            .j-content { padding: 12px; }
+            .j-kpi-bar { gap: 6px; }
+            .j-kpi { min-width: 80px; padding: 8px 10px; }
+            .j-kpi-value { font-size: 0.85rem; }
+            .j-filters { gap: 4px; }
+            .j-table { font-size: 0.62rem; }
+            .j-table td, .j-table th { padding: 5px 6px; }
+            .j-detail-content { grid-template-columns: 1fr; }
+            .j-modal { padding: 18px; margin: 12px; }
+            #j-panel-analytics > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+            .j-cal-day { min-height: 52px; padding: 4px; }
+            .j-cal-day-num { font-size: 0.52rem; }
+            .j-cal-day-r { font-size: 0.58rem; }
+            .j-cal-day-meta { font-size: 0.48rem; }
+            .j-cal-grid { gap: 2px; }
+            .j-goal-row { flex-wrap: wrap; gap: 6px; }
+            .j-goal-bar { width: 100%; order: 4; }
+        }
+    </style>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Header -->
+    <div class="j-header">
+        <div class="j-header-left">
+            <a href="/" class="j-back">&larr; Dashboard</a>
+            <h1>Trade Journal</h1>
+        </div>
+        <div class="j-header-right">
+            <a href="/journal/guide" class="j-back">How the journal works &rarr;</a>
+            <span id="j-credit-balance" style="font-size:0.6rem;color:#8b949e;display:none"></span>
+            <button class="j-btn j-btn-primary" id="j-btn-new-trade">+ Log Trade</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="j-tabs">
+        <button class="j-tab active" data-tab="trades">Trades</button>
+        <button class="j-tab" data-tab="calendar">Calendar</button>
+        <button class="j-tab" data-tab="analytics">Analytics</button>
+        <button class="j-tab" data-tab="sessions">Sessions</button>
+        <button class="j-tab" data-tab="playbooks">Playbooks</button>
+    </div>
+
+    <!-- Content -->
+    <main id="main-content">
+    <div class="j-content">
+        <!-- ======== TRADES TAB ======== -->
+        <div class="j-panel active" id="j-panel-trades">
+            <!-- KPIs -->
+            <div class="j-kpi-bar" id="j-kpi-bar"></div>
+
+            <!-- Equity Curve -->
+            <div class="j-equity-wrap" id="j-equity-wrap" style="display:none">
+                <div class="j-equity-header">
+                    <h3>Equity Curve (cumulative R)</h3>
+                    <div style="display:flex;gap:6px">
+                        <select class="j-filter-select" id="j-equity-days" style="font-size:0.6rem">
+                            <option value="30">30d</option>
+                            <option value="90" selected>90d</option>
+                            <option value="180">6m</option>
+                            <option value="365">1y</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas class="j-equity-canvas" id="j-equity-canvas"></canvas>
+            </div>
+
+            <!-- Filters -->
+            <div class="j-filters" id="j-filters">
+                <select class="j-filter-select" id="j-filter-days">
+                    <option value="7">7 days</option>
+                    <option value="30" selected>30 days</option>
+                    <option value="90">90 days</option>
+                    <option value="180">6 months</option>
+                    <option value="365">1 year</option>
+                </select>
+                <input type="text" class="j-filter-input" id="j-filter-asset" placeholder="Asset" style="width:70px">
+                <select class="j-filter-select" id="j-filter-direction">
+                    <option value="">All dirs</option>
+                    <option value="long">Long</option>
+                    <option value="short">Short</option>
+                </select>
+                <input type="text" class="j-filter-input" id="j-filter-setup" placeholder="Setup type" style="width:100px">
+                <select class="j-filter-select" id="j-filter-mistakes">
+                    <option value="">All trades</option>
+                    <option value="true">With mistakes</option>
+                    <option value="false">No mistakes</option>
+                </select>
+                <button class="j-filter-btn" id="j-filter-clear">Clear</button>
+            </div>
+
+            <!-- Actions -->
+            <div class="j-actions">
+                <button class="j-btn j-btn-secondary" id="j-btn-import">Import Drawings</button>
+                <span class="j-spacer"></span>
+                <span id="j-select-count" style="font-size:0.65rem;color:#8b949e"></span>
+                <button class="j-btn j-btn-secondary" id="j-btn-bulk-tag" disabled>Tag Selected</button>
+                <button class="j-btn j-btn-danger" id="j-btn-bulk-delete" disabled>Delete Selected</button>
+            </div>
+
+            <!-- Trade Table -->
+            <div class="j-table-wrap">
+                <table class="j-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px"><input type="checkbox" class="j-checkbox" id="j-select-all"></th>
+                            <th data-sort="opened_at">Date <span class="sort-arrow"></span></th>
+                            <th data-sort="asset">Asset <span class="sort-arrow"></span></th>
+                            <th data-sort="direction">Dir <span class="sort-arrow"></span></th>
+                            <th>Entry / Exit</th>
+                            <th data-sort="rr_planned">Plan R <span class="sort-arrow"></span></th>
+                            <th data-sort="rr_actual">Actual R <span class="sort-arrow"></span></th>
+                            <th data-sort="setup_type">Setup <span class="sort-arrow"></span></th>
+                            <th>Grade</th>
+                            <th>Mistakes</th>
+                            <th data-sort="duration">Duration <span class="sort-arrow"></span></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="j-trade-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Empty state -->
+            <div class="j-empty" id="j-empty" style="display:none">
+                <div class="j-empty-icon">&#128203;</div>
+                <div class="j-empty-text">No trades yet. Log your first trade to get started.</div>
+            </div>
+        </div>
+
+        <!-- ======== CALENDAR TAB ======== -->
+        <div class="j-panel" id="j-panel-calendar">
+            <div class="j-cal-nav">
+                <button id="j-cal-prev">&larr;</button>
+                <div class="j-cal-month" id="j-cal-month-label"></div>
+                <button id="j-cal-next">&rarr;</button>
+            </div>
+            <div class="j-cal-grid" id="j-cal-grid"></div>
+            <div class="j-cal-summary" id="j-cal-summary"></div>
+            <div class="j-cal-drill" id="j-cal-drill" style="display:none">
+                <div class="j-cal-drill-header">
+                    <h3 id="j-cal-drill-title">Day Details</h3>
+                    <button class="j-cal-drill-close" id="j-cal-drill-close">Close</button>
+                </div>
+                <div id="j-cal-drill-content"></div>
+            </div>
+        </div>
+
+        <!-- ======== ANALYTICS TAB ======== -->
+        <div class="j-panel" id="j-panel-analytics">
+            <!-- Period selector + AI controls -->
+            <div class="j-filters" style="margin-bottom:14px;display:flex;align-items:center;gap:8px">
+                <select class="j-filter-select" id="j-analytics-days">
+                    <option value="30">30 days</option>
+                    <option value="90" selected>90 days</option>
+                    <option value="180">6 months</option>
+                    <option value="365">1 year</option>
+                </select>
+                <span style="flex:1"></span>
+                <button class="j-btn" id="j-btn-weekly-review" style="font-size:0.62rem;padding:4px 10px">AI Review</button>
+            </div>
+
+            <!-- NL Query -->
+            <div class="j-nl-query" style="margin-bottom:16px;display:flex;gap:6px;padding:10px 12px;background:#161b22;border:1px solid #21262d;border-radius:6px">
+                <input type="text" class="j-modal-input" id="j-nl-input" placeholder="Ask about your trades... e.g. &quot;What's my best performing setup?&quot;" style="flex:1;font-size:0.65rem;padding:6px 10px;background:#0d1117">
+                <button class="j-btn j-btn-primary" id="j-btn-nl-query" style="font-size:0.62rem;padding:4px 12px;white-space:nowrap">Ask</button>
+            </div>
+            <div id="j-nl-output" style="margin-bottom:14px;font-size:0.65rem;color:#8b949e;line-height:1.5;display:none"></div>
+
+            <!-- KPI Cards -->
+            <div class="j-kpi-bar" id="j-analytics-kpis"></div>
+
+            <!-- Charts Row: R Histogram + MFE/MAE -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>R-Multiple Distribution</h3></div>
+                    <div id="j-chart-r-hist" style="width:100%;height:220px"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>MFE vs MAE</h3></div>
+                    <div id="j-chart-mfe-mae" style="width:100%;height:220px"></div>
+                </div>
+            </div>
+
+            <!-- Breakdowns -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" id="j-breakdowns">
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Setup</h3></div>
+                    <div id="j-bd-setup"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Asset</h3></div>
+                    <div id="j-bd-asset"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Direction</h3></div>
+                    <div id="j-bd-direction"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Weekday</h3></div>
+                    <div id="j-bd-weekday"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Time of Day</h3></div>
+                    <div id="j-bd-hour"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>By Duration</h3></div>
+                    <div id="j-bd-duration"></div>
+                </div>
+            </div>
+
+            <!-- Rule Adherence + Streaks -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>Rule Adherence</h3></div>
+                    <div id="j-bd-adherence"></div>
+                </div>
+                <div class="j-equity-wrap" style="margin-bottom:0">
+                    <div class="j-equity-header"><h3>Streak Analysis</h3></div>
+                    <div id="j-streak-analysis"></div>
+                </div>
+            </div>
+
+            <!-- ======== PLAYBOOK ANALYTICS ======== -->
+            <div class="j-equity-wrap" id="j-pb-section" style="margin-bottom:16px">
+                <div class="j-equity-header"><h3>Playbook Analytics</h3></div>
+
+                <div id="j-pb-locked" class="j-pb-locked" style="display:none">
+                    <div class="j-pb-locked-title">Playbook analytics is a paid feature</div>
+                    <div class="j-pb-locked-text" id="j-pb-locked-text">
+                        Per-setup and per-tag win rate, expectancy in R, R-multiple distribution,
+                        profit factor, and average MAE/MFE — broken down by setup, archetype tag,
+                        symbol, side, hour of day and day of week. Descriptive numbers only, from
+                        your own closed trades.
+                    </div>
+                    <span>This needs a higher plan. An admin can change plans under Admin → Users.</span>
+                </div>
+
+                <div id="j-pb-unlocked" style="display:none">
+                    <div class="j-pb-dim-tabs" id="j-pb-dim-tabs">
+                        <span class="j-pb-dim-tab active" data-dim="by_setup">Setup</span>
+                        <span class="j-pb-dim-tab" data-dim="by_tag">Archetype Tag</span>
+                        <span class="j-pb-dim-tab" data-dim="by_symbol">Symbol</span>
+                        <span class="j-pb-dim-tab" data-dim="by_side">Side</span>
+                        <span class="j-pb-dim-tab" data-dim="by_hour_of_day">Hour of Day</span>
+                        <span class="j-pb-dim-tab" data-dim="by_day_of_week">Day of Week</span>
+                    </div>
+                    <div class="j-pb-basis-note">
+                        R = reward:risk multiple (needs a recorded stop). A group falls back to
+                        percent return and is marked <em>pct-based</em> the moment any trade in
+                        it has no recorded stop, so R and percent numbers are never mixed.
+                        Groups marked <span class="j-pb-small-flag">*</span> have fewer than 20
+                        closed trades — descriptive only.
+                    </div>
+                    <div class="j-table-wrap">
+                        <table class="j-table j-pb-table">
+                            <thead>
+                                <tr>
+                                    <th>Group</th><th>N</th><th>Win %</th><th>Expectancy</th>
+                                    <th>Profit Factor</th><th>Avg Win</th><th>Avg Loss</th>
+                                    <th>Avg MFE</th><th>Avg MAE</th><th>Distribution</th>
+                                </tr>
+                            </thead>
+                            <tbody id="j-pb-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="j-empty" id="j-pb-empty" style="display:none;padding:20px 0">
+                        <div class="j-empty-text">Not enough closed trades yet for this breakdown.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state (shown when no data) -->
+            <div class="j-empty" id="j-analytics-empty" style="display:none">
+                <div class="j-empty-text">Not enough closed trades for analytics. Close some trades to see your stats.</div>
+            </div>
+        </div>
+
+        <!-- ======== SESSIONS TAB ======== -->
+        <div class="j-panel" id="j-panel-sessions">
+            <div class="j-actions" style="margin-bottom:16px">
+                <button class="j-btn j-btn-primary" id="j-btn-new-session">+ New Session</button>
+                <span class="j-spacer"></span>
+                <select class="j-filter-select" id="j-session-month">
+                    <!-- populated by JS -->
+                </select>
+            </div>
+            <div id="j-session-list"></div>
+            <div class="j-empty" id="j-session-empty" style="display:none">
+                <div class="j-empty-text">No sessions yet. Create one to track your trading day.</div>
+            </div>
+        </div>
+
+        <!-- ======== PLAYBOOKS TAB ======== -->
+        <div class="j-panel" id="j-panel-playbooks">
+            <div class="j-actions" style="margin-bottom:16px;display:flex;gap:8px;align-items:center">
+                <button class="j-btn j-btn-primary" id="j-btn-new-playbook">+ New Playbook</button>
+                <span style="flex:1"></span>
+                <button class="j-btn" id="j-btn-export-csv" style="font-size:0.62rem;padding:4px 10px" title="Export all trades as CSV">Export Trades CSV</button>
+                <button class="j-btn" id="j-btn-export-json" style="font-size:0.62rem;padding:4px 10px" title="Export all journal data (trades, sessions, goals, playbooks)">Export All JSON</button>
+            </div>
+            <div id="j-playbook-list"></div>
+            <div class="j-empty" id="j-playbook-empty" style="display:none">
+                <div class="j-empty-text">No playbooks yet. Create one to document your trading setups.</div>
+            </div>
+
+            <!-- Goals Section -->
+            <div style="margin-top:24px;border-top:1px solid #21262d;padding-top:16px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <h3 style="font-size:0.75rem;color:#e6edf3;margin:0">Monthly Goals</h3>
+                    <select class="j-filter-select" id="j-goals-month" style="font-size:0.62rem">
+                        <!-- populated by JS -->
+                    </select>
+                    <span style="flex:1"></span>
+                    <button class="j-btn" id="j-btn-edit-goals" style="font-size:0.62rem;padding:4px 10px">Edit Goals</button>
+                </div>
+                <div id="j-goals-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== LOG TRADE MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-new">
+        <div class="j-modal">
+            <h2 id="j-modal-title">Log New Trade</h2>
+            <input type="hidden" id="j-form-id">
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Asset</label>
+                    <input type="text" class="j-modal-input" id="j-form-asset" placeholder="BTC" maxlength="20" style="text-transform:uppercase">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Timeframe</label>
+                    <select class="j-modal-input" id="j-form-timeframe">
+                        <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+                        <option value="1h">1H</option><option value="4h">4H</option>
+                        <option value="1D" selected>1D</option><option value="1W">1W</option><option value="1M">1M</option>
+                    </select>
+                </div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Direction</label>
+                <div class="j-dir-toggle" id="j-form-direction">
+                    <button type="button" class="j-dir-toggle-btn long active" data-dir="long">Long</button>
+                    <button type="button" class="j-dir-toggle-btn short" data-dir="short">Short</button>
+                </div>
+            </div>
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Entry Price</label>
+                    <input type="number" class="j-modal-input" id="j-form-entry" step="any" min="0">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Stop Loss</label>
+                    <input type="number" class="j-modal-input" id="j-form-stop" step="any" min="0">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Target</label>
+                    <input type="number" class="j-modal-input" id="j-form-target" step="any" min="0">
+                </div>
+            </div>
+            <div class="j-rr-preview" id="j-rr-preview"></div>
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Size</label>
+                    <input type="number" class="j-modal-input" id="j-form-size" step="any" min="0" placeholder="Optional">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Fees</label>
+                    <input type="number" class="j-modal-input" id="j-form-fees" step="any" min="0" placeholder="0">
+                </div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Setup Type</label>
+                <input type="text" class="j-modal-input" id="j-form-setup" placeholder="e.g. pullback, breakout" maxlength="50" list="j-setup-list">
+                <datalist id="j-setup-list"></datalist>
+            </div>
+            <!-- Checklist (dynamic) -->
+            <div class="j-modal-field" id="j-checklist-section" style="display:none">
+                <label class="j-modal-label">Checklist</label>
+                <div id="j-checklist-items"></div>
+            </div>
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Confidence</label>
+                    <div class="j-slider-group">
+                        <input type="range" class="j-slider" id="j-form-confidence" min="1" max="5" value="3">
+                        <span class="j-slider-val" id="j-form-confidence-val">3</span>
+                    </div>
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Mood</label>
+                    <div class="j-slider-group">
+                        <input type="range" class="j-slider" id="j-form-mood" min="1" max="5" value="3">
+                        <span class="j-slider-val" id="j-form-mood-val">3</span>
+                    </div>
+                </div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Tags</label>
+                <input type="text" class="j-modal-input" id="j-form-tags" placeholder="Comma-separated tags" maxlength="200">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Notes</label>
+                <textarea class="j-modal-input" id="j-form-notes" placeholder="Trade notes..." maxlength="10000"></textarea>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Account</label>
+                <input type="text" class="j-modal-input" id="j-form-account" placeholder="Optional label" maxlength="30">
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-modal-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-modal-save">Save Trade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== CLOSE TRADE MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-close">
+        <div class="j-modal">
+            <h2>Close Trade</h2>
+            <div id="j-close-context" style="font-size:0.65rem;color:#8b949e;margin-bottom:12px"></div>
+            <input type="hidden" id="j-close-id">
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Exit Price</label>
+                    <input type="number" class="j-modal-input" id="j-close-exit" step="any" min="0">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Exit Reason</label>
+                    <select class="j-modal-input" id="j-close-reason">
+                        <option value="manual">Manual</option>
+                        <option value="tp_hit">TP Hit</option>
+                        <option value="sl_hit">SL Hit</option>
+                        <option value="trailing_stop">Trailing Stop</option>
+                        <option value="time_based">Time-Based</option>
+                        <option value="breakeven">Breakeven</option>
+                    </select>
+                </div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Mistakes</label>
+                <div class="j-mistake-pills" id="j-close-mistakes"></div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Notes</label>
+                <textarea class="j-modal-input" id="j-close-notes" placeholder="Post-trade notes..." maxlength="10000"></textarea>
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-close-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-close-save">Close Trade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SESSION MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-session">
+        <div class="j-modal">
+            <h2 id="j-session-modal-title">New Session</h2>
+            <input type="hidden" id="j-session-form-id">
+            <div class="j-modal-field">
+                <label class="j-modal-label">Date</label>
+                <input type="date" class="j-modal-input" id="j-session-form-date">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Label</label>
+                <input type="text" class="j-modal-input" id="j-session-form-label" placeholder="e.g. morning, afternoon" maxlength="30">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Pre-session Notes (market plan, focus)</label>
+                <textarea class="j-modal-input" id="j-session-form-pre" placeholder="What's your plan today?" maxlength="10000"></textarea>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Post-session Notes (review, lessons)</label>
+                <textarea class="j-modal-input" id="j-session-form-post" placeholder="How did it go?" maxlength="10000"></textarea>
+            </div>
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Mood Before</label>
+                    <div class="j-slider-group">
+                        <input type="range" class="j-slider" id="j-session-form-mood-pre" min="1" max="5" value="3">
+                        <span class="j-slider-val" id="j-session-mood-pre-val">3</span>
+                    </div>
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Mood After</label>
+                    <div class="j-slider-group">
+                        <input type="range" class="j-slider" id="j-session-form-mood-post" min="1" max="5" value="3">
+                        <span class="j-slider-val" id="j-session-mood-post-val">3</span>
+                    </div>
+                </div>
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-session-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-session-save">Save Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== PLAYBOOK MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-playbook">
+        <div class="j-modal" style="max-width:550px">
+            <h2 id="j-pb-modal-title">New Playbook</h2>
+            <input type="hidden" id="j-pb-form-id">
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Name</label>
+                    <input type="text" class="j-modal-input" id="j-pb-form-name" placeholder="e.g. Range Breakout" maxlength="50">
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Setup Type</label>
+                    <input type="text" class="j-modal-input" id="j-pb-form-setup" placeholder="Links to trades" maxlength="50" list="j-setup-list">
+                </div>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Description</label>
+                <textarea class="j-modal-input" id="j-pb-form-desc" placeholder="What is this setup?" maxlength="5000" rows="2"></textarea>
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Ideal Conditions</label>
+                <textarea class="j-modal-input" id="j-pb-form-conditions" placeholder="When should you take this trade?" maxlength="5000" rows="2"></textarea>
+            </div>
+            <div class="j-modal-row">
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Entry Rules</label>
+                    <textarea class="j-modal-input" id="j-pb-form-entry" placeholder="Entry criteria" maxlength="5000" rows="2"></textarea>
+                </div>
+                <div class="j-modal-field">
+                    <label class="j-modal-label">Exit Rules</label>
+                    <textarea class="j-modal-input" id="j-pb-form-exit" placeholder="Exit criteria" maxlength="5000" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-pb-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-pb-save">Save Playbook</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== GOALS MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-goals">
+        <div class="j-modal" style="max-width:450px">
+            <h2>Monthly Goals</h2>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Max Daily Loss (R)</label>
+                <input type="number" class="j-modal-input" id="j-goal-max-loss" placeholder="e.g. 3" step="0.5" min="0">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Max Trades Per Day</label>
+                <input type="number" class="j-modal-input" id="j-goal-max-trades" placeholder="e.g. 5" min="1">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Min R:R Target</label>
+                <input type="number" class="j-modal-input" id="j-goal-min-rr" placeholder="e.g. 1.5" step="0.5" min="0">
+            </div>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Max Consecutive Losses Before Stop</label>
+                <input type="number" class="j-modal-input" id="j-goal-max-consec" placeholder="e.g. 3" min="1">
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-goal-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-goal-save">Save Goals</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== AI REVIEW MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-ai-review">
+        <div class="j-modal" style="max-width:600px">
+            <h2>AI Performance Review</h2>
+            <div id="j-ai-review-content" style="font-size:0.68rem;line-height:1.6;color:#d1d4dc;max-height:60vh;overflow-y:auto;padding:8px 0"></div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-ai-review-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== BULK TAG MODAL ======== -->
+    <div class="j-modal-overlay" id="j-modal-bulk-tag">
+        <div class="j-modal" style="max-width:400px">
+            <h2>Apply Setup Type</h2>
+            <div class="j-modal-field">
+                <label class="j-modal-label">Setup type to apply to selected trades</label>
+                <input type="text" class="j-modal-input" id="j-bulk-tag-input" placeholder="e.g. breakout, pullback" maxlength="50">
+            </div>
+            <div class="j-modal-actions">
+                <button class="j-btn j-btn-secondary" id="j-bulk-tag-cancel">Cancel</button>
+                <button class="j-btn j-btn-primary" id="j-bulk-tag-apply">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    </main>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/journal-charts.js') }}?v={{ cache_version('js/journal-charts.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/share-modal.js') }}?v={{ cache_version('js/share-modal.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/journal-page.js') }}?v={{ cache_version('js/journal-page.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/journal-analytics-charts.js') }}?v={{ cache_version('js/journal-analytics-charts.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/journal-playbooks-goals.js') }}?v={{ cache_version('js/journal-playbooks-goals.js') }}" defer></script>
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/journal-playbook-analytics.js') }}?v={{ cache_version('js/journal-playbook-analytics.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+</body>
+</html>

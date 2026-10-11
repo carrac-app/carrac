@@ -1,0 +1,1686 @@
+/* ============================================================================
+   CARRAC.CC — APP OVERHAUL · "Quietly Premium" (Direction B / B3 register)
+   ----------------------------------------------------------------------------
+   Drop-in stylesheet. Keeps every existing production class name. Load this
+   LAST — after main.css and the per-page inline blocks — so its rules win on
+   source order (specificity is kept equal to the originals on purpose).
+
+   Design principle (applies to every surface):
+     · raised surfaces; a quiet animated conic accent travels the card edge on
+       hover/active ONLY (respects prefers-reduced-motion) — no static frame
+     · refined SEGMENTED meters instead of plain progress bars
+     · readout rows  — label-over-value pairs (Age / R:R / Next)
+     · ONE accent per component, no chip-salad, fewer boxes/borders
+     · hover INTENSIFIES + lifts; press settles; it never adds chrome
+     · ONE typeface (Geist) everywhere — numerals align via font-variant-numeric:
+       tabular-nums, NOT a mono face. Mono survives only in literal code / API keys.
+     · the rail's active tab is quiet: weight + brightness + a hairline tick (no fill)
+
+   Direction tinting is done with :has(.play-direction-arrow.long|.short) so no
+   markup changes are required. A few richer touches need small markup additions
+   — see the "NEEDS MINOR MARKUP CHANGE" appendix at the bottom of this file.
+   ============================================================================ */
+
+/* ============================================================================
+   1 · TOKENS  (deduped — replaces the hardcoded near-duplicates in main.css)
+   Surfaces keep the live #0d1117 family; hues kept; teal #26a69a retired → green.
+   Old → token map:
+     #0d1117→--bg  #161b22→--s1  #1c2128/#1e222d→--s2  #222b37→--s3  #2b3542/#3d4754→--s4
+     borders {#21262d #2a2e39 #30363d #363a45 #3d4754 #787b86}→ --hairline/--border/--border-2
+     text   {#e6edf3 #d1d4dc #c9d1d9 #9099a6 #8b949e #787b86 #484f58 #4a4e59}→ --fg1..--fg4
+     greens {#3fb950 #2ea043 #238636 #26a69a*}→ --green / -2 / -dim   (*teal folded in)
+     reds   {#f85149 #ef5350 #f0556a #d83a50}→ --red / -2
+     warns  {#d29922 #ff9800 #f0b90b #f59e0b}→ --amber
+   ============================================================================ */
+:root{
+  --font-sans:'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --bg:#0d1117;
+  --s1:#141a22;          /* panel / card surface            */
+  --s2:#1a212b;          /* raised / input / nested          */
+  --s3:#222b37;          /* hover / track                    */
+  --s4:#2b3542;          /* control fill / toggle off        */
+  --chart-bg:#0f141b;
+
+  --hairline:#1b222b;    /* faint inner separators           */
+  --border:#29323d;      /* standard control / card border   */
+  --border-2:#3a4552;    /* hover / active outline           */
+
+  --fg1:#e9edf2;         /* primary — headings, key values   */
+  --fg2:#b4bdc8;         /* body                             */
+  --fg3:#89929e;         /* dim — labels, captions           */
+  --fg4:#67707b;         /* faint — meta, placeholders, ticks */
+
+  --green:#3fb950; --green-2:#2ea043; --green-dim:#238636;
+  --green-soft:rgba(63,185,80,.14); --green-line:rgba(63,185,80,.42); --green-glow:rgba(63,185,80,.20);
+  /* Sage = the BRAND accent for UI selection/toggle states only (matches the
+     marketing site). NEVER use for market semantics — up/long/win stay --green.
+     #85b183 = rgb(133,177,131). */
+  --sage:#85b183; --sage-soft:rgba(133,177,131,.16); --sage-line:rgba(133,177,131,.5); --sage-strong:rgba(133,177,131,.34);
+  --red:#f85149;   --red-2:#d83a50;
+  --red-soft:rgba(248,81,73,.13);   --red-line:rgba(248,81,73,.42);   --red-glow:rgba(248,81,73,.18);
+  --blue:#58a6ff;  --blue-soft:rgba(88,166,255,.13);  --blue-line:rgba(88,166,255,.42);
+  --amber:#d6a72b; --amber-soft:rgba(214,167,43,.14); --amber-line:rgba(214,167,43,.42);
+
+  --r-sm:6px; --r:8px; --r-lg:10px; --r-xl:14px; --pill:999px;
+
+  --el1:0 1px 2px rgba(0,0,0,.5);
+  --el2:0 2px 5px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.28);
+  --el3:0 10px 28px rgba(0,0,0,.5), 0 3px 8px rgba(0,0,0,.4);
+  --sheen:inset 0 1px 0 rgba(255,255,255,.05);
+  --ring:0 0 0 3px rgba(88,166,255,.32);
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --spring:cubic-bezier(.34,1.4,.5,1);
+}
+
+/* ============================================================================
+   2 · BASE — fonts, focus, scrollbar
+   ============================================================================ */
+/* ONE family — Geist for everything. Numerals align with tabular figures,
+   NOT a mono face. Mono survives only where content is literal code. */
+.play-card, .play-card *, .panel-plays-view, .plays-creation-form, .plays-empty-state,
+.view-mode-strip, .chart-drawer, .panel-tabs, .more-menu-dropdown,
+.settings-wrap, .settings-tabs, .j-kpi-bar{ font-family:var(--font-sans); }
+
+/* data → tabular-nums for column alignment (replaces the mono face) */
+.play-direction-arrow, .play-age, .plays-count, .play-conditions-label,
+.play-condition-evidence, .play-bt-badge, .play-status-pill, .drawer-data-age,
+.more-menu-user-email, .more-menu-user-tier, .more-menu-footer-link,
+.j-kpi-value, .jp-kpi-chip-value, .pl-price, .play-readout-val,
+.field input, .field-input, .plays-form-input{ font-variant-numeric:tabular-nums; }
+
+/* mono survives ONLY in literal code / API-key fields (opt-in via .code) */
+code, kbd, samp, .field input.code, .field-input.code, .plays-form-input.code, .api-key-input{ font-family:var(--font-mono); }
+
+/* animated card-edge sweep primitive (note 2) */
+@property --b3-angle{ syntax:'<angle>'; initial-value:0deg; inherits:false; }
+@keyframes b3-sweep{ to{ --b3-angle:360deg; } }
+
+/* one consistent, visible focus ring (replaces the suppressed outlines) */
+.plays-new-btn:focus-visible, .plays-form-input:focus-visible, .plays-pill:focus-visible,
+.play-action-btn:focus-visible, .view-mode-btn:focus-visible, .drawer-tab:focus-visible,
+.panel-tab:focus-visible, .more-menu-item:focus-visible, .settings-tab:focus-visible,
+.save-btn:focus-visible, .field input:focus-visible, .field-select:focus-visible,
+.field-input:focus-visible, .plays-empty-cta:focus-visible{
+  outline:none; box-shadow:var(--ring); border-radius:var(--r-sm);
+}
+
+/* ============================================================================
+   3 · RIGHT-PANEL VERTICAL RAIL  (.view-mode-strip / .view-mode-btn)
+   Priority #2 — affordance. Active tab now reads as a connected, tinted tab
+   with a glowing accent bar, not just green text.
+   ============================================================================ */
+.view-mode-strip{
+  background:var(--s1); border-right:1px solid var(--hairline);
+  padding:8px 5px; gap:3px;
+}
+.view-mode-btn{
+  position:relative; border:none; border-radius:var(--r);
+  color:var(--fg3); font-family:var(--font-sans); font-weight:500; letter-spacing:.3px;
+  background:transparent; transition:background .18s var(--ease), color .15s;
+}
+.view-mode-btn:hover{ color:var(--fg2); background:transparent; }
+/* note 1 — NO fill: active = weight + brightness + a single hairline indicator */
+.view-mode-btn.active{ color:var(--fg1); font-weight:600; background:transparent; box-shadow:none; border-left:none; }
+.view-mode-btn.active::before{
+  content:''; position:absolute; right:-1px; top:32%; bottom:32%; width:2px; border-radius:2px; background:var(--green);
+}
+.view-mode-strip .view-mode-btn[data-mode="news"]{ border-top:1px solid var(--hairline); }
+
+/* ============================================================================
+   4 · BOTTOM STATUS BAR  (.chart-drawer handle + .drawer-tab)
+   Real segmented tabs with semantic count pills + a top accent on the active one.
+   ============================================================================ */
+.chart-drawer{ background:var(--s1); }
+.chart-drawer-handle{ gap:4px; box-shadow:var(--sheen); border-bottom:1px solid var(--hairline); }
+.drawer-tab{
+  gap:7px; padding:5px 13px; border-radius:var(--r);
+  border:1px solid transparent; border-top:2px solid transparent;
+  color:var(--fg3); font-family:var(--font-sans); font-size:12px;
+  transition:background .15s, color .15s, box-shadow .15s, border-color .15s;
+}
+.drawer-tab:hover{ background:var(--s2); color:var(--fg2); }
+.drawer-tab.active{
+  background:transparent; color:var(--fg1); font-weight:600;
+  border-color:transparent; border-top-color:var(--green);
+}
+/* semantic accents — one per tab, no rainbow */
+.drawer-tab.has-alerts.active{ border-top-color:var(--amber); }
+.drawer-tab.has-scenarios.active{ border-top-color:var(--blue); }
+.drawer-tab.has-long.active{ border-top-color:var(--green); }
+.drawer-tab.has-short.active{ border-top-color:var(--red); }
+.drawer-tab.has-alerts .drawer-tab-label{ color:var(--amber); }
+.drawer-tab.has-scenarios .drawer-tab-label{ color:var(--blue); }
+.drawer-tab.has-long .drawer-tab-label{ color:var(--green); }
+.drawer-tab.has-short .drawer-tab-label{ color:var(--red); }
+.drawer-data-age{ color:var(--fg4); }
+
+/* ============================================================================
+   5 · PANEL TOP TABS  (.panel-tabs / .panel-tab) — connected-tab affordance
+   ============================================================================ */
+.panel-tabs{ background:var(--s1); border-bottom:1px solid var(--hairline); }
+.panel-tab{
+  color:var(--fg3); font-family:var(--font-sans); border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s, background .15s;
+}
+.panel-tab:hover{ color:var(--fg1); background:var(--s2); }
+.panel-tab.active{ color:var(--fg1); border-bottom-color:var(--green); background:transparent; }
+
+/* ============================================================================
+   6 · SHARED B3 PRIMITIVES — segmented meter + readout row
+   Applied below to plays, backtest, journal via their own class names.
+   ============================================================================ */
+/* segmented meter: a rounded track sliced into ticks. Set --seg to the segment
+   count for exact alignment (e.g. style="--seg:3"); defaults to a 4-tick texture. */
+.b3-meter{ position:relative; height:6px; background:var(--s3); border-radius:var(--pill); overflow:hidden; }
+.b3-meter > i{ display:block; height:100%; border-radius:var(--pill);
+  background:linear-gradient(90deg,var(--green-2),var(--green)); box-shadow:0 0 8px var(--green-glow); }
+.b3-meter::after{ content:''; position:absolute; inset:0; pointer-events:none; --seg:4;
+  background:repeating-linear-gradient(90deg, transparent 0 calc(100%/var(--seg) - 2px),
+                                       var(--s1) calc(100%/var(--seg) - 2px) calc(100%/var(--seg))); }
+
+/* readout cell — mono value over a tiny uppercase label */
+.b3-readout{ display:flex; gap:0; }
+.b3-readout > div{ flex:1; display:flex; flex-direction:column; gap:3px; padding-left:13px; border-left:1px solid var(--hairline); }
+.b3-readout > div:first-child{ padding-left:0; border-left:none; }
+.b3-readout .rl{ font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg4); }
+.b3-readout .rv{ font-size:12px; font-weight:600; color:var(--fg2); font-variant-numeric:tabular-nums; }
+
+/* ============================================================================
+   7 · PLAYS — header + status groups
+   ============================================================================ */
+.panel-plays-view{ background:var(--bg); }
+.plays-header{ background:var(--s1); border-bottom:1px solid var(--hairline); box-shadow:var(--sheen); padding:12px 14px; }
+.plays-title{ color:var(--fg1); font-weight:600; font-size:.9rem; }
+.plays-count{ color:var(--fg3); }
+.plays-new-btn{
+  height:32px; padding:0 14px; background:var(--green-dim); color:#eafff0;
+  border:1px solid rgba(255,255,255,.08); border-radius:var(--r); box-shadow:var(--el1),var(--sheen);
+  font-family:var(--font-sans); font-weight:600; cursor:pointer;
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease), background .18s;
+}
+.plays-new-btn:hover{ background:var(--green-2); transform:translateY(-1px); box-shadow:var(--el2); }
+.plays-new-btn:active{ transform:translateY(0) scale(.99); }
+.plays-content{ padding:12px; }
+
+.play-status-group{ margin-bottom:14px; }
+.play-status-group-header{
+  display:flex; align-items:center; gap:8px; padding:4px 2px 9px;
+  color:var(--fg3); font-family:var(--font-sans); font-weight:600; letter-spacing:.6px;
+}
+.play-status-group-header::after{ content:''; flex:1; height:1px; background:var(--hairline); }
+
+/* ============================================================================
+   8 · PLAY CARD — the B3 instrument panel (winning treatment)
+   Raised surface · direction-tinted top hairline · badge · segmented meter ·
+   readout footer. Direction comes from the child .play-direction-arrow via :has().
+   ============================================================================ */
+.play-card{
+  position:relative; overflow:hidden; --b3-accent:var(--border-2);
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:13px 15px 14px; margin-bottom:9px; box-shadow:var(--el1);
+  transition:transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+.play-card:has(.play-direction-arrow.long){  --b3-accent:var(--green); }
+.play-card:has(.play-direction-arrow.short){ --b3-accent:var(--red); }
+/* Direction-B markup convention: .play-card.long / .play-card.short */
+.play-card.long{  --b3-accent:var(--green); }
+.play-card.short{ --b3-accent:var(--red); }
+/* note 2 — a quiet conic accent travelling the edge, ONLY on hover / active */
+.play-card::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; opacity:0;
+  background:conic-gradient(from var(--b3-angle), transparent 0 58%, var(--b3-accent) 76%, transparent 88%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite:exclude;
+  transition:opacity .3s ease;
+}
+.play-card:hover{ transform:translateY(-2px); border-color:var(--border-2); box-shadow:var(--el2); }
+.play-card.expanded{ border-color:var(--border-2); box-shadow:var(--el2); }
+.play-card:hover::after, .play-card.expanded::after{ opacity:.9; animation:b3-sweep 2.2s linear infinite; }
+@media (prefers-reduced-motion:reduce){
+  .play-card::after{ animation:none !important; }
+  .play-card:hover::after, .play-card.expanded::after{ opacity:.5; }
+}
+
+.play-card-header{ align-items:center; gap:10px; }
+/* arrow → tinted instrument badge */
+.play-direction-arrow{
+  width:20px; height:20px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; font-size:10px; background:transparent;
+}
+.play-direction-arrow.long{  color:var(--green); background:var(--green-soft); }
+.play-direction-arrow.short{ color:var(--red);   background:var(--red-soft); }
+.play-direction-arrow.neutral{ color:var(--fg3); }
+.play-card-title{ color:var(--fg1); font-weight:600; font-size:.82rem; }
+.play-card-menu{ color:var(--fg4); border-radius:var(--r-sm); transition:color .15s, background .15s; }
+.play-card-menu:hover{ color:var(--fg1); background:var(--s3); }
+
+/* meta → quiet dot-separated text, no chips, no boxes */
+.play-card-meta{ gap:0; margin-top:9px; align-items:center; flex-wrap:wrap; }
+.play-type-badge, .play-approach-badge{
+  font-size:.66rem; color:var(--fg4); background:transparent; border:none; border-radius:0; padding:0;
+}
+.play-card-meta > *:not(:first-child)::before{ content:'\00b7'; color:var(--border-2); margin:0 7px; }
+
+/* conditions bar → segmented meter (see appendix for exact per-segment colour) */
+.play-conditions-bar{
+  height:6px; background:var(--s3); border-radius:var(--pill); overflow:hidden; position:relative; margin-top:11px;
+}
+.play-conditions-fill{
+  background:linear-gradient(90deg,var(--green-2),var(--green)); border-radius:var(--pill);
+  box-shadow:0 0 8px var(--green-glow);
+}
+.play-card:has(.play-direction-arrow.short) .play-conditions-fill{
+  background:linear-gradient(90deg,var(--red-2),var(--red)); box-shadow:0 0 8px var(--red-glow);
+}
+.play-conditions-bar::after{
+  content:''; position:absolute; inset:0; pointer-events:none; --seg:3;
+  background:repeating-linear-gradient(90deg, transparent 0 calc(100%/var(--seg) - 2px),
+                                       var(--s1) calc(100%/var(--seg) - 2px) calc(100%/var(--seg)));
+}
+.play-conditions-label{ color:var(--fg3); top:-15px; font-variant-numeric:tabular-nums; }
+
+/* footer → readout idiom: status as dot + small-caps, age as quiet mono */
+.play-card-footer{ margin-top:12px; padding-top:11px; border-top:1px solid var(--hairline); }
+.play-status-pill{
+  background:transparent !important; padding:0; border-radius:0;
+  display:inline-flex; align-items:center; gap:6px; font-weight:600; letter-spacing:.08em;
+}
+.play-status-pill::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 6px currentColor; }
+.play-status-pill.watching{ color:var(--blue); }
+.play-status-pill.acting{ color:var(--green); }      /* was teal #26a69a */
+.play-status-pill.completed{ color:var(--green); }
+.play-status-pill.invalidated{ color:var(--red); }
+.play-status-pill.expired{ color:var(--amber); }
+.play-age{ color:var(--fg4); }
+.play-bt-badge{ background:var(--s3); color:var(--fg3); border-radius:var(--pill); }
+.play-bt-badge.pos{ background:var(--green-soft); color:var(--green); }   /* was teal */
+.play-bt-badge.neg{ background:var(--red-soft); color:var(--red); }
+
+/* ============================================================================
+   9 · EXPANDED CARD DETAIL
+   ============================================================================ */
+.play-card-detail{ margin-top:12px; padding-top:12px; border-top:1px solid var(--hairline); }
+.play-thesis{ color:var(--fg2); font-style:normal; font-size:.78rem; line-height:1.6; }
+.play-conditions-list{ gap:6px; margin:8px 0 10px; }
+.play-condition{
+  display:flex; align-items:baseline; gap:9px; font-size:.72rem; padding:3px 0;
+}
+.play-condition::before{ content:'\25cb'; color:var(--fg4); flex-shrink:0; }
+.play-condition.met{ color:var(--fg2); } .play-condition.met::before{ content:'✓'; color:var(--green); }
+.play-condition.unmet{ color:var(--fg3); }
+.play-condition-evidence{ color:var(--fg4); }
+.play-action-plan{ background:var(--s2); border:1px solid var(--border); border-radius:var(--r); color:var(--fg2); padding:8px 10px; }
+.play-invalidation{
+  background:var(--red-soft); border:1px solid var(--red-line); border-left:1px solid var(--red-line);
+  border-radius:var(--r); padding:9px 11px; font-size:.72rem; line-height:1.5;
+}
+.play-invalidation-label{ color:var(--red); font-weight:600; }
+.play-last-checked{ color:var(--fg4); }
+
+/* one unified action-button size/idiom across the expanded card */
+.play-detail-actions{ gap:7px; margin-top:12px; }
+.play-action-btn{
+  height:30px; padding:0 13px; font-size:.7rem; font-family:var(--font-sans); font-weight:500;
+  background:var(--s2); border:1px solid var(--border); color:var(--fg2); border-radius:var(--r);
+  box-shadow:var(--sheen); transition:transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s, background .15s, color .15s;
+}
+.play-action-btn:hover{ background:var(--s3); border-color:var(--border-2); color:var(--fg1); transform:translateY(-1px); box-shadow:var(--el2); }
+.play-action-btn:active{ transform:translateY(0) scale(.99); }
+.play-action-btn[data-action="acting"]{ border-color:var(--green-line); color:var(--green); }   /* was teal */
+.play-action-btn[data-action="completed"]{ border-color:var(--green-line); color:var(--green); }
+.play-action-btn[data-action="invalidated"], .play-action-btn.delete-btn{ border-color:var(--red-line); color:var(--red); }
+.play-refresh-btn{ border:1px solid var(--border); color:var(--fg3); border-radius:var(--r-sm); }
+.play-refresh-btn:hover{ border-color:var(--green-line); color:var(--green); }
+
+/* ============================================================================
+   10 · CREATION FORM  (.plays-creation-form …)
+   Restyle to the comfortable register. The full 4-step guided flow needs added
+   markup (stepper, type cards, live preview) — see appendix items A4/A5.
+   ============================================================================ */
+.plays-creation-form{ background:var(--bg); border-bottom:1px solid var(--hairline); padding:16px; }
+.plays-form-section{ margin-bottom:16px; }
+.plays-form-label{
+  color:var(--fg2); font-family:var(--font-sans); font-weight:600; font-size:.7rem;
+  letter-spacing:.02em; text-transform:none; margin-bottom:8px;
+}
+.plays-pill-group{ gap:5px; }
+.plays-pill{
+  font-family:var(--font-sans); font-size:.7rem; padding:6px 13px; border-radius:var(--r);
+  border:1px solid var(--border); background:var(--s1); color:var(--fg3);
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s, color .15s, background .15s;
+}
+.plays-pill:hover{ border-color:var(--border-2); color:var(--fg2); transform:translateY(-1px); box-shadow:var(--el1); }
+.plays-pill.selected{ border-color:var(--green); color:var(--green); background:var(--green-soft); box-shadow:var(--el1); }
+.plays-form-input, select.plays-form-input, textarea.plays-form-input{
+  background:var(--s2); border:1px solid var(--border); color:var(--fg1); border-radius:var(--r);
+  font-family:var(--font-sans); padding:9px 12px; transition:border-color .15s, box-shadow .15s, background .15s;
+}
+.plays-form-input.mono{ font-variant-numeric:tabular-nums; }
+.plays-form-input:focus{ border-color:var(--green); box-shadow:var(--ring); background:var(--bg); outline:none; }
+.plays-form-input::placeholder{ color:var(--fg4); }
+.plays-form-row{ gap:10px; }
+.plays-form-actions{ gap:8px; margin-top:14px; }
+.plays-form-cancel{
+  background:var(--s2); border:1px solid var(--border); color:var(--fg2); border-radius:var(--r);
+  font-family:var(--font-sans); padding:8px 16px; transition:all .18s var(--ease);
+}
+.plays-form-cancel:hover{ background:var(--s3); border-color:var(--border-2); color:var(--fg1); transform:translateY(-1px); box-shadow:var(--el2); }
+.plays-form-submit{
+  background:var(--green-dim); border:1px solid rgba(255,255,255,.08); color:#eafff0; border-radius:var(--r);
+  font-family:var(--font-sans); font-weight:600; padding:8px 18px; box-shadow:var(--el1),var(--sheen);
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease), background .18s;
+}
+.plays-form-submit:hover{ background:var(--green-2); transform:translateY(-1px); box-shadow:var(--el2); }
+
+/* ============================================================================
+   11 · EMPTY STATE / DISCOVERY  (.plays-empty-state …) — the lead-in (#1)
+   ============================================================================ */
+.plays-empty-state{ padding:44px 24px 24px; gap:10px; }
+.plays-empty-icon{
+  width:64px; height:64px; display:flex; align-items:center; justify-content:center;
+  color:var(--green); background:var(--green-soft); border:1px solid var(--green-line);
+  border-radius:var(--r-xl); box-shadow:var(--el2); opacity:1; margin-bottom:8px;
+}
+.plays-empty-title{ color:var(--fg1); font-family:var(--font-sans); font-weight:600; font-size:1.05rem; }
+.plays-empty-desc{ color:var(--fg3); font-size:.78rem; line-height:1.65; max-width:300px; }
+.plays-empty-cta{
+  margin-top:12px; height:40px; padding:0 22px; background:var(--green-dim); color:#eafff0;
+  border:1px solid rgba(255,255,255,.08); border-radius:var(--r); font-family:var(--font-sans);
+  font-weight:600; font-size:.82rem; cursor:pointer; box-shadow:var(--el2),var(--sheen);
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease), background .18s;
+}
+.plays-empty-cta:hover{ background:var(--green-2); transform:translateY(-1px); box-shadow:var(--el3); }
+
+/* ============================================================================
+   12 · ACCOUNT / NAV MENU  (.more-menu-*) — polished account surface
+   ============================================================================ */
+.more-menu-dropdown{
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--r-lg);
+  box-shadow:var(--el3),var(--sheen); overflow:hidden; padding-bottom:0;
+}
+.more-menu-btn{ border-radius:var(--r-sm); transition:background .15s, border-color .15s, color .15s; }
+.more-menu-btn:hover{ background:var(--s2); border-color:var(--border-2); }
+.more-menu-user{
+  padding:14px; background:linear-gradient(180deg,var(--s2),var(--s1));
+  border-bottom:1px solid var(--hairline); font-family:var(--font-sans);
+}
+.more-menu-user-name{ color:var(--fg1); font-weight:600; font-size:.85em; }
+.more-menu-user-email{ color:var(--fg3); }
+.more-menu-user-tier-line{ color:var(--fg4); margin-top:6px; }
+.more-menu-user-tier{
+  letter-spacing:.5px; padding:2px 9px; border-radius:var(--pill);
+  background:var(--amber-soft); color:var(--amber); border:1px solid var(--amber-line);
+}
+.more-menu-user-tier.tier-tester{ color:var(--green); background:var(--green-soft); border-color:var(--green-line); }
+.more-menu-section-label{
+  font-family:var(--font-sans); font-weight:700; letter-spacing:.7px; color:var(--fg4);
+  padding:9px 14px 4px;
+}
+.more-menu-item{
+  font-family:var(--font-sans); color:var(--fg2); border-radius:var(--r-sm); margin:0 6px;
+  padding:8px 8px; transition:background .13s, color .13s;
+}
+.more-menu-item:hover{ background:var(--s3); color:var(--fg1); }
+.more-menu-icon{ color:var(--fg3); width:18px; }
+.more-menu-item:hover .more-menu-icon{ color:var(--fg1); }
+.more-menu-discord{ color:var(--blue); }
+.more-menu-discord:hover{ background:var(--blue-soft); color:#7aa9ff; }
+.more-menu-badge{ background:var(--red); color:#fff; border-radius:var(--pill); }
+.more-menu-logout{ color:var(--red); font-family:var(--font-sans); }
+.more-menu-logout:hover{ background:var(--red-soft); }
+.more-menu-footer{ padding:9px 14px; border-top:1px solid var(--hairline); }
+.more-menu-footer-link{ color:var(--fg4); }
+.more-menu-footer-link:hover{ color:var(--fg3); }
+
+/* ============================================================================
+   13 · SETTINGS PAGE  (.settings-* / .channel-card / .toggle / .field)
+   Brought onto the app shell idiom — tabs, channel cards, real toggles, grids.
+   ============================================================================ */
+.settings-wrap{ max-width:920px; }
+.settings-header{ margin-bottom:24px; }
+.settings-tabs{ gap:2px; border-bottom:1px solid var(--hairline); }
+.settings-tab{
+  font-family:var(--font-sans); font-size:.74rem; color:var(--fg3);
+  border-bottom:2px solid transparent; transition:color .15s, border-color .15s, background .15s;
+}
+.settings-tab:hover{ color:var(--fg1); background:var(--s2); }
+.settings-tab.active{ color:var(--fg1); border-bottom-color:var(--green); background:transparent; }
+.section-label{ font-family:var(--font-sans); font-weight:700; color:var(--fg4); border-bottom:1px solid var(--hairline); letter-spacing:.06em; }
+.channel-card{
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:18px; box-shadow:var(--el1); position:relative; overflow:hidden;
+  transition:border-color .15s, box-shadow .15s;
+}
+.channel-card:hover{ border-color:var(--border-2); }
+.channel-title{ color:var(--fg1); font-family:var(--font-sans); font-weight:600; }
+
+/* toggle — springy thumb */
+.toggle{ width:40px; height:23px; }
+.toggle-slider{ background:var(--s4); border-radius:var(--pill); box-shadow:inset 0 1px 2px rgba(0,0,0,.4); transition:background .2s var(--ease); }
+.toggle-slider::before{ width:17px; height:17px; left:3px; top:3px; background:var(--fg2); box-shadow:var(--el1); transition:transform .22s var(--spring), background .2s; }
+.toggle input:checked + .toggle-slider{ background:var(--green-dim); }
+.toggle input:checked + .toggle-slider::before{ transform:translateX(17px); background:#fff; }
+
+.field label{ font-family:var(--font-sans); color:var(--fg3); text-transform:uppercase; letter-spacing:.5px; font-size:.66rem; }
+.field input, .field-input, .field-select, .field-textarea{
+  background:var(--s2); border:1px solid var(--border); color:var(--fg1); border-radius:var(--r);
+  font-family:var(--font-sans); transition:border-color .15s, box-shadow .15s, background .15s;
+}
+.field input.code, .field-input.code{ font-family:var(--font-mono); }
+.field input:focus, .field-input:focus, .field-select:focus, .field-textarea:focus{
+  border-color:var(--green); box-shadow:var(--ring); background:var(--bg); outline:none;
+}
+.field-row{ gap:14px; }
+.save-btn{
+  background:var(--green-dim); color:#eafff0; border:1px solid rgba(255,255,255,.08); border-radius:var(--r);
+  font-family:var(--font-sans); font-weight:600; box-shadow:var(--el1),var(--sheen);
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease), background .18s;
+}
+.save-btn:hover{ background:var(--green-2); transform:translateY(-1px); box-shadow:var(--el2); }
+
+/* ============================================================================
+   14 · JOURNAL KPIs + GENERIC PROGRESS — readout idiom, segmented meter
+   ============================================================================ */
+.j-kpi-bar{ display:flex; flex-wrap:wrap; gap:10px; }
+.j-kpi{
+  background:var(--s1); border:1px solid var(--border); border-radius:var(--r-lg);
+  position:relative; overflow:hidden; box-shadow:var(--el1); transition:border-color .15s, transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.j-kpi::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:transparent; }
+.j-kpi:hover{ border-color:var(--border-2); transform:translateY(-1px); box-shadow:var(--el2); }
+.j-kpi-accent-green::before{ background:var(--green); }
+.j-kpi-accent-red::before{ background:var(--red); }
+.j-kpi-label{ color:var(--fg4); letter-spacing:.08em; }
+.j-kpi-value{ color:var(--fg1); font-variant-numeric:tabular-nums; }
+.j-kpi-value.positive{ color:var(--green); } .j-kpi-value.negative{ color:var(--red); }
+.jp-kpi-chip-label{ color:var(--fg4); }
+.jp-kpi-chip-value{ color:var(--fg1); font-variant-numeric:tabular-nums; }
+
+/* any leftover plain progress bar → segmented green meter */
+.progress-bar{ background:linear-gradient(90deg,var(--green-2),var(--green)); box-shadow:0 0 8px var(--green-glow); }
+
+/* ============================================================================
+/* ============================================================================
+   15 · JOURNAL PAGE — intentionally omitted from the design export.
+   The journal (drawer panel + /journal full page) gets its own design pass
+   done directly in this repo, in the same B3 register.
+   ========================================================================= */
+
+/* ============================================================================
+   APPENDIX · NEEDS MINOR MARKUP CHANGE (CSS alone can't express these)
+   ----------------------------------------------------------------------------
+   These keep the same class NAMES; they only need extra child elements. No new
+   naming scheme is introduced — each is the smallest addition that unlocks the
+   full B3 treatment.
+
+   A1 · Exact per-segment condition meter.
+        Now: one .play-conditions-fill inside .play-conditions-bar; this file
+        fakes ticks with a repeating-gradient (default --seg:3). For TRUE
+        per-condition segments that colour met=green / next=amber individually,
+        render N children:  <span class="play-conditions-seg met|near|"> … </span>
+        OR set the segment count inline:  style="--seg:<total>"  on
+        .play-conditions-bar (CSS already reads --seg).
+
+   A2 · Collapsed-card readout row (R:R / Next condition).
+        .play-card-footer currently holds only .play-status-pill + .play-age.
+        To show the Age · R:R · Next readout, add inside the footer:
+        <span class="play-readout-val">2.4</span> etc. (tabular-nums styling for
+        .play-readout-val is already defined). No CSS rename needed.
+
+   A3 · Direction tinting + edge-sweep rely on :has().
+        .play-card has no direction class; this file tints the badge + the animated
+        edge accent via :has(.play-direction-arrow.long|.short). All evergreen
+        browsers support :has(). For older engines, add the direction class onto
+        .play-card itself (class="play-card long") and swap the :has() selectors
+        for .play-card.long / .play-card.short.
+
+   A4 · Guided creation stepper.
+        .plays-creation-form is a flat form. The 4-step flow (Setup→Thesis→
+        Conditions→Review) needs a stepper element above the form, e.g.
+        <div class="plays-form-steps"> with .plays-form-step children. (Hook a
+        .plays-form-steps section and I'll style it to match.)
+
+   A5 · Type selector as description cards.
+        Type is chosen via .plays-pill today. The B3 radio-cards (icon + name +
+        one-line description) need an icon + description child inside each pill,
+        e.g. <span class="plays-pill-ico"> and <span class="plays-pill-desc">.
+        Without them this file still upgrades the pills to tactile cells.
+
+   A6 · Account menu avatar.
+        .more-menu-user shows name/email/tier. The avatar disc in the B3 menu
+        needs one element, e.g. <span class="more-menu-avatar">JM</span> at the
+        top of .more-menu-user. Optional — the header reads well without it.
+   ============================================================================ */
+
+
+/* ============================================================================
+   16 · TWEAKS 1
+   - rail: accent runs the FULL button + faint tint = clearer differentiation
+   - all horizontal tabs: straight accent line, zero curve (radius 0)
+   - bottom drawer: flat tabs + density pass (less wasted space)
+   - jp-* (bottom drawer panels / journal parts): B3 register basics
+   - magnet as text button states
+   ========================================================================= */
+
+/* rail — full-length line, quiet tint, elegant + simple */
+.view-mode-btn.active::before{ top:2px; bottom:2px; border-radius:0; }
+.view-mode-btn.active{
+  background:linear-gradient(to left, rgba(63,185,80,.09), transparent 72%);
+}
+
+/* bottom status bar — no curved accents, tighter */
+.chart-drawer-handle{ padding:2px 8px; min-height:25px; gap:2px; }
+.drawer-tab{ border-radius:0; padding:4px 11px; }
+.drawer-tab.active{
+  background:linear-gradient(to bottom, rgba(63,185,80,.07), transparent 65%);
+}
+.drawer-tab.has-alerts.active{ background:linear-gradient(to bottom, rgba(214,167,67,.07), transparent 65%); }
+.drawer-tab.has-short.active{ background:linear-gradient(to bottom, rgba(248,81,73,.07), transparent 65%); }
+
+/* right-panel top tabs — straight 2px underline only */
+.panel-tab{ border-radius:0; }
+.panel-tab.active{ background:transparent; }
+
+/* jp tabs (drawer panels) — same idiom, green not blue */
+.jp-tab-bar{ padding:0 8px; border-bottom:1px solid var(--hairline); background:var(--s1); }
+.jp-tab{ font-family:var(--font-sans); font-size:.62rem; letter-spacing:.05em;
+  color:var(--fg3); border-radius:0; padding:5px 11px; }
+.jp-tab:hover{ color:var(--fg2); }
+.jp-tab.active{ color:var(--fg1); border-bottom-color:var(--green); }
+
+/* bottom drawer density — paddings only, layout untouched */
+.jp-dashboard{ padding:6px 10px; }
+.jp-dash-cols{ gap:10px; }
+.jp-kpi-row{ gap:8px; }
+.jp-stats{ font-family:var(--font-sans); font-variant-numeric:tabular-nums; color:var(--fg3); }
+
+/* journal trades list — flat hairline rows */
+.journal-trades-list{ gap:0; }
+.journal-trades-list > *{ border-bottom:1px solid var(--hairline); }
+.journal-trades-list > *:last-child{ border-bottom:none; }
+
+/* magnet text button states (markup now text, see chart-toolbar.js) */
+#magnet-btn{ font-family:var(--font-sans); }
+#magnet-btn.active{ color:var(--green); }
+#magnet-btn.magnet-strong{ background:var(--green-soft); color:var(--green); border-radius:var(--r); }
+
+/* ============================================================================
+   17 · TWEAKS 2 — NEUTRAL CHROME
+   Matrix-green retired from the CHROME: tabs, rail, drawer accents and tool
+   states go neutral/subtle. Green/red/amber stay ONLY where they carry
+   meaning — charts, long/short, P&L, condition states, status badges.
+   (The green "+ New" CTA is kept as the one brand accent.)
+   ========================================================================= */
+
+/* rail — neutral line + whisper tint */
+.view-mode-btn.active::before{ background:var(--fg2); }
+.view-mode-btn.active{
+  background:linear-gradient(to left, rgba(255,255,255,.055), transparent 72%);
+}
+
+/* right-panel top tabs — neutral underline */
+.panel-tab.active{ border-bottom-color:var(--fg2); }
+
+/* drawer-panel jp tabs — neutral underline */
+.jp-tab.active{ border-bottom-color:var(--fg2); }
+
+/* bottom bar — neutral by default; semantic variants below keep their color */
+.drawer-tab.active{
+  border-top-color:var(--fg2);
+  background:linear-gradient(to bottom, rgba(255,255,255,.045), transparent 65%);
+}
+.drawer-tab.has-long.active{ border-top-color:var(--green);
+  background:linear-gradient(to bottom, rgba(63,185,80,.07), transparent 65%); }
+.drawer-tab.has-short.active{ border-top-color:var(--red); }
+.drawer-tab.has-alerts.active{ border-top-color:var(--amber); }
+.drawer-tab.has-scenarios.active{ border-top-color:var(--blue); }
+
+/* magnet — neutral tool states (mode, not market data) */
+#magnet-btn.active{ color:var(--fg1); background:var(--s2); }
+#magnet-btn.magnet-strong{ color:var(--fg1); background:var(--s3); border-radius:var(--r); }
+
+/* ============================================================================
+   18 · B3 BUILD-OUT — real per-segment meter + next-condition readout
+   (markup emitted by plays-panel.js)
+   ========================================================================= */
+.play-conditions-bar.b3-segmented{
+  display:flex; gap:3px; align-items:center; height:auto;
+  background:transparent; overflow:visible; border-radius:0; margin-top:12px;
+}
+.play-conditions-bar.b3-segmented::after{ content:none; }
+.b3-seg{ flex:1; height:3px; border-radius:1px; background:var(--s3);
+  transition:background .25s var(--ease), box-shadow .25s var(--ease); }
+.b3-seg.met{ background:var(--green); box-shadow:0 0 6px var(--green-glow); }
+.play-card.short .b3-seg.met{ background:var(--red); box-shadow:0 0 6px var(--red-glow); }
+.play-card.neutral .b3-seg.met{ background:var(--blue); box-shadow:none; }
+.play-conditions-bar.b3-segmented .play-conditions-label{
+  position:static; top:auto; margin-left:7px; flex:none; }
+.play-next-line{ margin-top:7px; font-family:var(--font-sans); font-size:10px;
+  color:var(--fg4); letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ============================================================================
+   19 · ONE FAMILY AT THE ROOT + NEUTRAL SWEEP
+   main.css sets mono on body — this flips the WHOLE app chrome to the one
+   sans family; tabular-nums keeps numeric columns aligned. Mono survives
+   nowhere in chrome (API-key literals get it explicitly if needed).
+   Plus: non-semantic green chrome goes neutral.
+   ========================================================================= */
+body, button, input, select, textarea{
+  font-family:var(--font-sans);
+  font-variant-numeric:tabular-nums;
+}
+
+/* scrollbar — muted sage (design export; was matrix green, then
+   neutral gray — but the universal scrollbar-color rule in main.css is what
+   modern Chrome actually renders, these webkit rules only reach Safari) */
+::-webkit-scrollbar-thumb{ background:#5f7a5e; }
+::-webkit-scrollbar-thumb:hover{ background:#85b183; }
+
+/* panel drag divider */
+.panel-divider:hover, .panel-divider.dragging{ background:var(--fg3); }
+
+/* timeframe buttons — active was filled green */
+.tf-btn.active{ background:rgba(255,255,255,.10); color:var(--fg1); }
+
+/* add-buttons (chrome, not signals) */
+.ms-add-btn{ border-color:var(--border, rgba(255,255,255,.14)); color:var(--fg2); }
+.tc-add-btn{ color:var(--fg2); }
+/* kept semantic on purpose: .score-high, .api-status-item.status-ok,
+   .ms-action-badge.ms-act-long (data/status signals) */
+
+/* account menu header — avatar grid + retired-teal border out */
+.more-menu-user{
+  display:grid; grid-template-columns:32px 1fr; column-gap:10px;
+  align-items:center; border-bottom:1px solid var(--hairline);
+}
+.menu-avatar{
+  grid-row:1 / span 2; width:30px; height:30px; border-radius:999px;
+  background:var(--s3); border:1px solid var(--hairline);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:600; font-size:13px; color:var(--fg1);
+}
+.more-menu-user-name{ grid-column:2; }
+.more-menu-user-email{ grid-column:2; }
+.more-menu-user-tier-line{ grid-column:1 / -1; margin-top:6px; }
+
+/* ============================================================================
+   20 · GUIDED CREATION FLOW (.pcf-*) — markup in plays-panel.js
+   ========================================================================= */
+/* ==========================================================================
+   Carrac — Guided 4-Step Play Creation Form
+   Selectors: .pcf-* for new elements; also restyle existing .plays-creation-form
+   Tokens from carrac-overhaul.css — all var(--*) references must match :root there.
+   ========================================================================== */
+
+/* Stepper header */
+.pcf-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 14px 16px 0;
+  background: var(--s1);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.pcf-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 0 0 10px;
+  flex: 1;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--fg4);
+  font-family: var(--font-sans);
+  font-size: .68rem;
+  font-weight: 500;
+  letter-spacing: .03em;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+
+.pcf-step:hover { color: var(--fg2); }
+
+.pcf-step[aria-current="step"] {
+  color: var(--fg1);
+  font-weight: 600;
+  border-bottom-color: var(--fg1);
+}
+
+.pcf-step.pcf-step--done { color: var(--fg3); }
+
+.pcf-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--fg4);
+  font-size: .65rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s, color .15s;
+  flex-shrink: 0;
+}
+
+.pcf-step[aria-current="step"] .pcf-step-num {
+  background: var(--s3);
+  border-color: var(--border-2);
+  color: var(--fg1);
+}
+
+.pcf-step.pcf-step--done .pcf-step-num {
+  background: rgba(255,255,255,.05);
+  border-color: var(--border-2);
+  color: var(--fg2);
+}
+
+.pcf-step.pcf-step--done .pcf-step-num::after {
+  content: '\2713';
+  font-size: .6rem;
+}
+
+.pcf-step.pcf-step--done .pcf-step-num-inner { display: none; }
+
+.pcf-step-label {
+  font-size: .62rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Step body wrapper */
+.pcf-body {
+  padding: 18px 16px 0;
+  background: var(--bg);
+}
+
+/* Step headings */
+.pcf-step-heading {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--fg1);
+  margin: 0 0 3px;
+}
+
+.pcf-step-sub {
+  font-size: .68rem;
+  color: var(--fg3);
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+/* Type description cards */
+.pcf-type-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pcf-type-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--s1);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  color: var(--fg2);
+  text-align: left;
+  transition: background .15s, border-color .15s, box-shadow .15s, transform .12s var(--ease);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pcf-type-card:hover {
+  background: var(--s2);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+  box-shadow: var(--el1);
+}
+
+.pcf-type-card.selected {
+  background: var(--s2);
+  border-color: var(--border-2);
+  box-shadow: var(--el1), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.pcf-type-card-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: var(--s3);
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .13s, border-color .13s;
+  position: relative;
+}
+
+.pcf-type-card.selected .pcf-type-card-radio {
+  background: var(--fg1);
+  border-color: var(--fg1);
+}
+
+.pcf-type-card.selected .pcf-type-card-radio::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bg);
+  position: absolute;
+}
+
+.pcf-type-card-content { flex: 1; display: block; }
+
+.pcf-type-card-title {
+  display: block;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--fg1);
+  margin-bottom: 2px;
+}
+
+.pcf-type-card-desc {
+  display: block;
+  font-size: .68rem;
+  color: var(--fg3);
+  line-height: 1.4;
+}
+
+/* Approach segmented control */
+.pcf-approach-seg {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--s2);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.pcf-approach-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg3);
+  font-family: var(--font-sans);
+  font-size: .68rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .13s, color .13s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pcf-approach-btn:last-child { border-right: none; }
+
+.pcf-approach-btn:hover {
+  background: var(--s3);
+  color: var(--fg2);
+}
+
+.pcf-approach-btn.selected {
+  background: rgba(255,255,255,.06);
+  color: var(--fg1);
+  font-weight: 600;
+}
+
+/* Field label */
+.pcf-field { margin-bottom: 14px; }
+
+.pcf-field-label {
+  display: block;
+  color: var(--fg2);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: .7rem;
+  letter-spacing: .02em;
+  margin-bottom: 7px;
+}
+
+/* Section divider */
+.pcf-section-divider {
+  height: 1px;
+  background: var(--hairline);
+  margin: 14px 0;
+}
+
+/* Generous step 2 inputs */
+.pcf-title-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pcf-thesis-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* Step 4 review card */
+.pcf-review-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 15px;
+  margin-bottom: 14px;
+  box-shadow: var(--el1);
+}
+
+.pcf-review-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+  flex-wrap: wrap;
+}
+
+.pcf-review-title {
+  color: var(--fg1);
+  font-size: .82rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 80px;
+}
+
+.pcf-review-badge {
+  font-size: .62rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--pill);
+  background: var(--s3);
+  color: var(--fg3);
+  border: 1px solid var(--border);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcf-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.pcf-review-thesis {
+  font-size: .72rem;
+  color: var(--fg3);
+  line-height: 1.55;
+  border-left: 2px solid var(--border-2);
+  padding-left: 9px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.pcf-review-conditions {
+  display: flex;
+  gap: 12px;
+  font-size: .68rem;
+  color: var(--fg3);
+}
+
+.pcf-review-cond-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pcf-review-cond-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-2);
+  flex-shrink: 0;
+}
+
+.pcf-review-cond-dot.has { background: var(--fg3); }
+
+/* Navigation row */
+.pcf-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--hairline);
+  margin-top: 6px;
+}
+
+.pcf-nav-back {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--fg2);
+  border-radius: var(--r);
+  font-family: var(--font-sans);
+  font-size: .75rem;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+  min-width: 72px;
+}
+
+.pcf-nav-back:hover {
+  background: var(--s3);
+  border-color: var(--border-2);
+  color: var(--fg1);
+}
+
+.pcf-nav-next {
+  flex: 1;
+  background: var(--s3);
+  border: 1px solid var(--border-2);
+  color: var(--fg1);
+  border-radius: var(--r);
+  font-family: var(--font-sans);
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+  box-shadow: var(--el1), var(--sheen);
+}
+
+.pcf-nav-next:hover {
+  background: rgba(255,255,255,.08);
+  transform: translateY(-1px);
+  box-shadow: var(--el2);
+}
+
+.pcf-nav-next:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.pcf-nav-cancel {
+  background: none;
+  border: none;
+  color: var(--fg4);
+  font-family: var(--font-sans);
+  font-size: .7rem;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color .13s;
+}
+
+.pcf-nav-cancel:hover { color: var(--fg2); }
+
+/* Guided form resets outer padding */
+.plays-creation-form.pcf-guided {
+  padding: 0;
+  background: var(--bg);
+}
+
+/* Info boxes in step 3 */
+.pcf-body .plays-info-box {
+  font-size: .7rem;
+  line-height: 1.55;
+  color: var(--fg3);
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.pcf-body .plays-form-section { margin-bottom: 14px; }
+
+/* ============================================================================
+   21 · SHADCN REGISTER — primitives + ticker/TF/drawing-toolbar coherence
+   Near-monochrome chrome; the chart is the colorful centerpiece. One control
+   height, one radius, hairline borders, segmented groups. Mono belongs to the
+   Bloomberg ticker strip ONLY.
+   ========================================================================= */
+:root{ --ctl-h:28px; --ctl-r:6px; }
+
+/* — top ticker strip: THE deliberate mono surface — */
+.ticker-bar{ font-family:var(--font-mono); }
+.ticker-item{ gap:6px; padding:0 12px; }
+.ticker-label{
+  color:var(--fg3); font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+}
+.ticker-value{ font-weight:600; font-variant-numeric:tabular-nums; }
+.ticker-divider{ color:rgba(255,255,255,.08); }
+
+/* — TF selector row: one segmented control — */
+.tf-selector{
+  font-family:var(--font-sans); height:var(--ctl-h); padding:0 11px;
+  background:transparent; border:1px solid rgba(255,255,255,.09); border-radius:0;
+  color:var(--fg3); margin-left:-1px; transition:background .12s, color .12s;
+}
+.tf-selector:first-of-type{ border-radius:var(--ctl-r) 0 0 var(--ctl-r); margin-left:0; }
+.tf-selector:hover{ background:rgba(255,255,255,.05); color:var(--fg2); z-index:1; position:relative; }
+.tf-selector.active{
+  background:rgba(255,255,255,.10); color:var(--fg1); font-weight:600;
+  z-index:1; position:relative;
+}
+.tf-sep{ display:inline-block; width:9px; }
+.tf-sep + .tf-selector{ border-radius:var(--ctl-r) 0 0 var(--ctl-r); margin-left:0; }
+.tf-selector:last-of-type, .tf-selector:has(+ .tf-sep){ border-radius:0 var(--ctl-r) var(--ctl-r) 0; }
+.tf-selector:first-of-type:last-of-type{ border-radius:var(--ctl-r); }
+
+/* other tf-btn surfaces follow the same look */
+.tf-btn{ font-family:var(--font-sans); border-radius:var(--ctl-r); background:transparent;
+  border:1px solid rgba(255,255,255,.09); color:var(--fg3); }
+.tf-btn:hover{ background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.14); }
+
+/* — drawing toolbar: uniform squares, clustered, neutral active — */
+.tool-btn{
+  height:var(--ctl-h); min-width:var(--ctl-h); border-radius:var(--ctl-r);
+  font-family:var(--font-sans); color:var(--fg3);
+  transition:background .12s, color .12s;
+}
+/* border-color:transparent kills main.css's surviving grey #787b86 hover
+   border — the one thing that still made the search/camera/share icons feel
+   boxier than the TF and menu buttons */
+.tool-btn:hover{ background:rgba(255,255,255,.06); color:var(--fg1); border-color:transparent; }
+.tool-btn.active{ background:rgba(255,255,255,.10); color:var(--fg1); }
+.tool-text-btn{ padding:0 11px; }
+.tool-separator{
+  display:inline-block; width:1px; height:16px; background:rgba(255,255,255,.09);
+  margin:0 6px; align-self:center;
+}
+
+/* — symbols neutral (asset identifiers carry no signal) — */
+.ticker-label{ color:var(--fg3); }
+
+/* — dropdown triggers (Candles/Panes/Indicators/Line/EW): same control kind,
+   one look. .indicator-btn and .tool-group-btn are functionally identical
+   (text + chevron, opens a menu) — mirrors .tool-btn's own base/hover/active
+   pattern above verbatim so all toolbar controls read as one system. — */
+.indicator-btn,
+.tool-group-btn{
+  height:var(--ctl-h); border-radius:var(--ctl-r);
+  font-family:var(--font-sans); color:var(--fg3);
+  transition:background .12s, color .12s;
+}
+.indicator-btn:hover,
+.tool-group-btn:hover{ background:rgba(255,255,255,.06); color:var(--fg1); border-color:transparent; }
+.indicator-btn.active,
+.tool-group-btn.active{ background:rgba(255,255,255,.10); color:var(--fg1); }
+
+/* — favourite/quick-access chips (Macro/Swing): same token palette + radius
+   as the rest of the toolbar — retires hardcoded teal/cyan. Kept as a
+   distinct accent-tinted toggle (not neutral like .tool-btn) since it's
+   semantically a quick-access shortcut, not a drawing tool. — */
+.ind-fav-pill{
+  border-radius:var(--ctl-r); border-color:rgba(255,255,255,.09);
+  color:var(--fg3); background:rgba(255,255,255,.04);
+  transition:background .12s, color .12s, border-color .12s;
+}
+.ind-fav-pill:hover{ background:rgba(255,255,255,.08); color:var(--fg2); border-color:rgba(255,255,255,.14); }
+.ind-fav-pill.active{
+  background:var(--sage-soft); border-color:var(--sage-line); color:var(--sage);
+}
+.ind-fav-pill.ind-fav-group{ border-style:dashed; border-color:rgba(255,255,255,.14); color:var(--fg3); }
+.ind-fav-pill.ind-fav-group.active{
+  border-style:solid; border-color:var(--sage-line); background:var(--sage-soft); color:var(--sage);
+}
+
+/* — quiet the hover across the WHOLE toolbar row: main.css still lifts every
+   one of these on :hover with a neo-brutalist offset shadow (transform +
+   box-shadow), which contradicts this file's stated hover direction
+   ("INTENSIFIES + lifts... never adds chrome"). Reset it in one place so the
+   hover is a tint only — the toolbar reads as one system, not two eras. — */
+.tf-selector:hover, .tool-btn:hover, .tool-text-btn:hover,
+.indicator-btn:hover, .tool-group-btn:hover,
+.ind-fav-pill:hover, .ind-fav-group-wrapper:hover,
+.watchlist-star-btn:hover{
+  transform:none; box-shadow:none;
+}
+
+/* ============================================================================
+   22 · TICK-DIRECTION PRICE COLORING (.tk-*) — engine in tick-color.js
+   ========================================================================= */
+/* ─── tick-color.js companion CSS ─────────────────────────────────────────────
+ * Classes emitted by CarracTick.paint().
+ * Colors: repo uses #3fb950 (green) and #f85149 (red) as hardcoded values
+ * (no CSS custom-property variables defined in the codebase).
+ *
+ * Two tones:
+ *   .tk-up / .tk-down          — full-brightness: use on top-bar ticker strip
+ *   .tk-soft .tk-up / .tk-down — muted: add .tk-soft to the container element
+ *                                for dense table rows (screener / watchlist)
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* Prefix (unchanged leading characters) — inherits parent colour (neutral) */
+.tk-prefix {
+    color: inherit;
+}
+
+/* Changed suffix — full brightness */
+.tk-delta.tk-up   { color: #3fb950; }
+.tk-delta.tk-down { color: #f85149; }
+
+/* Soft variants unified to match plain — one green, one red everywhere */
+.tk-soft .tk-delta.tk-up   { color: #3fb950; }
+.tk-soft .tk-delta.tk-down { color: #f85149; }
+
+/* ─── flash pulse ──────────────────────────────────────────────────────────── */
+@keyframes tkFlash {
+    0%   { opacity: 0.55; filter: brightness(1.35); }
+    100% { opacity: 1;    filter: brightness(1); }
+}
+
+.tk-flash {
+    animation: tkFlash 0.4s ease-out;
+}
+
+/* Honour prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .tk-flash {
+        animation: none;
+    }
+}
+
+/* ============================================================================
+   23 · TWEAKS 3 — muted ticker, Geist Mono strip, seamless TF, register
+   extended to ticker-config popover / indicator menu / indicator groups
+   ========================================================================= */
+:root{ --font-tick:'Geist Mono', var(--font-mono); }
+
+/* one font for the WHOLE top strip (regime incl.) */
+.action-bar, .action-bar button, .action-bar span{ font-family:var(--font-tick); }
+
+/* ticker strip: coherent sizes, restore value colors */
+.ticker-bar *{ font-family:var(--font-tick); }
+.ticker-bar .ticker-label{ color:var(--fg4); font-size:11px; text-transform:uppercase; letter-spacing:.07em; }
+.ticker-bar .ticker-value{ font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; }
+/* value color: RESTORED — tick-direction spans (.tk-delta.tk-up/down) still override */
+
+/* TF group: continuous — no separators, no inner radii */
+.tf-sep{ display:none; }
+.tf-sep + .tf-selector{ border-radius:0; margin-left:-1px; }
+.tf-selector:has(+ .tf-sep){ border-radius:0; }
+
+/* ticker settings popover */
+.ticker-config-popover{
+  font-family:var(--font-sans); background:var(--s2);
+  border:1px solid var(--hairline); border-radius:var(--r-lg);
+  box-shadow:var(--el3); color:var(--fg2);
+}
+.ticker-config-popover label{ color:var(--fg2); }
+.ticker-config-popover input[type="checkbox"]{ accent-color:var(--fg2); }
+
+/* indicator menu (dropdown next to TF) */
+.indicator-menu{
+  font-family:var(--font-sans); background:var(--s2);
+  border:1px solid var(--hairline); border-radius:var(--r-lg);
+  box-shadow:var(--el3);
+}
+.indicator-menu-item{
+  height:var(--ctl-h); border-radius:var(--ctl-r);
+  color:var(--fg2); transition:background .12s, color .12s;
+}
+.indicator-menu-item:hover{ background:rgba(255,255,255,.06); color:var(--fg1); }
+.indicator-menu-item.active{ background:rgba(255,255,255,.10); color:var(--fg1); }
+.ind-menu-body{ padding:6px; }
+
+/* indicator groups */
+.ind-group-pill{
+  font-family:var(--font-sans); background:transparent;
+  border:1px solid rgba(255,255,255,.09); border-radius:var(--ctl-r);
+  color:var(--fg3); transition:background .12s, color .12s;
+}
+.ind-group-pill:hover{ background:rgba(255,255,255,.05); color:var(--fg2); }
+.ind-group-pill.active{ background:rgba(255,255,255,.10); color:var(--fg1); border-color:rgba(255,255,255,.14); }
+.ind-group-add, .ind-group-edit{ color:var(--fg3); border-color:rgba(255,255,255,.09); }
+.ind-group-add:hover, .ind-group-edit:hover{ color:var(--fg1); }
+
+/* ============================================================================
+   24 · TWEAKS 4 — ticker coherence, overlay sans, symbol neutral, table bump,
+   quiet TF, toolbar font enforcement
+   ========================================================================= */
+
+/* 3 · Overlays must NOT inherit strip mono — force sans on popover + account menu
+       and ALL their descendants (specificity beats the action-bar blanket rule)   */
+.ticker-config-popover,
+.ticker-config-popover *,
+.more-menu-dropdown,
+.more-menu-dropdown *{
+  font-family:var(--font-sans) !important;
+}
+
+/* 4 · Watchlist / table rows: symbol weight → medium, all type-* → neutral,
+       price-change size → 1em (matches price + symbol)                           */
+.symbol{ font-weight:500 !important; }
+.type-crypto, .type-crypto_metric, .type-stock,
+.type-etf, .type-commodity, .type-index, .type-forex{
+  color:var(--fg1) !important;
+}
+.price-change{ font-size:1em !important; }
+
+/* 6 · Tables bigger: bump #data-table + .watchlist-table td/th row size by ~1px
+       Selector bumped: th, td (the global table base in main.css, font-size:1em
+       resolves to 12px on the 12px root; we go to 13px, and add 1px pad)
+       We scope to the two asset tables only to avoid clobbering report tables.   */
+#data-table td, #data-table th,
+.watchlist-table td, .watchlist-table th{
+  font-size:13px;
+  padding:5px 8px;
+}
+
+/* 7 · TF selector: quiet text segments — no borders, no background,
+       hover = faint highlight, active = slightly brighter + fg1               */
+.tf-selector{
+  background:transparent !important;
+  border-color:transparent !important;
+}
+.tf-selector:hover{
+  background:rgba(255,255,255,.05) !important;
+  border-color:transparent !important;
+}
+.tf-selector.active{
+  background:rgba(255,255,255,.10) !important;
+  border-color:transparent !important;
+  color:var(--fg1) !important;
+}
+
+/* 8 · Toolbar controls: force sans — main.css has JetBrains Mono on
+       .tool-text-btn and .indicator-btn with !important; override with
+       higher-specificity selectors or matching !important              */
+.indicator-btn,
+.indicator-btn *{
+  font-family:var(--font-sans) !important;
+}
+.ind-group-pill,
+.ind-group-add,
+.ind-group-edit{
+  font-family:var(--font-sans) !important;
+}
+.draw-toggle,
+.tool-btn,
+.tool-btn *,
+.tool-text-btn{
+  font-family:var(--font-sans) !important;
+}
+
+/* ============================================================================
+   25 · TWEAKS 5 — TF container truly transparent + watchlist size (id-based)
+   ========================================================================= */
+.adv-chart-timeframes{ background:transparent; padding:0; border-radius:0; }
+#watchlist-table td, #watchlist-table th,
+#data-table td, #data-table th{ font-size:13px; padding:5px 8px; }
+
+/* ============================================================================
+   26 · TOOLBAR UX — fast tooltips w/ kbd chips, flyout shortcut hints,
+   floating drawing context bar, derived group-pill partial state
+   ========================================================================= */
+
+/* fast tooltip (replaces native title on toolbar controls) */
+#cx-tooltip{
+  position:fixed; z-index:99999; display:none; pointer-events:none;
+  padding:4px 8px; border-radius:var(--ctl-r);
+  background:#1c2128; border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 4px 16px rgba(0,0,0,.45);
+  font-family:var(--font-sans); font-size:11.5px; color:var(--fg1);
+  white-space:nowrap;
+}
+#cx-tooltip kbd{
+  margin-left:7px; padding:1px 5px; border-radius:4px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
+  font-family:var(--font-sans); font-size:10px; color:var(--fg2);
+}
+
+/* flyout shortcut hints */
+.tool-menu-item .menu-kbd{
+  margin-left:auto; padding:0 5px; border-radius:4px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10);
+  font-size:9.5px; color:var(--fg3); line-height:15px;
+}
+
+/* floating drawing context bar (desktop selection toolbar) */
+#drawing-ctx-bar{
+  position:fixed; z-index:26000; transform:translateX(-50%);
+  display:flex; align-items:center; gap:5px; padding:5px 9px;
+  background:rgba(22,27,34,0.97); border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;
+  box-shadow:0 4px 18px rgba(0,0,0,.45);
+  font-family:var(--font-sans);
+}
+#drawing-ctx-bar .dcb-name{ font-size:11px; color:var(--fg3); padding-right:2px; white-space:nowrap; }
+#drawing-ctx-bar .dcb-sep{ width:1px; height:16px; background:rgba(255,255,255,.10); margin:0 2px; }
+#drawing-ctx-bar .dcb-dot{
+  width:16px; height:16px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; padding:0; box-sizing:border-box;
+  transition:transform .1s, border-color .1s;
+}
+#drawing-ctx-bar .dcb-dot:hover{ transform:scale(1.15); }
+#drawing-ctx-bar .dcb-dot.active{ border-color:#fff; }
+#drawing-ctx-bar .dcb-w{
+  width:24px; height:22px; border-radius:5px; cursor:pointer; padding:0 4px;
+  background:transparent; border:1px solid transparent;
+  display:flex; align-items:center;
+}
+#drawing-ctx-bar .dcb-w span{ display:block; width:100%; background:var(--fg2); border-radius:1px; }
+#drawing-ctx-bar .dcb-w:hover{ background:rgba(255,255,255,.06); }
+#drawing-ctx-bar .dcb-w.active{ background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.14); }
+#drawing-ctx-bar .dcb-w.active span{ background:var(--fg1); }
+#drawing-ctx-bar .dcb-btn{
+  width:24px; height:22px; border-radius:5px; cursor:pointer; padding:0;
+  background:transparent; border:1px solid transparent; color:var(--fg2);
+  display:flex; align-items:center; justify-content:center;
+}
+#drawing-ctx-bar .dcb-btn:hover{ background:rgba(255,255,255,.06); color:var(--fg1); }
+#drawing-ctx-bar .dcb-btn.active{ background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.14); color:var(--fg1); }
+#drawing-ctx-bar .dcb-danger:hover{ background:rgba(248,81,73,.12); color:#f85149; }
+
+/* group pill partial state — some (not all) members on */
+.ind-fav-pill.ind-fav-group.partial{
+  border-style:dashed; border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.04); color:var(--fg2);
+}
+.mobile-ind-group-pill.partial{
+  border-style:dashed; border-color:rgba(63,185,80,.45); color:var(--fg2);
+}
+
+/* ============================================================================
+   27 · TOOLBAR CONSISTENCY 2 — brand-sage UI accent, asset/star into the
+   system, dropdown-menu surface parity (Panes + Line/EW match Indicators)
+   ----------------------------------------------------------------------------
+   Accent scope: ONLY persistent UI toggles/selections become sage. The three
+   ad-hoc active accents (green #3fb950, teal #26a69a, blue #58a6ff) collapse
+   into one --sage. Market semantics (up/long/win/tk-up) stay --green,
+   untouched. Transient states (a drawing tool being armed, the active TF in
+   the segmented control) stay the quiet neutral white-tint — colour is spent
+   only where it means "you turned this ON".
+   ========================================================================= */
+
+/* — persistent toggles + selections → sage — */
+.draw-toggle.active{ background:var(--sage-soft); color:var(--sage); }
+.tool-btn.active.magnet-strong{
+  background:var(--sage-strong); color:#fff; border-color:var(--sage-line);
+}
+.ind-checkbox.active{ background:var(--sage); border-color:var(--sage); }
+.asset-switcher-item.active{ background:var(--sage-soft); }
+.mc-layout-opt.active{ color:var(--sage); }
+
+/* — asset switcher + favourite star: adopt the system radius + quiet hover
+   (were border-radius:1px with the old hard-shadow lift). Hover gets an
+   explicit tint so it highlights like every other toolbar control.
+   Also re-declare height + transition here: main.css leaves them at 22px /
+   `all .15s ease`, which is why these two still FELT different from the
+   28px / background+color .12s unified controls. — */
+.asset-switcher-btn, .watchlist-star-btn{
+  border-radius:var(--ctl-r);
+  height:var(--ctl-h);
+  transition:background .12s, color .12s;
+}
+.asset-switcher-btn:hover{
+  transform:none; box-shadow:none; border-color:transparent;
+  background:rgba(255,255,255,.06); color:var(--fg1);
+}
+/* star: same quiet tint as every other control (keeps its gold color-change) */
+.watchlist-star-btn:hover{
+  transform:none; box-shadow:none; border-color:transparent;
+  background:rgba(255,255,255,.06);
+}
+
+/* — asset search popup (Spacebar): adopt the dropdown-menu surface + unified
+   row hover. Never touched by the unification pass — was square corners,
+   harsh #787b86 border, 5px offset shadow, amber headers, no focus ring. — */
+.asset-search-popup{
+  background:var(--s2); border:1px solid var(--hairline); border-radius:var(--r-lg);
+  box-shadow:var(--el3);
+}
+.asset-search-input{
+  background:var(--s2); border:none; border-bottom:1px solid var(--hairline);
+  border-radius:var(--r-lg) var(--r-lg) 0 0; color:var(--fg1);
+}
+.asset-search-input:focus{ border-bottom-color:var(--sage); }
+.asset-search-item{
+  border-radius:var(--ctl-r); color:var(--fg2); transition:background .12s, color .12s;
+}
+.asset-search-item:hover, .asset-search-item.highlighted{
+  background:rgba(255,255,255,.06); color:var(--fg1);
+}
+.asset-search-header{ color:var(--fg3); }
+.asset-search-divider{ background:var(--hairline); }
+.asset-search-empty{ color:var(--fg3); }
+
+/* — sidebar control row (magnifier / pencil / collapse / gear): same quiet
+   hover as the toolbar controls instead of main.css's solid #3d4754 box — */
+.panel-actions-row .collapse-toggle-btn,
+.panel-actions-row .panel-settings-btn{
+  border:1px solid transparent; border-radius:var(--ctl-r);
+  background:transparent; color:var(--fg3);
+  transition:background .12s, color .12s;
+}
+.panel-actions-row .collapse-toggle-btn:hover,
+.panel-actions-row .panel-settings-btn:hover{
+  background:rgba(255,255,255,.06); color:var(--fg1); border-color:transparent;
+}
+
+/* — active TF segment → sage (the selected timeframe should carry
+   the brand accent, not the neutral white-tint §24 forces). Needs !important
+   to beat §24's !important neutral rule. — */
+.tf-selector.active{
+  background:var(--sage-soft) !important; color:var(--sage) !important;
+}
+
+/* — dropdown MENU surfaces: Panes (.mc-layout-dropdown), Line/EW
+   (.tool-group-menu) AND the asset switcher (.asset-switcher-menu) were still
+   on the old #1e222d / 1px / hard-shadow look. Match the modernised
+   .indicator-menu surface (§23) so every open menu agrees. — */
+.mc-layout-dropdown, .tool-group-menu, .asset-switcher-menu{
+  background:var(--s2); border:1px solid var(--hairline);
+  border-radius:var(--r-lg); box-shadow:var(--el3); padding:6px;
+}
+.mc-layout-opt, .tool-menu-item, .asset-switcher-item{
+  border-radius:var(--ctl-r); color:var(--fg2);
+  transition:background .12s, color .12s;
+}
+.mc-layout-opt:hover, .tool-menu-item:hover, .asset-switcher-item:hover{
+  background:rgba(255,255,255,.06); color:var(--fg1);
+}
+
+/* ============================================================================
+   28 · TOOLBAR CONSISTENCY 3 — chart-type glyphs, Draw/Pin hover-reveal
+   ----------------------------------------------------------------------------
+   (a) chart-type-menu rows (Candles/Heikin Ashi/Hollow/OHLC/Line) get a small
+       inline glyph before the label (chart-toolbar.js buildChartTypeMenuHTML /
+       CHART_TYPE_GLYPHS). .indicator-menu-item already provides the flex row +
+       8px gap (main.css) — the glyph only needs its own sizing + resting dim.
+   (b) the drawing-toolbar Pin toggle now lives inside a hover-reveal wrapper
+       around the nav row's Draw button (chart-toolbar.js buildNavToolbarHTML),
+       mirroring .ind-group-edit-zone / .tf-edit-zone's zero-width-until-hover
+       slide-out. #draw-pin-btn keeps its id/classes — the click handler in chart-events.js
+       (toggles .active + klineDrawToolbarPinned) keys off them. Pinned state
+       stays sage-accented + always visible (not hover-gated) so a pin stays
+       discoverable once set.
+   ========================================================================= */
+
+/* (a) chart-type glyphs */
+.chart-type-menu .ctm-glyph{
+  display:flex; align-items:center; justify-content:center;
+  width:14px; height:14px; flex-shrink:0; opacity:.72;
+  transition:opacity .12s;
+}
+.indicator-menu-item:hover .ctm-glyph,
+.indicator-menu-item.active .ctm-glyph{ opacity:1; }
+
+/* (b) Draw/Pin hover-reveal — the group-pill edit-zone pattern: a zero-width
+   zone that slides out of Draw's right edge on wrapper hover and stays out
+   while pinned. The pin glyph is slanted while unpinned (a "would pin"
+   preview) and stands upright once pinned. Sage, not the pills' legacy teal. */
+.draw-toggle-wrapper{ display:inline-flex; align-items:stretch; }
+.draw-pin-icon-btn{
+  width:0; overflow:hidden; border:none; padding:0; margin-left:1px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--sage-soft); color:var(--fg3); cursor:pointer;
+  border-radius:0 var(--ctl-r) var(--ctl-r) 0;
+  transition:width .18s ease, padding .18s ease, background .15s, color .15s;
+}
+.draw-toggle-wrapper:hover .draw-pin-icon-btn,
+.draw-pin-icon-btn.active{ width:26px; padding:0 2px; }
+.draw-pin-icon-btn:hover{ background:var(--sage-strong); color:var(--fg1); }
+.draw-pin-icon-btn.active{ color:var(--sage); }
+/* svg-qualified first selector: ties main.css's `.adv-chart-toolbar svg.lucide`
+   (0,2,1) 18px rule and wins on source order */
+.draw-pin-icon-btn svg.draw-pin-icon,
+.draw-pin-icon-btn .draw-pin-icon,
+i.draw-pin-icon[data-lucide]{
+  width:11px; height:11px; flex-shrink:0;
+  transform:rotate(45deg);
+  transition:transform .18s ease;
+}
+.draw-pin-icon-btn.active .draw-pin-icon{ transform:rotate(0deg); }
+
+/* keep parity with #draw-toggle-btn's existing "desktop-only" mobile hiding
+   (main.css) now that Pin shares its wrapper — hide the whole unit together */
+@media screen and (max-width: 768px){
+  .draw-toggle-wrapper{ display:none !important; }
+}
+body.mobile-action-bar-active .draw-toggle-wrapper{ display:none !important; }
+
+/* ============================================================================
+   28 · Asset-panel rows — aligned names + centred watchlist star
+   The symbol cell laid out its name box and the watchlist star as two inline
+   boxes in a ~100px table cell: a long name (RENDER) pushed the star onto a
+   second line (tall row + displaced status dot), a baseline-vs-middle mismatch
+   dropped the star below short names (NEAR/HYPE), and icon-less rows (metrics
+   like TOTAL / BTC.D / USDT.D, plus any 404'd logo) started their name ~21px
+   left of iconned rows. Fix: one vertically-centred, non-wrapping flex row,
+   with a fixed 16px logo slot ALWAYS reserved — the real logo when present,
+   else a blank aligned placeholder — so every name lines up. The narrow panel
+   reclaims a little cell padding so full names + star + values still fit.
+   (Mobile keeps its candlestick-glyph slot: that rule overrides this same
+   ::before inside the max-width:768px block.)
+   ========================================================================= */
+td.symbol{ display:flex; align-items:center; flex-wrap:nowrap; }
+td.symbol .symbol-chart{ min-width:0; flex:0 1 auto; }
+td.symbol .symbol-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+td.symbol .star{ flex:0 0 auto; }
+/* blank 16px logo slot for icon-less rows (metrics) and 404'd logos, so names align */
+td.symbol .symbol-chart:not(:has(.symbol-logo))::before{ content:""; width:16px; height:16px; flex:0 0 auto; }
+
+/* narrow right-panel: reclaim horizontal budget (id-scoped to beat #data-table td) */
+.right-panel #data-table td.symbol{ padding-left:3px; padding-right:3px; }
+.right-panel #data-table td.price{ padding-left:3px; padding-right:3px; }
+.right-panel #data-table td.change-col{ padding-left:3px; padding-right:3px; }
+.right-panel #data-table td.consensio-col{ padding-left:3px; padding-right:3px; }
+.right-panel #data-table td.symbol .symbol-chart{ gap:4px; }
+.right-panel #data-table td.symbol .star{ margin-left:2px; }

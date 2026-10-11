@@ -1,0 +1,19 @@
+{
+  "alerts": [],
+  "classification": "ignore",
+  "components": {
+    "adx_modifier": -25,
+    "divergence": 10,
+    "ema_convergence": 0,
+    "price_position": 25,
+    "volume": 15
+  },
+  "direction": "bullish",
+  "has_alert": false,
+  "patterns": [
+    "below_emas",
+    "ranging_penalty"
+  ],
+  "regime": "ranging",
+  "score": 25
+}

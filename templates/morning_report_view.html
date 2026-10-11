@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Morning Report — {{ report.created_at | fmtdate }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overflow-x: hidden; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            padding: 0 0 60px;
+            overflow-x: hidden;
+        }
+        .header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 600; color: #e6edf3; }
+        .header-links { display: flex; gap: 16px; }
+        .header-links a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+        .report-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 24px 32px;
+        }
+        .report-content h1, .report-content h2, .report-content h3 {
+            color: #e6edf3;
+            margin-top: 1.2em;
+            margin-bottom: 0.4em;
+        }
+        .report-content h1 { font-size: 1.4rem; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+        .report-content h2 { font-size: 1.15rem; }
+        .report-content h3 { font-size: 1rem; }
+        .report-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+        }
+        .report-content th, .report-content td {
+            border: 1px solid #30363d;
+            padding: 6px 10px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .report-content th { background: #21262d; color: #e6edf3; }
+        .report-content ul, .report-content ol { padding-left: 1.5em; margin: 8px 0; }
+        .report-content li { margin: 4px 0; }
+        .report-content code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .report-content hr { border: none; border-top: 1px solid #30363d; margin: 16px 0; }
+        .report-content strong { color: #e6edf3; }
+        .staleness-banner {
+            border-radius: 5px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+        .staleness-banner.amber {
+            background: #2d2000;
+            border: 1px solid #a86800;
+            color: #e0a830;
+        }
+        .staleness-banner.gray {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            color: #8b949e;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/vendor/purify.min.js') }}?v={{ cache_version('js/vendor/purify.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <div class="header">
+        <h1>Morning Report — {{ report.created_at | fmtdate }}</h1>
+        <div class="header-links">
+            <a href="/report/morning/archive">&larr; Archive</a>
+            <a href="/report/morning">Current</a>
+            <a href="{{ url_for('legal.disclaimer') }}" style="opacity:0.4;font-size:0.65rem;" title="AI-generated, not financial advice">Disclaimer</a>
+        </div>
+    </div>
+    <div class="container">
+        {% set _rdate = report.created_at | fmtdate %}
+        {% if report_type == 'weekly' and age_days > 3 %}
+        <div class="staleness-banner amber">
+            Weekly digest from {{ _rdate }} — its &#8220;Next Week Setup&#8221; refers to the week that is now underway or past.
+        </div>
+        {% elif report_type == 'week_ahead' and age_days > 2 %}
+        <div class="staleness-banner amber">
+            Week-ahead briefing written {{ _rdate }} — some catalysts listed may have already occurred.
+        </div>
+        {% elif report_type == 'morning' and age_days > 1 %}
+        <div class="staleness-banner gray">
+            Archived report from {{ _rdate }}.
+        </div>
+        {% endif %}
+        <div class="report-content" id="report-body"></div>
+    </div>
+    <script nonce="{{ csp_nonce }}">
+        const raw = {{ report.content | tojson }};
+        if (typeof DOMPurify !== 'undefined') {
+            document.getElementById('report-body').innerHTML = DOMPurify.sanitize(marked.parse(raw));
+        } else {
+            // DOMPurify CDN failed — escape HTML for safety
+            var tmp = document.createElement('div');
+            tmp.textContent = raw;
+            document.getElementById('report-body').innerHTML = tmp.innerHTML;
+        }
+    </script>
+</body>
+</html>

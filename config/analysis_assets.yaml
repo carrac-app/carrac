@@ -1,0 +1,77 @@
+# Asset Configuration for Chart Status Reporter
+# This file defines the assets to analyze, their timeframes, and contextual notes
+
+analysis_order:
+  - group: "Macro"
+    description: "Dollar, rates, and volatility indicators"
+    assets:
+      - symbol: "DXY"
+        name: "US Dollar Index"
+        timeframes: ["1W", "1D"]
+        context: "Dollar strength index. Inverse correlation with risk assets. Above 105 = risk-off environment."
+        data_source: "stooq"  # stooq, binance, coingecko
+
+      - symbol: "US10Y"
+        name: "10-Year Treasury Yield"
+        timeframes: ["1D"]
+        context: "10-year Treasury yield. Rising yields = tighter financial conditions, usually negative for growth assets."
+        data_source: "stooq"
+
+      - symbol: "VIX"
+        name: "CBOE Volatility Index"
+        timeframes: ["1D"]
+        context: "Fear index. Above 20 = elevated fear. Spikes often mark local bottoms in equities."
+        data_source: "stooq"
+
+  - group: "Equities"
+    description: "Major stock indices"
+    assets:
+      - symbol: "SPX"
+        name: "S&P 500"
+        timeframes: ["1W", "1D"]
+        context: "S&P 500 index. Leading indicator for risk appetite. BTC often follows with 1-3 day lag."
+        data_source: "stooq"
+
+      - symbol: "NDX"
+        name: "Nasdaq 100"
+        timeframes: ["1D"]
+        context: "Nasdaq 100 tech index. Higher beta than SPX, strong correlation with crypto."
+        data_source: "stooq"
+
+  - group: "Crypto Majors"
+    description: "Bitcoin and Ethereum"
+    assets:
+      - symbol: "BTC"
+        name: "Bitcoin"
+        timeframes: ["1W", "1D", "4H"]
+        context: "Bitcoin. Usually inverse to DXY. Leads altcoin moves by days to weeks."
+        data_source: "binance"
+
+      - symbol: "ETH"
+        name: "Ethereum"
+        timeframes: ["1W", "1D"]
+        context: "Ethereum. ETH/BTC ratio indicates altcoin appetite - rising = alt season brewing."
+        data_source: "binance"
+
+  - group: "Crypto Alts"
+    description: "Selected altcoins"
+    assets:
+      - symbol: "SOL"
+        name: "Solana"
+        timeframes: ["1D"]
+        context: "Solana. High beta play, often outperforms in risk-on environments."
+        data_source: "binance"
+
+# Inter-asset relationships (used for context in reports)
+relationships:
+  - "DXY and BTC typically move inverse - DXY strength = BTC weakness"
+  - "VIX spikes often mark local bottoms in both equities and crypto"
+  - "US10Y rising aggressively is negative for long-duration assets (tech, crypto)"
+  - "SPX leading, BTC lagging by 1-3 days is common pattern"
+  - "ETH/BTC ratio above 0.06 historically signals altcoin strength"
+
+# Report settings
+report_settings:
+  include_relationships: true
+  group_by_hierarchy: true
+  show_unclear_items: true

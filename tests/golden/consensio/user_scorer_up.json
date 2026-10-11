@@ -1,0 +1,19 @@
+{
+  "classification": "ignore",
+  "components": {
+    "cpr": 15,
+    "divergence": 10,
+    "freshness": 0,
+    "volume": 20
+  },
+  "direction": "bullish",
+  "patterns": [
+    "mixed",
+    "unknown",
+    "volume_confirmed",
+    "cpr_aligned",
+    "mature_trend"
+  ],
+  "regime": "strong_trend",
+  "score": 31
+}

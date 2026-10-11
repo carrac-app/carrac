@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Tier Configuration</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px; }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        h1 { margin-bottom: 8px; }
+        .nav { margin-bottom: 20px; font-size: 14px; display: flex; gap: 16px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        h2 { font-size: 18px; margin-bottom: 12px; }
+        .flash { padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+        .flash-success { background: rgba(38,166,154,0.15); border: 1px solid #26a69a; color: #26a69a; }
+        .flash-error { background: rgba(239,83,80,0.15); border: 1px solid #ef5350; color: #ef5350; }
+
+        /* Tier config table */
+        .tier-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tier-table th, .tier-table td { padding: 6px 10px; border: 1px solid #30363d; text-align: left; }
+        .tier-table th { background: #0d1117; position: sticky; top: 0; }
+        .tier-table td:first-child { font-weight: 600; white-space: nowrap; color: #8b949e; }
+        .tier-table input { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px; padding: 3px 6px; width: 80px; font-size: 12px; font-family: monospace; }
+        .tier-table input:focus { border-color: #58a6ff; outline: none; }
+        .tier-table .db-override { background: rgba(163,113,247,0.1); }
+        .tier-table .val-bool-true { color: #26a69a; }
+        .tier-table .val-bool-false { color: #ef5350; }
+        .tier-table .val-num { color: #d2a8ff; }
+
+        /* Buttons */
+        .btn { display: inline-block; padding: 6px 14px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 13px; }
+        .btn:hover { background: #30363d; }
+        .btn-primary { background: #238636; border-color: #238636; color: #fff; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-danger { background: #da3633; border-color: #da3633; color: #fff; }
+        .btn-sm { padding: 3px 10px; font-size: 12px; }
+
+        /* Overrides section */
+        .override-card { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .override-card .email { color: #58a6ff; font-weight: 600; }
+        .override-card .reason { color: #8b949e; font-size: 12px; }
+        .override-card .json { font-family: monospace; font-size: 12px; color: #d2a8ff; flex: 1; }
+        textarea { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px; font-family: monospace; font-size: 13px; width: 100%; resize: vertical; }
+        .add-override { margin-top: 12px; padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; }
+        .add-override label { display: block; margin-bottom: 4px; font-size: 13px; color: #8b949e; }
+        .add-override input[type="text"], .add-override input[type="number"] {
+            background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px; padding: 6px 10px; font-size: 13px; width: 100%; margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    {% set admin_page = 'tiers' %}
+    {% include 'admin_nav.html' %}
+    <h1>Tier Configuration</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %}
+    {% endwith %}
+
+    <!-- Tier Limits Table -->
+    <div class="card">
+        <h2>Feature Limits by Tier</h2>
+        <p style="color:#8b949e;font-size:13px;margin-bottom:12px;">
+            Purple cells have DB overrides. Edit values and click Save to override the hardcoded defaults.
+        </p>
+        <div style="overflow-x:auto;">
+        <table class="tier-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    {% for tier_name in ['free', 'member', 'tester', 'premium', 'admin'] %}
+                    <th>{{ tier_name | title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in all_keys %}
+                <tr>
+                    <td>{{ key }}</td>
+                    {% for tier_name in ['free', 'member', 'tester', 'premium', 'admin'] %}
+                    {% set val = tiers_data[tier_name].get(key, '') %}
+                    {% set is_db = db_configs.get(tier_name, {}).get(key) is not none %}
+                    <td class="{{ 'db-override' if is_db else '' }}">
+                        {% if val is sameas true %}
+                            <span class="val-bool-true">true</span>
+                        {% elif val is sameas false %}
+                            <span class="val-bool-false">false</span>
+                        {% elif val is number %}
+                            <span class="val-num">{{ val }}</span>
+                        {% else %}
+                            {{ val }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Edit Tier Config -->
+    <div class="card">
+        <h2>Edit Tier Config</h2>
+        <p style="color:#8b949e;font-size:13px;margin-bottom:12px;">
+            Submit key-value overrides as a form. Only submitted keys will be overridden; others keep hardcoded defaults.
+        </p>
+        {% for tier_name in ['free', 'member', 'premium'] %}
+        <details style="margin-bottom:12px;">
+            <summary style="cursor:pointer;font-weight:600;color:#58a6ff;">Edit {{ tier_name | title }}</summary>
+            <form method="POST" action="{{ url_for('admin.admin_update_tier_config', tier_name=tier_name) }}" style="margin-top:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <textarea name="_raw" rows="6" placeholder='Enter key=value pairs, one per line. Example:&#10;ai_queries_monthly=50&#10;max_scenarios=20&#10;cross_device_sync=true'
+                    id="tier-edit-{{ tier_name }}">{% for k, v in db_configs.get(tier_name, {}).items() %}{{ k }}={{ v }}
+{% endfor %}</textarea>
+                <div style="margin-top:6px;">
+                    <button type="submit" class="btn btn-primary btn-sm btn-save-tier" data-tier="{{ tier_name }}">Save {{ tier_name | title }}</button>
+                </div>
+            </form>
+        </details>
+        {% endfor %}
+    </div>
+
+    <!-- Per-User Overrides -->
+    <div class="card">
+        <h2>Per-User Overrides</h2>
+        {% if overrides %}
+        {% for ov in overrides %}
+        <div class="override-card">
+            <span class="email">{{ ov.email }}</span>
+            <span style="color:#8b949e;">({{ ov.tier }})</span>
+            <span class="json">{{ ov.overrides }}</span>
+            <span class="reason">{{ ov.reason or '' }}</span>
+            <form method="POST" action="{{ url_for('admin.admin_clear_user_overrides', user_id=ov.user_id) }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Clear</button>
+            </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:#8b949e;">No per-user overrides configured.</p>
+        {% endif %}
+
+        <div class="add-override">
+            <h3 style="font-size:14px;margin-bottom:8px;">Add Override</h3>
+            <form method="POST" action="" id="override-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label>User ID</label>
+                <input type="number" name="user_id" id="ov-user-id" placeholder="User ID" required>
+                <label>Overrides (JSON)</label>
+                <textarea name="overrides_json" rows="3" placeholder='{"ai_queries_monthly": 100, "max_scenarios": 999}'></textarea>
+                <label>Reason</label>
+                <input type="text" name="reason" placeholder="Beta tester, VIP, etc.">
+                <button type="submit" class="btn btn-primary btn-sm" id="override-submit-btn">Add Override</button>
+            </form>
+        </div>
+    </div>
+
+    <script nonce="{{ csp_nonce }}">
+    // Delegated click handler — no inline onclick attributes.
+    function parseTierForm(form) {
+        var raw = form.querySelector('textarea').value.trim();
+        if (!raw) { alert('No values entered'); return false; }
+        var lines = raw.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+            var eq = lines[i].indexOf('=');
+            if (eq < 1) continue;
+            var key = lines[i].substring(0, eq).trim();
+            var val = lines[i].substring(eq + 1).trim();
+            if (!key) continue;
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = val;
+            form.appendChild(input);
+        }
+        form.querySelector('textarea').name = '';
+        return true;
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.btn-save-tier').forEach(function (btn) {
+            btn.addEventListener('click', function (ev) {
+                if (!parseTierForm(btn.form)) {
+                    ev.preventDefault();
+                }
+            });
+        });
+        // CSP: override form — set action dynamically on submit (replaces inline onclick)
+        var overrideBtn = document.getElementById('override-submit-btn');
+        if (overrideBtn) {
+            overrideBtn.addEventListener('click', function() {
+                var userId = document.getElementById('ov-user-id').value;
+                document.getElementById('override-form').action = '/admin/user/' + userId + '/overrides';
+            });
+        }
+    });
+    </script>
+</body>
+</html>

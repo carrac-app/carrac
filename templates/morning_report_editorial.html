@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if public_brief is defined and public_brief %}Carrac — The Daily Brief{% else %}Carrac · Morning Briefing{% endif %}</title>
+{% if public_brief is defined and public_brief %}
+<meta name="description" content="Carrac's daily market brief — regime, breadth, liquidity and key levels across major assets, built from live data. Not financial advice.">
+<link rel="canonical" href="{{ site_url }}/brief">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Carrac — The Daily Brief">
+<meta property="og:description" content="Carrac's daily market brief — regime, breadth, liquidity and key levels across major assets, built from live data. Not financial advice.">
+<meta property="og:url" content="{{ site_url }}/brief">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carrac — The Daily Brief">
+<meta name="twitter:description" content="Carrac's daily market brief — regime, breadth, liquidity and key levels across major assets, built from live data. Not financial advice.">
+<meta name="twitter:image" content="{{ site_url }}/static/og-dashboard.png">
+{% endif %}
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+<script src="{{ url_for('static', filename='js/vendor/purify.min.js') }}?v={{ cache_version('js/vendor/purify.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+<style>
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:"Inter",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+/* story-main: needed for story-layout grid child */
+.story-main{min-width:0;}
+/* board prose fallback: when marketSnapshot renders as plain HTML not a table */
+#ed-board .section p,#ed-board .section li{font-size:14px;color:var(--cream-2);}
+/* Full written analysis — collapsed essay/scenarios, demoted below the facts */
+.full-analysis{margin:44px 0 0;border-top:1px solid var(--rule);}
+.full-analysis>summary{cursor:pointer;list-style:none;font-family:"Fraunces",Georgia,serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);padding:16px 0;user-select:none;}
+.full-analysis>summary::-webkit-details-marker{display:none;}
+.full-analysis>summary::after{content:"  ▸";color:var(--faint);}
+.full-analysis[open]>summary::after{content:"  ▾";}
+.full-analysis>summary:hover{color:var(--cream);}
+.ed-disclaim{font-size:11px;color:var(--muted);max-width:1180px;margin:6px auto 0;padding:0 32px;}
+.ed-disclaim a{color:inherit;text-decoration:underline;}
+/* The wordmark is the public /brief page's path into the product, so it is
+   a link: inherit color, no underline, so it reads like plain text; hover
+   gives a subtle affordance. */
+.wm{color:inherit;text-decoration:none;}
+.wm:hover{opacity:.82;}
+/* Topbar "Get started free" CTA — public /brief only. Small-caps gold pill,
+   same idiom as .full-analysis>summary scaled down for the topbar. Hidden
+   under ~700px so it can't crowd the switch/ribbon/acts row (see the
+   report-editorial.css 880px breakpoint for the existing idiom). */
+.btn.cta{font-family:"Fraunces";font-size:11px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--gold);border-color:var(--gold-dim);
+  background:rgba(198,169,111,.08);}
+.btn.cta:hover{background:rgba(198,169,111,.16);color:#d4b87e;}
+@media(max-width:700px){.btn.cta{display:none;}}
+/* Footer CTA band + quiet link row — public /brief only. Mirrors the
+   brief_reader.html .brief-ctaband/.foot idiom (defined the same way there,
+   locally per-template) so brief-family pages share one visual language.
+   .foot itself is already shared (report-editorial.css) — reused as-is. */
+.brief-ctaband{border:1px solid var(--rule);border-radius:12px;background:var(--ink-2);
+  padding:26px 28px;margin:0 0 6px;display:flex;align-items:center;justify-content:space-between;
+  gap:20px;flex-wrap:wrap;}
+.brief-ctaband p{margin:0;font-size:14.5px;line-height:1.62;color:var(--cream-2);max-width:56ch;}
+.brief-cta-btn{font-family:"Inter",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);
+  background:var(--gold);border-radius:8px;padding:10px 20px;text-decoration:none;white-space:nowrap;}
+.brief-cta-btn:hover{background:#d4b87e;}
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body class="ed-scope">
+
+<!-- ===== STICKY TOP BAR ===== -->
+<div class="topbar"><div class="row">
+  <a class="wm" href="{% if public_brief is defined and public_brief %}{{ site_url }}{% else %}/{% endif %}"><b>Carrac</b><span class="sep">·</span><span class="ed">Morning Briefing</span></a>
+  <div class="switch">
+    <a class="on" href="/report/morning">Morning</a>
+    <a href="#" title="Coming soon">Afternoon</a>
+    <a href="/report/weekly/latest" title="Weekly">Weekly</a>
+    <a href="/report/week_ahead/latest" title="Week Ahead">Week Ahead</a>
+  </div>
+  <div class="spacer"></div>
+  <div class="ribbon" id="ed-ribbon">
+    <div class="it"><div class="k">Mood</div><div class="v" id="ed-rib-mood">—</div></div>
+    <div class="it"><div class="k">Breadth</div><div class="v" id="ed-rib-breadth">—</div></div>
+    <div class="it"><div class="k">Bond vol</div><div class="v" id="ed-rib-bondvol">—</div></div>
+    <div class="it"><div class="k">Fear / Greed</div><div class="v" id="ed-rib-fg">—</div></div>
+  </div>
+  <div class="acts">
+    <a class="btn" href="/report/morning/archive">Archive</a>
+    {% if public_brief is defined and public_brief %}
+    <a class="btn cta" href="{{ site_url }}/register" target="_blank" rel="noopener">Get started free →</a>
+    {% endif %}
+  </div>
+</div></div>
+<div class="ed-disclaim" role="note">AI-generated market analysis — <a href="{{ url_for('legal.disclaimer') }}">not financial advice</a>.</div>
+
+<!-- ===== SECTION NAV — plain in-page anchors (no more tab switching; the whole
+     report is one linear scroll, this is just a table of contents). ===== -->
+<div class="secnav"><div class="row">
+  <a href="#ed-stretched">What&rsquo;s stretched</a>
+  <a href="#ed-docket">Docket</a>
+  <a href="#ed-liquidity">Liquidity</a>
+  <a href="#ed-take">The Tape</a>
+  <a href="#ed-heat">Heat</a>
+  <a href="#ed-spotlight">Spotlight</a>
+  <a href="#ed-board-section">Board</a>
+  <a href="#ed-rotation">Rotation</a>
+  <a href="#ed-desk">Derivatives Desk</a>
+  <a href="#ed-signals">Signals</a>
+  <a href="#ed-flows">Flows</a>
+  <a href="#ed-macro-mini">Macro</a>
+  <a href="#ed-full-analysis">Full analysis</a>
+</div></div>
+
+<!-- ===== THE LINEAR DESK NOTE (single column, top to bottom) ===== -->
+<div class="wrap">
+
+  <!-- Afternoon delta card (same-day; hidden until JS populates it) -->
+  <div id="ed-afternoon-delta" style="display:none"></div>
+
+  <!-- Hero (kicker + headline + deck): populated by JS; server-renders date as initial stub -->
+  <div class="lede" id="ed-hero">
+    <div class="kicker">
+      <span class="tag">Morning Brief</span>
+      <span>{% if date is defined and date %}{{ date }}{% endif %}</span>
+    </div>
+    <h1 class="hl serif" style="color:var(--muted);font-size:24px">Loading report…</h1>
+  </div>
+
+  <!-- The Tape — since yesterday (single-column band, populated by JS) -->
+  <div id="ed-take"></div>
+  <!-- #ed-changes is intentionally empty; sinceYesterday renders inside #ed-take -->
+  <div id="ed-changes"></div>
+
+  <!-- ── Facts-thick core: what's stretched, heat, spotlight (cluster cards,
+       ladders collapsed behind <details>), board, signals, macro facts.
+       This is now the main event — what you land on, not a side tab. ── -->
+  {% include 'partials/_facts_modules.html' %}
+
+  <!-- Email capture band (Task C) — public /brief ONLY.
+       Reuses the beta-waitlist infra (source=brief-digest); honest copy —
+       delivery doesn't exist yet, this is a be-first list, not a live
+       subscription. Non-advice, no fake urgency. -->
+  {% if public_brief is defined and public_brief %}
+  <div class="subscribe-band" id="ed-subscribe">
+    <div class="eyebrow">Be first</div>
+    <p class="subscribe-copy">Want this brief in your inbox? Email delivery is coming — leave your address and be first.</p>
+    <form id="ed-subscribe-form" class="subscribe-form" novalidate>
+      <input type="email" id="ed-subscribe-email" class="subscribe-input" placeholder="you@example.com" maxlength="254" autocomplete="email" required>
+      <button type="submit" class="subscribe-btn">Notify me</button>
+    </form>
+    <p class="subscribe-msg" id="ed-subscribe-msg" role="status" aria-live="polite"></p>
+  </div>
+  <script nonce="{{ csp_nonce | default('') }}">
+  (function () {
+      'use strict';
+      var form = document.getElementById('ed-subscribe-form');
+      if (!form) { return; }
+      var input = document.getElementById('ed-subscribe-email');
+      var msgEl = document.getElementById('ed-subscribe-msg');
+      var btn = form.querySelector('button[type="submit"]');
+
+      function _log(tag, data) {
+          if (typeof window.carracLog === 'function') { window.carracLog('brief-subscribe', tag, data); }
+      }
+
+      form.addEventListener('submit', function (evt) {
+          evt.preventDefault();
+          var email = (input.value || '').trim();
+          if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) {
+              msgEl.textContent = 'Enter a valid email address.';
+              msgEl.className = 'subscribe-msg err';
+              return;
+          }
+          btn.disabled = true;
+          msgEl.textContent = '';
+          msgEl.className = 'subscribe-msg';
+          fetch('/api/brief-subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email })
+          }).then(function (r) {
+              return r.json().catch(function () { return {}; }).then(function (data) {
+                  return { ok: r.ok, data: data };
+              });
+          }).then(function (res) {
+              if (res.ok && res.data && res.data.ok) {
+                  form.style.display = 'none';
+                  msgEl.textContent = "You're on the list.";
+                  msgEl.className = 'subscribe-msg ok';
+                  _log('subscribed', {});
+              } else {
+                  btn.disabled = false;
+                  msgEl.textContent = (res.data && res.data.error) || "Couldn't add you right now — try again shortly.";
+                  msgEl.className = 'subscribe-msg err';
+              }
+          }).catch(function (err) {
+              btn.disabled = false;
+              msgEl.textContent = "Couldn't add you right now — try again shortly.";
+              msgEl.className = 'subscribe-msg err';
+              _log('error', String(err));
+          });
+      });
+  })();
+  </script>
+  {% endif %}
+
+  <!-- Full written analysis (collapsed by default): the long story + scenarios +
+       market snapshot board + the macro/calendar/quant-engine/options/on-chain
+       deep-dive. Kept, but one click away rather than the front door. -->
+  <details class="full-analysis" id="ed-full-analysis">
+    <summary>Full written analysis</summary>
+    <div id="ed-story">{% if story_html is defined and story_html %}{{ story_html | safe }}{% endif %}</div>
+    <div id="ed-scenarios"></div>
+    <div id="ed-board"></div>
+    <div id="ed-macro"></div>
+  </details>
+
+</div><!-- /.wrap -->
+
+<!-- Footer CTA (public /brief only) — the flagship share/SEO page had no
+     path into the product past this point; a stranger from a tweet could
+     not sign up without editing the URL. Sentence deliberately echoes the
+     dangling, unlinked sales line the report engine appends to generated
+     content (morning_engine/engine.py _GENERAL_REPORT_FOOTER) — that text
+     stays as-is (it's generated report prose, not this template), but this
+     block gives the same idea an actual, always-visible, linked CTA. -->
+{% if public_brief is defined and public_brief %}
+<div class="wrap">
+  <div class="brief-ctaband">
+    <p>The free daily brief covers the market&rsquo;s hotspots — the full app focuses the same levels-and-indicators read on what you&rsquo;re trading.</p>
+    <a class="brief-cta-btn" href="{{ site_url }}/register" target="_blank" rel="noopener">Get started free →</a>
+  </div>
+</div>
+<div class="foot">
+  <a href="{{ site_url }}" style="color:inherit">Home</a>
+  &nbsp;&middot;&nbsp;
+  <a href="{{ url_for('legal.disclaimer') }}" style="color:inherit">Disclaimer</a>
+</div>
+{% endif %}
+
+<!-- ===== JS ===== -->
+{% if brief_inline is defined and brief_inline %}
+<script nonce="{{ csp_nonce | default('') }}">window.__briefData = {{ brief_inline | tojson }}</script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/report-core.js') }}?v={{ cache_version('report-core.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script nonce="{{ csp_nonce | default('') }}">
+(function () {
+    'use strict';
+
+    /* ── Section nav is now plain in-page anchors (html{scroll-behavior:smooth}
+       handles the scroll) — no tab-switching JS needed. ── */
+
+    /* ── Logging helper (uses window.carracLog if present, else console) ── */
+    function _log(msg, data) {
+        if (typeof window.carracLog === 'function') {
+            window.carracLog('editorial', msg, data || null);
+        } else {
+            console.log('[editorial]', msg, data || '');
+        }
+    }
+
+    /* ── Timestamp parse (mirrored from legacy) ── */
+    function _parseTs(s) {
+        if (!s) return null;
+        var iso = String(s).trim().replace(' ', 'T');
+        if (!/[zZ]$|[+\-]\d{2}:?\d{2}$/.test(iso)) iso += 'Z';
+        var dt = new Date(iso);
+        return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    /* ── Ribbon handlers — extracted so the public /brief inline blob
+         (window.__briefData) and the live-fetch path share the EXACT same
+         parsing logic (no forked handling between the two sources). ── */
+    function _applySentimentRibbon(data) {
+        if (!data || !data.sentiment) return;
+        var s = data.sentiment;
+        var el;
+        el = document.getElementById('ed-rib-mood');
+        if (el && s.regime && s.regime.regime) el.textContent = s.regime.regime;
+        el = document.getElementById('ed-rib-fg');
+        if (el && s.fear_greed) {
+            var v = s.fear_greed.value != null ? Math.round(s.fear_greed.value) : null;
+            var c = s.fear_greed.classification || '';
+            el.textContent = v != null ? v + (c ? ' · ' + c : '') : (c || '—');
+        }
+    }
+
+    function _applyBreadthRibbon(data) {
+        if (!data) return;
+        var el = document.getElementById('ed-rib-breadth');
+        if (el && data.label) el.textContent = data.label;
+    }
+
+    function _applyBondVolRibbon(data) {
+        if (!data) return;
+        var el = document.getElementById('ed-rib-bondvol');
+        var bv = data.bond_vol;
+        if (el && bv && bv.label) el.textContent = bv.label;
+    }
+
+    /* ── Ribbon: fetch live values from the same data sources as the Pulse cockpit.
+         /api/market-sentiment   → Mood (regime) + Fear/Greed
+         /api/market/breadth     → Breadth label
+         /api/quant/snapshot     → Bond vol (MOVE); graceful-fail for non-tester tier.
+         On the public /brief page, window.__briefData pre-supplies these three
+         blobs server-side — use them directly and skip the (401/redirecting)
+         authed fetch entirely; same handler functions either way. ── */
+    function _fetchPulseRibbon() {
+        var _brief = window.__briefData || null;
+
+        if (_brief && _brief.sentiment) {
+            _applySentimentRibbon(_brief.sentiment);
+        } else {
+            fetch('/api/market-sentiment', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(_applySentimentRibbon)
+                .catch(function (e) { if (typeof window.carracLog === 'function') window.carracLog('fetch', '/api/market-sentiment failed — rendered as empty', String((e && e.message) || e)); });
+        }
+
+        if (_brief && _brief.breadth) {
+            _applyBreadthRibbon(_brief.breadth);
+        } else {
+            fetch('/api/market/breadth', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(_applyBreadthRibbon)
+                .catch(function (e) { if (typeof window.carracLog === 'function') window.carracLog('fetch', '/api/market/breadth failed — rendered as empty', String((e && e.message) || e)); });
+        }
+
+        /* Bond vol from /api/quant/snapshot — returns 403 for non-tester tier; leave — on fail */
+        if (_brief && _brief.snapshot) {
+            _applyBondVolRibbon(_brief.snapshot);
+        } else {
+            // SILENCE-OK: documented above — 403 for non-tester tier is an
+            // expected, routine response here, not an error worth breadcrumbing.
+            fetch('/api/quant/snapshot', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(_applyBondVolRibbon)
+                .catch(function () {});
+        }
+    }
+
+    /* ── Market Pulse one-liner: extract from ## Market Pulse section in raw content.
+         The morning engine writes:  "## Market Pulse\nFear & Greed X … · MOVE Y (label)"
+         This is deterministic (not LLM), making it the ideal prose-dedup deck sentence. ── */
+    function _findMarketPulse(rawContent) {
+        if (!rawContent) return null;
+        var lines = rawContent.split('\n');
+        var inPulse = false;
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (/^##\s+market\s+pulse/i.test(line)) { inPulse = true; continue; }
+            if (inPulse) {
+                if (/^##/.test(line)) break;  /* next top-level section */
+                if (line) return line.replace(/\*+/g, '').trim();  /* strip bold markers */
+            }
+        }
+        return null;
+    }
+
+    /* ── Populate #ed-hero with kicker + headline + deck ── */
+    function _populateHero(data, sections) {
+        try {
+            var heroEl = document.getElementById('ed-hero');
+            if (!heroEl) return;
+
+            /* Date line: prefer actual report creation time */
+            var d = _parseTs(data.created_at);
+            var dateStr = d
+                ? d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                : ({{ date | default(none) | tojson }} || '');
+
+            /* Tag: attempt to derive regime from metadata, else 'Morning Brief' */
+            var tagText = 'Morning Brief';
+            var meta = data.metadata || {};
+            if (meta.regime) tagText = meta.regime;
+
+            /* Headline: first sentence of summary, or overview text, or fallback */
+            var rawSummary = (data.summary || '').replace(/<[^>]+>/g, '').trim();
+            var overviewText = (sections.overview || '').replace(/<[^>]+>/g, '').trim();
+            var headlineSource = rawSummary || overviewText;
+            /* Split on '. ' to get first sentence; avoid splitting abbreviations */
+            var firstDot = headlineSource.search(/\.\s+[A-Z]/);
+            var firstSentence = firstDot > 0 ? headlineSource.substring(0, firstDot + 1) : headlineSource.split('\n')[0];
+            /* No char-cap: let the serif headline wrap naturally (2–3 lines is fine). */
+            var headline = firstSentence || 'Morning Briefing';
+
+            /* Deck: prefer the deterministic Market Pulse one-liner (prose-dedup spec);
+               fall back to first ~300 chars of overview/summary. */
+            var marketPulse = _findMarketPulse(data.content);
+            var deckSource = rawSummary || overviewText;
+            if (deckSource.length > 320) deckSource = deckSource.substring(0, 317) + '…';
+            var deck = marketPulse || (deckSource !== headline ? deckSource : '');
+
+            var html = '<div class="kicker">';
+            html += '<span class="tag">' + escapeHtml(tagText) + '</span>';
+            if (dateStr) html += '<span>' + escapeHtml(dateStr) + '</span>';
+            if (d) {
+                var asof = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                html += '<span class="d"></span><span>As of ' + escapeHtml(asof) + '</span>';
+            }
+            html += '</div>';
+            html += '<h1 class="hl serif">' + escapeHtml(headline) + '</h1>';
+            if (deck) {
+                html += '<p class="deck">' + escapeHtml(deck) + '</p>';
+            }
+            heroEl.innerHTML = html;
+        } catch (e) { _log('hero-error', String(e)); }
+    }
+
+    /* ── Extract list items from parsed section HTML ── */
+    function _htmlToLiItems(html) {
+        if (!html) return [];
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var lis = tmp.querySelectorAll('li');
+        if (lis.length) return Array.from(lis).map(function (li) { return li.innerHTML; });
+        /* Fallback: treat paragraphs as items */
+        var ps = tmp.querySelectorAll('p');
+        return Array.from(ps)
+            .filter(function (p) { return p.textContent.trim(); })
+            .map(function (p) { return p.innerHTML; });
+    }
+
+    /* ── Build .changes <li> from a raw innerHTML string.
+         Tries to detect "<strong>Label</strong>: value" or "Label: value" patterns. ── */
+    function _toChangesLi(raw) {
+        /* Pattern 1: <strong>Label</strong>: value */
+        var m = raw.match(/^<strong>([^<]+)<\/strong>:?\s*(.*)/is);
+        if (m) {
+            return '<li><span class="lab">' + m[1].trim() + '</span><span class="val">' +
+                   m[2].trim().replace(/^:\s*/, '') + '</span></li>';
+        }
+        /* Pattern 2: plain "Label: value" (first colon within 50 chars) */
+        var plain = raw.replace(/<[^>]+>/g, '');
+        var ci = plain.indexOf(':');
+        if (ci > 0 && ci < 50) {
+            return '<li><span class="lab">' + escapeHtml(plain.substring(0, ci).trim()) +
+                   '</span><span class="val">' + escapeHtml(plain.substring(ci + 1).trim()) + '</span></li>';
+        }
+        return '<li>' + raw + '</li>';
+    }
+
+    /* ── Populate #ed-take — "The Tape" (editorial v4: a single full-width band,
+       not a twocol split). Same data sources as before (The take bullets +
+       Since-yesterday changes), just stacked vertically under one eyebrow. ── */
+    function _populateTake(sections) {
+        var el = document.getElementById('ed-take');
+        if (!el) return;
+        try {
+            /* The take — prefer TL;DR/overview bullets; fall back to
+               Action Dashboard when the morning report omits the TL;DR section. */
+            var takeHtml = '';
+            var _takeSrc = sections.overview || sections.actionDashboard || '';
+            if (_takeSrc) {
+                var items = _htmlToLiItems(_takeSrc);
+                if (items.length) {
+                    takeHtml = '<ul class="take">' +
+                               items.map(function (i) { return '<li>' + i + '</li>'; }).join('') +
+                               '</ul>';
+                }
+            }
+
+            /* Since yesterday (.changes key/value rows), below the take */
+            var changesHtml = '';
+            if (sections.sinceYesterday) {
+                var sinceItems = _htmlToLiItems(sections.sinceYesterday);
+                if (sinceItems.length) {
+                    changesHtml = '<ul class="changes">' +
+                                  sinceItems.map(_toChangesLi).join('') +
+                                  '</ul>';
+                } else {
+                    /* Prose fallback: render as-is in compact style */
+                    changesHtml = '<div style="font-size:14px;color:var(--cream-2);line-height:1.6">' +
+                                  sections.sinceYesterday + '</div>';
+                }
+            }
+
+            if (takeHtml || changesHtml) {
+                el.innerHTML =
+                    '<div class="eyebrow">The Tape <span class="src">since yesterday</span></div>' +
+                    '<div class="tape">' + takeHtml + changesHtml + '</div>';
+            }
+        } catch (e) { _log('take-error', String(e)); }
+    }
+
+    /* ── Convert blockquotes from story HTML into .pullquote paragraphs.
+         The morning engine sometimes uses > blockquote syntax for tension lines. ── */
+    function _liftPullquotes(html) {
+        if (!html) return html;
+        return html.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, function (_, inner) {
+            return '<p class="pullquote">' + inner.replace(/<br\s*\/?>/gi, ' ').trim() + '</p>';
+        });
+    }
+
+    /* ── Build Levels in play rail card from confluenceZones HTML ── */
+    function _buildLevelsCard(html) {
+        if (!html) return '';
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        /* Try to render list items as .lvl rows */
+        var lis = tmp.querySelectorAll('li');
+        if (lis.length) {
+            var rows = Array.from(lis).slice(0, 6).map(function (li) {
+                var text = li.textContent.trim();
+                /* Try to split "LABEL: price" or "price — LABEL" */
+                var m = text.match(/^(.+?):\s*([0-9,. ]+)/);
+                if (m) {
+                    return '<div class="lvl"><div class="a">' + escapeHtml(m[1].trim()) +
+                           '</div><div class="p">' + escapeHtml(m[2].trim()) + '</div></div>';
+                }
+                return '<div class="lvl"><div class="a">' + escapeHtml(text) + '</div></div>';
+            }).join('');
+            return '<div class="railcard"><div class="rh">Levels in play</div>' + rows + '</div>';
+        }
+        /* Fallback: render content directly */
+        return '<div class="railcard"><div class="rh">Levels in play</div><div style="font-size:13px;color:var(--cream-2)">' + html + '</div></div>';
+    }
+
+    /* ── Build Today's catalyst rail card from calendar HTML ── */
+    function _buildCatalystCard(html) {
+        if (!html) return '';
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var li = tmp.querySelector('li');
+        var p = tmp.querySelector('p');
+        var first = li || p;
+        if (first) {
+            return '<div class="railcard cat"><div class="rh">Today\'s catalyst</div>' +
+                   '<p style="font-size:13.5px;color:var(--cream);margin:0 0 6px">' +
+                   first.innerHTML + '</p></div>';
+        }
+        return '<div class="railcard cat"><div class="rh">Today\'s catalyst</div>' +
+               '<div style="font-size:13px;color:var(--cream-2)">' + html + '</div></div>';
+    }
+
+    /* ── Populate #ed-story (.story-layout with sticky .rail) ── */
+    function _populateStory(sections) {
+        var el = document.getElementById('ed-story');
+        if (!el) return;
+        try {
+            if (!sections.story) { el.style.display = 'none'; return; }
+
+            var storyContent = _liftPullquotes(sections.story);
+            var storyMain =
+                '<div class="eyebrow">The story</div>' +
+                '<div class="story">' + storyContent + '</div>';
+
+            /* Rail: Levels in play (from confluenceZones section or server-supplied lead asset) */
+            var levelsCard = sections.confluenceZones ? _buildLevelsCard(sections.confluenceZones) : '';
+            if (!levelsCard && window.__edLeadLevels && window.__edLeadLevels.length) {
+                var _lvlRows = window.__edLeadLevels.slice(0, 6).map(function(c) {
+                    var px = c.price != null
+                        ? (c.price < 10 ? '$' + c.price.toFixed(4)
+                           : '$' + c.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}))
+                        : '—';
+                    var label = (c.members || []).slice(0, 2).join(' + ') || (c.side || '');
+                    return '<div class="lvl">' +
+                        '<div class="a">' + escapeHtml(window.__edLeadSymbol || '') +
+                        '<small>' + escapeHtml(label) + '</small></div>' +
+                        '<div class="p">' + escapeHtml(px) +
+                        '<small class="' + (c.side === 'support' ? 'sup' : 'res') + '">' + escapeHtml(c.side || '') + '</small></div></div>';
+                }).join('');
+                levelsCard = '<div class="railcard"><div class="rh">Levels in play</div>' + _lvlRows + '</div>';
+            }
+
+            /* Rail: Today's catalyst (from calendar or upcoming-events section) */
+            var catalystCard = sections.calendar ? _buildCatalystCard(sections.calendar) :
+                               (sections.catalysts ? _buildCatalystCard(sections.catalysts) : '');
+
+            var rail = (levelsCard || catalystCard)
+                ? '<aside class="rail">' + levelsCard + catalystCard + '</aside>'
+                : '';
+
+            el.innerHTML =
+                '<div class="section">' +
+                  '<div class="story-layout">' +
+                    '<div class="story-main">' + storyMain + '</div>' +
+                    rail +
+                  '</div>' +
+                '</div>';
+        } catch (e) { _log('story-error', String(e)); }
+    }
+
+    /* ── Base-rate guard: true only if the section text exposes explicit median /
+         hit-rate / sample numbers (e.g., from a quantitative backtest run).
+         Narrative-only scenario sections return false → stats row is OMITTED. ── */
+    function _hasExplicitStats(html) {
+        var text = (html || '').replace(/<[^>]+>/g, ' ');
+        return /hit\s+rate/i.test(text) && /\d+%/.test(text) &&
+               (/\bmedian\b/i.test(text) || /\bsample\b/i.test(text));
+    }
+
+    /* ── Split scenarios HTML into bull and bear legs on <h3> boundaries ── */
+    function _splitScenarios(html) {
+        if (!html) return null;
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var nodes = Array.from(tmp.childNodes);
+
+        var bull = null, bear = null;
+        var current = null, currentType = null;
+
+        function _flush() {
+            if (!current || !currentType) return;
+            if (currentType === 'bull' && !bull) bull = current;
+            else if (currentType === 'bear' && !bear) bear = current;
+        }
+
+        nodes.forEach(function (node) {
+            if (node.nodeName === 'H3') {
+                _flush();
+                var t = (node.textContent || '').toLowerCase();
+                if (t.includes('bull') || t.includes('upside') || t.includes('positive') || t.includes('recover')) {
+                    currentType = 'bull';
+                } else if (t.includes('bear') || t.includes('downside') || t.includes('negative') || t.includes('breakdown') || t.includes('break')) {
+                    currentType = 'bear';
+                } else {
+                    currentType = 'other';
+                }
+                current = { title: (node.textContent || '').trim(), bodyHtml: '', invalHtml: '' };
+            } else if (current) {
+                var outer = node.outerHTML || (node.nodeType === 3 ? escapeHtml(node.textContent || '') : '');
+                if (!outer) return;
+                if (/invalidat/i.test(node.textContent)) {
+                    current.invalHtml += outer;
+                } else {
+                    current.bodyHtml += outer;
+                }
+            }
+        });
+        _flush();
+
+        if (bull || bear) return { bull: bull, bear: bear };
+
+        /* Fallback: split on paragraphs whose leading <strong> contains bull/bear/scenario keywords.
+           Handles LLM output that uses **bold** labels instead of ### headers. */
+        var pBull = null, pBear = null;
+        var curp = null, curpType = null;
+
+        function _flushP() {
+            if (!curp || !curpType) return;
+            if (curpType === 'bull' && !pBull) pBull = curp;
+            else if (curpType === 'bear' && !pBear) pBear = curp;
+        }
+
+        Array.from(tmp.querySelectorAll('p')).forEach(function(p) {
+            var strong = p.querySelector('strong');
+            var st = (strong ? strong.textContent : '').toLowerCase();
+            var isBull = st.includes('bull') || st.includes('upside') ||
+                         st.includes('scenario a') || st.includes('scenario 1') ||
+                         /^\s*scenario\s+a\b/i.test(p.textContent);
+            var isBear = st.includes('bear') || st.includes('downside') ||
+                         st.includes('scenario b') || st.includes('scenario 2') ||
+                         /^\s*scenario\s+b\b/i.test(p.textContent);
+            if (isBull || isBear) {
+                _flushP();
+                curpType = isBull ? 'bull' : 'bear';
+                /* Title: strip "Scenario A/B — " prefix and "(Bull/Bear Leg)" suffix */
+                var rawTitle = (strong ? strong.textContent : p.textContent).trim();
+                rawTitle = rawTitle.replace(/^scenario\s+[ab]\s*[—–\-]+\s*/i, '').replace(/\s*\(bull\s*leg\)/i, '').replace(/\s*\(bear\s*leg\)/i, '').trim();
+                /* Body: the paragraph itself (includes description after bold prefix) */
+                curp = { title: rawTitle, bodyHtml: p.outerHTML, invalHtml: '' };
+            } else if (curp) {
+                if (/invalidat/i.test(p.textContent)) {
+                    curp.invalHtml += p.outerHTML;
+                } else {
+                    curp.bodyHtml += p.outerHTML;
+                }
+            }
+        });
+        _flushP();
+
+        return (pBull || pBear) ? { bull: pBull, bear: pBear } : null;
+    }
+
+    /* ── Build a single scenario .scard ── */
+    function _buildScenCard(leg, type) {
+        /* Strip the "Bull leg — " / "Bear leg — " prefix from the h3 title */
+        var title = (leg.title || '')
+            .replace(/^bull\s*leg\s*[—–\-]+\s*/i, '')
+            .replace(/^bear\s*leg\s*[—–\-]+\s*/i, '')
+            .trim();
+
+        var card = '<div class="scard ' + type + '">';
+        card += '<div class="lead">' + (type === 'bull' ? 'Bull leg' : 'Bear leg') + '</div>';
+        card += '<h3 class="serif">' + escapeHtml(title) + '</h3>';
+        if (leg.bodyHtml) card += leg.bodyHtml;
+        /* Stats row: OMITTED unless explicit base-rate numbers found (base-rate guard) */
+        if (leg.invalHtml) {
+            card += '<div class="inval">' + leg.invalHtml + '</div>';
+        }
+        card += '</div>';
+        return card;
+    }
+
+    /* ── Populate #ed-scenarios (.scen-grid bull/bear .scard cards) ── */
+    function _populateScenarios(sections) {
+        var el = document.getElementById('ed-scenarios');
+        if (!el || !sections.scenarios) { if (el) el.style.display = 'none'; return; }
+        try {
+            var split = _splitScenarios(sections.scenarios);
+
+            if (!split) {
+                /* No h3 bull/bear split found — render as single prose card */
+                el.innerHTML =
+                    '<div class="section"><div class="eyebrow">Scenarios</div>' +
+                    '<div class="scen-grid"><div class="scard" style="grid-column:1/-1">' +
+                    sections.scenarios + '</div></div></div>';
+                return;
+            }
+
+            /* Stats row guard: log whether stats would be present */
+            var statsPresent = _hasExplicitStats(sections.scenarios);
+            _log('scenarios-stats', { present: statsPresent, omitted: !statsPresent });
+
+            var cards = '';
+            if (split.bull) cards += _buildScenCard(split.bull, 'bull');
+            if (split.bear) cards += _buildScenCard(split.bear, 'bear');
+
+            el.innerHTML =
+                '<div class="section"><div class="eyebrow">Scenarios</div>' +
+                '<div class="scen-grid">' + cards + '</div></div>';
+        } catch (e) { _log('scenarios-error', String(e)); }
+    }
+
+    /* ── Populate #ed-macro pane from parsed report sections.
+         Renders each present section (calendar, macro context, quant engine,
+         options, on-chain) as an editorial .mod with eyebrow + mh header.
+         Tables promoted to .board for editorial table styling.
+         Non-fatal per-section: a missing/empty key is silently skipped. ── */
+    function _populateMacro(sections) {
+        var el = document.getElementById('ed-macro');
+        if (!el) return;
+        try {
+            /* Section keys ordered by appearance likelihood in real morning reports.
+               'catalysts' catches "## Upcoming Economic Events" when calendar is empty.
+               'regimePositioning' catches "## What the Data Says" sections. */
+            var macroModules = [
+                { key: 'calendar',          eyebrow: 'Calendar',        label: 'Economic Calendar' },
+                { key: 'catalysts',         eyebrow: 'Events',          label: 'Upcoming Events' },
+                { key: 'macro',             eyebrow: 'Macro Context',   label: 'Macro & Overnight' },
+                { key: 'regimePositioning', eyebrow: 'Data',            label: 'What the Data Says' },
+                { key: 'quantEngine',       eyebrow: 'Quant Engine',    label: 'Quantitative Data' },
+                { key: 'options',           eyebrow: 'Derivatives',     label: 'Options Corner' },
+                { key: 'onchain',           eyebrow: 'On-Chain',        label: 'On-Chain Data' },
+            ];
+            var html = '';
+            macroModules.forEach(function (mod) {
+                try {
+                    var content = sections[mod.key];
+                    if (!content || !content.trim()) return;
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = content;
+                    /* Promote tables to .board class for editorial table styling */
+                    tmp.querySelectorAll('table').forEach(function (t) {
+                        if (!t.classList.contains('board')) t.classList.add('board');
+                    });
+                    html += '<div class="mod">' +
+                        '<div class="eyebrow">' + escapeHtml(mod.eyebrow) + '</div>' +
+                        '<div class="mh">' + escapeHtml(mod.label) + '</div>' +
+                        '<div class="section">' + tmp.innerHTML + '</div>' +
+                        '</div>';
+                } catch (e) {
+                    _log('macro-section-error', { key: mod.key, err: String(e) });
+                }
+            });
+            if (html) {
+                el.innerHTML = html;
+            } else {
+                el.innerHTML = '<p style="color:var(--muted);padding:46px 0 24px;font-size:14px">' +
+                    'Macro &amp; data sections not available in this report.</p>';
+            }
+        } catch (e) { _log('macro-error', String(e)); }
+    }
+
+    /* ── Populate #ed-board (Brief snapshot) and #ed-board-full (Board pane) ── */
+    function _populateBoard(sections) {
+        var el = document.getElementById('ed-board');
+        var elFull = document.getElementById('ed-board-full');
+        if (!sections.marketSnapshot) {
+            if (el) el.style.display = 'none';
+            if (elFull) elFull.innerHTML = '<p style="color:var(--muted);padding:46px 0 24px;font-size:14px">Board data unavailable in this report.</p>';
+            return;
+        }
+        try {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = sections.marketSnapshot;
+
+            /* Promote any rendered table to .board class */
+            tmp.querySelectorAll('table').forEach(function (t) {
+                if (!t.classList.contains('board')) t.classList.add('board');
+            });
+
+            /* Style signal cells (▲/▼ arrows) and percentage cells */
+            tmp.querySelectorAll('td').forEach(function (td) {
+                var text = (td.textContent || '').trim();
+                if (/^[▲▼]+$/.test(text)) {
+                    td.classList.add('sig');
+                    if (text.includes('▲') && !text.includes('▼')) td.classList.add('up');
+                    else if (text.includes('▼') && !text.includes('▲')) td.classList.add('dn');
+                }
+                if (/^\+\d/.test(text) && text.includes('%')) td.classList.add('bull');
+                if (/^[−\-]\d/.test(text) && text.includes('%')) td.classList.add('bear');
+            });
+
+            var boardHtml =
+                '<div class="section" style="border-bottom:none">' +
+                '<div class="eyebrow">The board</div>' +
+                tmp.innerHTML +
+                '</div>';
+
+            if (el) el.innerHTML = boardHtml;
+            /* Mirror identical content into the Board pane */
+            if (elFull) elFull.innerHTML = boardHtml;
+        } catch (e) { _log('board-error', String(e)); }
+    }
+
+    /* ── Afternoon delta card ──
+         Fetches /api/report/afternoon/latest (same day only). When the response has a
+         structured `delta`, renders the timeline + "What moved" ledger at the top of
+         the Brief pane. Falls back to prose when delta is null; shows "no material
+         change" state when all fields are held/empty. Non-fatal. ── */
+    function _populateAfternoonDelta() {
+        var el = document.getElementById('ed-afternoon-delta');
+        if (!el) return;
+        try {
+            fetch('/api/report/afternoon/latest', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (t) {
+                    if (!t || !t.content) return;
+                    var aftDt = _parseTs(t.created_at);
+                    if (!aftDt) return;
+                    if (aftDt.toISOString().slice(0, 10) !== new Date().toISOString().slice(0, 10)) return;
+
+                    var delta = t.delta || null;
+
+                    /* Morning timestamp from already-loaded morning report */
+                    var morningTs = '';
+                    var diffStr = '';
+                    if (window.__edReport && window.__edReport.data) {
+                        var mDt = _parseTs(window.__edReport.data.created_at);
+                        if (mDt) {
+                            morningTs = mDt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                            var diffMs = aftDt - mDt;
+                            if (diffMs > 0) {
+                                var diffH = Math.floor(diffMs / 3600000);
+                                var diffMin = Math.floor((diffMs % 3600000) / 60000);
+                                diffStr = diffH > 0 ? diffH + 'h ' + diffMin + 'm later' : diffMin + 'm later';
+                            }
+                        }
+                    }
+                    var aftTs = aftDt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                    var html = '';
+
+                    /* ── Timeline ── */
+                    html += '<div class="tl">' +
+                        '<div class="node done"><div class="dot"></div>' +
+                        '<div class="t">' + escapeHtml(morningTs || '—') + '</div>' +
+                        '<div class="l">Morning brief</div></div>' +
+                        '<div class="node now"><div class="dot"></div>' +
+                        '<div class="t">' + escapeHtml(aftTs) + '</div>' +
+                        '<div class="l">Afternoon · now</div></div>' +
+                        '<div class="node future"><div class="dot"></div>' +
+                        '<div class="t">Asia open</div>' +
+                        '<div class="l">Overnight watch</div></div>' +
+                        '</div>';
+
+                    /* ── Header ── */
+                    html += '<div class="dh">' +
+                        '<div class="tag">Afternoon Delta</div>' +
+                        (diffStr ? '<div class="meta">since this morning · ' + escapeHtml(diffStr) + '</div>' : '') +
+                        '</div>';
+
+                    if (!delta) {
+                        /* No structured delta — prose fallback */
+                        html += '<div class="section"><div class="body">' +
+                            ReportCore.simpleMarkdownToHtml(t.content) +
+                            '</div></div>';
+                    } else {
+                        /* Lede: first non-heading, non-list line from content */
+                        var lede = '';
+                        var lines = (t.content || '').split('\n');
+                        for (var li = 0; li < lines.length; li++) {
+                            var ln = lines[li].trim();
+                            if (ln && !/^[#\-\*\d>]/.test(ln)) { lede = ln; break; }
+                        }
+                        if (lede) html += '<h1 class="dl serif">' + escapeHtml(lede) + '</h1>';
+
+                        /* All-held / no-material-change check */
+                        var allHeld = !delta.regime.changed &&
+                            (!delta.fear_greed.dir || delta.fear_greed.dir === 'flat') &&
+                            (!delta.levels_tested || !delta.levels_tested.length) &&
+                            (!delta.signal_flips || !delta.signal_flips.length) &&
+                            (!delta.new_prints || !delta.new_prints.length);
+
+                        if (allHeld) {
+                            html += '<div class="section" style="padding:18px 0 26px;color:var(--muted);font-size:14px">' +
+                                'No material change since this morning — regime and sentiment held, no new catalysts.' +
+                                '</div>';
+                        } else {
+                            /* ── What moved ledger ── */
+                            html += '<div class="eyebrow">What moved</div><div class="ledger">';
+
+                            /* Regime row (.neu always — regime changes trigger a separate report) */
+                            var regChg = delta.regime.changed;
+                            html += '<div class="lrow neu">' +
+                                '<div class="what">Regime<small>quant engine</small></div>' +
+                                '<div class="was">' + escapeHtml(String(delta.regime.was || '—')) + '</div>' +
+                                '<div class="arr">→</div>' +
+                                '<div class="nowv">' + escapeHtml(String(delta.regime.now || '—')) +
+                                ' <span class="chip ' + (regChg ? 'new' : 'held') + '">' +
+                                (regChg ? 'changed' : 'held') + '</span></div></div>';
+
+                            /* Fear & Greed row */
+                            var fgDir = delta.fear_greed.dir || 'flat';
+                            var fgCls = fgDir === 'up' ? 'up' : (fgDir === 'down' ? 'dn' : 'neu');
+                            var fgArrow = fgDir === 'up' ? ' ▲' : (fgDir === 'down' ? ' ▼' : '');
+                            html += '<div class="lrow ' + fgCls + '">' +
+                                '<div class="what">Fear &amp; Greed</div>' +
+                                '<div class="was">' + escapeHtml(String(delta.fear_greed.was != null ? delta.fear_greed.was : '—')) + '</div>' +
+                                '<div class="arr">→</div>' +
+                                '<div class="nowv">' + escapeHtml(String(delta.fear_greed.now != null ? delta.fear_greed.now : '—')) +
+                                escapeHtml(fgArrow) + '</div></div>';
+
+                            /* Levels tested (.up if reclaimed/held, .dn if lost) */
+                            (delta.levels_tested || []).forEach(function (lv) {
+                                var oc = String(lv.outcome || '');
+                                var lvCls = /reclaim|hold|held|above/i.test(oc) ? 'up' :
+                                    (/lost|broke|below/i.test(oc) ? 'dn' : 'neu');
+                                html += '<div class="lrow ' + lvCls + '">' +
+                                    '<div class="what">' + escapeHtml(String(lv.asset || '') + ' ' + String(lv.level || '')) +
+                                    '<small>level tested</small></div>' +
+                                    '<div class="was">tested</div>' +
+                                    '<div class="arr">→</div>' +
+                                    '<div class="nowv">' + escapeHtml(oc) + '</div></div>';
+                            });
+
+                            /* Signal flips (.up if to bullish, .dn if to bearish) */
+                            (delta.signal_flips || []).forEach(function (sf) {
+                                var toV = String(sf.to || '');
+                                var sfCls = /bull/i.test(toV) ? 'up' : (/bear/i.test(toV) ? 'dn' : 'neu');
+                                html += '<div class="lrow ' + sfCls + '">' +
+                                    '<div class="what">' + escapeHtml(String(sf.asset || '')) + '</div>' +
+                                    '<div class="was">' + escapeHtml(String(sf.from || '—')) + '</div>' +
+                                    '<div class="arr">→</div>' +
+                                    '<div class="nowv">' + escapeHtml(toV) + '</div></div>';
+                            });
+
+                            /* New prints (.neu + "new" chip) */
+                            (delta.new_prints || []).forEach(function (np) {
+                                var expStr = np.forecast != null ? String(np.forecast) :
+                                    (np.expected != null ? String(np.expected) : '—');
+                                var actStr = np.actual != null ? String(np.actual) : '—';
+                                html += '<div class="lrow neu">' +
+                                    '<div class="what">' + escapeHtml(String(np.event || np.name || '')) +
+                                    (np.ts ? '<small>' + escapeHtml(String(np.ts)) + '</small>' : '') +
+                                    '</div>' +
+                                    '<div class="was">exp ' + escapeHtml(expStr) + '</div>' +
+                                    '<div class="arr">→</div>' +
+                                    '<div class="nowv">' + escapeHtml(actStr) +
+                                    ' <span class="chip new">new</span></div></div>';
+                            });
+
+                            html += '</div>'; /* end .ledger */
+                        }
+
+                        /* Session summary prose */
+                        html += '<div class="section"><div class="eyebrow">Session summary</div>' +
+                            '<div class="body">' + ReportCore.simpleMarkdownToHtml(t.content) + '</div></div>';
+
+                        /* Overnight watch card — extract from content if present */
+                        try {
+                            var watchM = (t.content || '').match(
+                                /^#{1,3}\s*Overnight\s+watch[^\n]*\n([\s\S]*?)(?=\n#{1,3}\s|$)/im);
+                            if (watchM && watchM[1].trim()) {
+                                html += '<div class="watch">' +
+                                    '<div class="eyebrow">Overnight watch · Asia</div>' +
+                                    '<div class="body">' +
+                                    ReportCore.simpleMarkdownToHtml(watchM[1].trim()) +
+                                    '</div></div>';
+                            }
+                        } catch (e) { /* non-fatal */ }
+                    }
+
+                    el.innerHTML = html;
+                    el.style.display = '';
+                    el.style.paddingTop = '32px';
+                    _log('afternoon-delta-loaded', { hasDelta: !!delta });
+                })
+                .catch(function (err) {
+                    _log('afternoon-delta-error', String(err));
+                });
+        } catch (e) {
+            _log('afternoon-delta-init', String(e));
+        }
+    }
+
+    /* ── Report fetch handler — extracted so window.__briefData.report (public
+         /brief) and the live-fetch path share the EXACT same parsing/populate
+         logic (no forked handling between the two sources). ── */
+    function _applyMorningReport(data) {
+        if (!data || !data.content) {
+            _log('no-content', data);
+            var heroEl = document.getElementById('ed-hero');
+            if (heroEl) {
+                heroEl.innerHTML = '<p style="color:var(--muted);padding:46px 0 24px">Couldn\'t load the report — no content available.</p>';
+            }
+            return;
+        }
+
+        /* Parse all sections and expose on window for downstream panes (1.4+) */
+        var sections = ReportCore.parseReportSections(data.content, {editorial: true});
+        window.__edReport = { data: data, sections: sections };
+        _log('loaded', {
+            id: data.id,
+            sectionKeys: Object.keys(sections).filter(function (k) {
+                var v = sections[k];
+                return v && (typeof v === 'string' ? v.length > 0 : (typeof v === 'object' && Object.keys(v).length > 0));
+            })
+        });
+
+        /* Populate Brief pane — each function is internally non-fatal */
+        _populateHero(data, sections);
+        _populateTake(sections);
+        _populateStory(sections);
+        _populateScenarios(sections);
+        _populateBoard(sections);
+        /* Afternoon delta card — fires after __edReport is set; skipped
+           entirely on the public /brief page (same-day authed endpoint,
+           degrades gracefully by simply not rendering the card). */
+        if (!window.__briefData) {
+            _populateAfternoonDelta();
+        }
+        /* Populate Macro & Data pane (non-fatal per-section) */
+        _populateMacro(sections);
+    }
+
+    function _reportFetchError(err) {
+        _log('fetch-error', String(err));
+        var heroEl = document.getElementById('ed-hero');
+        if (heroEl) {
+            heroEl.innerHTML = '<p style="color:var(--muted);padding:46px 0 24px">Couldn\'t load the report.</p>';
+        }
+    }
+
+    /* ── Report fetch + parse pipeline ── */
+    try {
+        /* Ribbon fires immediately and independently — doesn't block the report fetch */
+        _fetchPulseRibbon();
+
+        if (window.__briefData && window.__briefData.report) {
+            _applyMorningReport(window.__briefData.report);
+        } else {
+            fetch('/api/report/morning/latest', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(_applyMorningReport)
+                .catch(_reportFetchError);
+        }
+    } catch (e) {
+        _log('init-error', String(e));
+    }
+
+    /* ── Expose context for downstream panes (Tasks 1.4+) ── */
+    window._isOwner = {{ is_admin | tojson }};
+    window._userTier = {{ tier | tojson }};
+    window._isPremium = ['member', 'premium', 'admin', 'tester'].includes(window._userTier);
+
+    /* ── Server-supplied lead-asset levels for story rail fallback (item #6) ── */
+    window.__edLeadLevels = {{ (facts_list[0].levels.clusters[:5] if facts_list and facts_list[0].get('levels') and facts_list[0].levels.get('clusters') else []) | tojson }};
+    window.__edLeadSymbol = {{ (facts_list[0].symbol if facts_list else '') | tojson }};
+
+})();
+</script>
+
+</body>
+</html>

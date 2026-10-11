@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carrac — a market-analysis workstation</title>
+<meta name="description" content="A market-analysis workstation: charts, a statistical engine, plays and alerts, a trade journal and an MCP server for AI agents." />
+<link rel="canonical" href="{{ site_url }}/" />
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Carrac">
+<meta property="og:title" content="Carrac — a market-analysis workstation">
+<meta property="og:description" content="Charts, a statistical engine, plays and alerts, a trade journal and an MCP server for AI agents.">
+<meta property="og:url" content="{{ site_url }}/">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/colors_and_type.css') }}?v={{ cache_version('css/colors_and_type.css') }}">
+<style>
+  :root { --sage: #85b183; --sage-strong: #74a072; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-page); color: #e8eaf0; font-family: var(--font-sans); line-height: var(--lh-normal); -webkit-font-smoothing: antialiased; }
+  .skip-link { position: absolute; left: -9999px; }
+  .skip-link:focus { left: 16px; top: 16px; background: var(--panel); color: #fff; padding: 8px 12px; border-radius: var(--r-md); z-index: 10; }
+  main { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 20px; text-align: center; }
+  h1 { margin: 0 0 16px; font-size: clamp(44px, 9vw, 72px); font-weight: var(--w-semibold); letter-spacing: -0.03em; line-height: var(--lh-tight); }
+  .lede { margin: 0 auto 32px; max-width: 34em; font-size: var(--t-lg); line-height: var(--lh-relaxed); color: rgba(232,234,240,0.72); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .btn { display: inline-block; padding: 12px 24px; border-radius: var(--r-lg); font-size: var(--t-body); font-weight: var(--w-medium); text-decoration: none; border: 1px solid var(--border-strong); color: #e8eaf0; }
+  .btn.primary { background: var(--sage); border-color: var(--sage); color: #0b0f0b; }
+  .btn.primary:hover { background: var(--sage-strong); border-color: var(--sage-strong); }
+  .btn:not(.primary):hover { border-color: var(--sage); }
+  .btn:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
+  .shot { margin: 56px auto 0; width: 100%; max-width: var(--maxw); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.5); }
+  .shot img { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<main id="main-content">
+  <h1>Carrac</h1>
+  <p class="lede">A market-analysis workstation: charts, a statistical engine, plays and alerts, a trade journal and an MCP server for AI agents.</p>
+  <div class="actions">
+    <a class="btn primary" href="/login">Sign in</a>
+    <a class="btn" href="/register">Create account</a>
+  </div>
+  <div class="shot">
+    <img src="{{ url_for('static', filename='img/landing/cockpit.png') }}?v={{ cache_version('img/landing/cockpit.png') }}" alt="The Carrac workspace: a price chart with indicators and a side panel of market readings" width="1440" height="900" loading="lazy" />
+  </div>
+</main>
+</body>
+</html>

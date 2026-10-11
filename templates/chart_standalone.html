@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v={{ cache_version('css/main.css') }}">
+    <title>{{ symbol }} {{ timeframe }} — Carrac</title>
+    <script nonce="{{ csp_nonce }}">
+        window.isStandaloneChart = true;
+        window.standaloneSymbol = {{ symbol|tojson }};
+        window.standaloneTimeframe = {{ timeframe|tojson }};
+        window._userTier = '{{ user.tier if user else "free" }}';
+        window._isPremium = ['member','premium','admin','tester'].includes(window._userTier);
+        window._hasPremiumFeatures = ['premium','admin','tester'].includes(window._userTier);
+    </script>
+    <style>
+        body { margin: 0; background: #0d1117; overflow: hidden; }
+        .chart-splash { position: fixed; inset: 0; display: flex; align-items: center;
+            justify-content: center; flex-direction: column; z-index: 9999;
+            background: #0d1117; color: #8b949e; font-family: 'JetBrains Mono', monospace; }
+        .chart-splash .symbol { font-size: 24px; color: #c9d1d9; font-weight: 600; margin-bottom: 8px; }
+        .chart-splash .tf { font-size: 14px; color: #58a6ff; }
+        .chart-splash .dots { font-size: 14px; margin-top: 12px; }
+        .chart-splash .dots::after { content: ''; animation: dots 1.2s steps(4) infinite; }
+        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+    </style>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <div class="chart-splash" id="chart-splash">
+        <div class="symbol">{{ symbol }}</div>
+        <div class="tf">{{ timeframe }}</div>
+        <div class="dots">Loading</div>
+    </div>
+    <script src="/static/js/shared-utils.js?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/lucide-icons.js" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/klinecharts.min.js" nonce="{{ csp_nonce | default('') }}"></script>
+    {# indicator-registry.js states its own contract at the top of
+       the file — "Must load after klinecharts.min.js, before all other chart
+       scripts." Without it the chart app throws `IndicatorRegistry is not
+       defined` at module scope and the page never gets past "Loading". #}
+    <script src="{{ url_for('static', filename='js/indicator-registry.js') }}?v={{ cache_version('js/indicator-registry.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-toolbar.js') }}?v={{ cache_version('js/chart-toolbar.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/smart-money-concepts.js') }}?v={{ cache_version('js/smart-money-concepts.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/carrac-indicator-pack.js') }}?v={{ cache_version('js/carrac-indicator-pack.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/watchlist.js') }}?v={{ cache_version('js/watchlist.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-preview.js') }}?v={{ cache_version('js/chart-preview.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/api-status-modal.js') }}?v={{ cache_version('js/api-status-modal.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/volume-profile.js') }}?v={{ cache_version('js/volume-profile.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/naked-poc.js') }}?v={{ cache_version('js/naked-poc.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/frvp.js') }}?v={{ cache_version('js/frvp.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/key-levels.js') }}?v={{ cache_version('js/key-levels.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    {# The chart app calls freehandEnsureIndicator() bare at chart init, so every
+       standalone chart needs freehand.js or it shows "Chart failed to load".
+       tests/test_chart_standalone_scripts.py #}
+    <script src="{{ url_for('static', filename='js/freehand.js') }}?v={{ cache_version('js/freehand.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    {# The chart app drives these on the chart path too — confluenceOnDataChange /
+       liqHeatmapOnDataChange run on every data change, the two toggles hang
+       off keyboard shortcuts. None has top-level side effects. #}
+    <script src="{{ url_for('static', filename='js/confluence-zones.js') }}?v={{ cache_version('js/confluence-zones.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/liq-heatmap.js') }}?v={{ cache_version('js/liq-heatmap.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/display-options.js') }}?v={{ cache_version('js/display-options.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/kline-drawings.js') }}?v={{ cache_version('js/kline-drawings.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/alert-panel.js') }}?v={{ cache_version('js/alert-panel.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/asset-search-core.js') }}?v={{ cache_version('js/asset-search-core.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/asset-search.js') }}?v={{ cache_version('js/asset-search.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/countdown-timer.js') }}?v={{ cache_version('js/countdown-timer.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/ticker-bar.js') }}?v={{ cache_version('js/ticker-bar.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/conn-store.js') }}?v={{ cache_version('js/conn-store.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-live-tick.js') }}?v={{ cache_version('js/chart-live-tick.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/binance-ws.js') }}?v={{ cache_version('js/binance-ws.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/hyperliquid-ws.js') }}?v={{ cache_version('js/hyperliquid-ws.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/table-tickers-ws.js') }}?v={{ cache_version('js/table-tickers-ws.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/ccxt-ws.js') }}?v={{ cache_version('js/ccxt-ws.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- FINNHUB_API_KEY is server-side only; finnhub-ws.js polls /api/finnhub/quotes. -->
+    <script src="{{ url_for('static', filename='js/finnhub-ws.js') }}?v={{ cache_version('js/finnhub-ws.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/main-page-search.js') }}?v={{ cache_version('js/main-page-search.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-touch.js') }}?v={{ cache_version('js/mobile-touch.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/split-layout.js') }}?v={{ cache_version('js/split-layout.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/multi-chart.js') }}?v={{ cache_version('js/multi-chart.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-gestures.js') }}?v={{ cache_version('js/chart-gestures.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/drawing-context-bar.js') }}?v={{ cache_version('js/drawing-context-bar.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/toolbar-tooltips.js') }}?v={{ cache_version('js/toolbar-tooltips.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-hover-prefetch.js') }}?v={{ cache_version('js/chart-hover-prefetch.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/screener-table.js') }}?v={{ cache_version('js/screener-table.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-indicator-defs.js') }}?v={{ cache_version('js/chart-indicator-defs.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-position-overlays.js') }}?v={{ cache_version('js/chart-position-overlays.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-overlay-defs.js') }}?v={{ cache_version('js/chart-overlay-defs.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    {# The chart app's own files, in the same order as index.html. #}
+    <script src="{{ url_for('static', filename='js/app-core.js') }}?v={{ cache_version('js/app-core.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/indicator-prefs.js') }}?v={{ cache_version('js/indicator-prefs.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-cache.js') }}?v={{ cache_version('js/chart-cache.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-modal.js') }}?v={{ cache_version('js/chart-modal.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-events.js') }}?v={{ cache_version('js/chart-events.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-keyboard.js') }}?v={{ cache_version('js/chart-keyboard.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/position-tools.js') }}?v={{ cache_version('js/position-tools.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-indicators.js') }}?v={{ cache_version('js/chart-indicators.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/drawing-editing.js') }}?v={{ cache_version('js/drawing-editing.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/draw-tool-palette.js') }}?v={{ cache_version('js/draw-tool-palette.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-loading.js') }}?v={{ cache_version('js/chart-loading.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-render.js') }}?v={{ cache_version('js/chart-render.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-chart.js') }}?v={{ cache_version('js/mobile-chart.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/stale-tab-recovery.js') }}?v={{ cache_version('js/stale-tab-recovery.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v={{ cache_version('js/main.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/drawing-tools.js" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/prefs-sync.js" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{# "What is Carrac?" feature grid + CTA — shared by every public share
+   page (share_play.html, share_trade.html). Parent template must set
+   `_utm` (utm query string) before including; styles (.show/.grid/.feat/
+   .cta) live in each parent's inline <style>. #}
+<div class="card show">
+  <h2>What is Carrac?</h2>
+  <div class="grid">
+    <div class="feat"><div class="t">Bring your own AI</div><div class="d">Connect Claude, Gemini or any MCP client to Carrac's server ({{ mcp_tool_count }} tools) and reason over the live market with your full context loaded.</div></div>
+    <div class="feat"><div class="t">Morning + afternoon report</div><div class="d">A BTC-focused daily briefing with broad macro &amp; majors coverage, plus an afternoon update on what changed since the open.</div></div>
+    <div class="feat"><div class="t">Confluence Filter</div><div class="d">Key levels across pivots, bands, EMAs, structure &amp; volume profile clustered into ranked zones — see how close price is to key levels you no longer hand-track.</div></div>
+    <div class="feat"><div class="t">Scanner</div><div class="d">A 0–12 multi-criteria score with a clear verdict for every watchlist asset, so you can rank where conditions are lining up.</div></div>
+    <div class="feat"><div class="t">Spot + futures tracking</div><div class="d">Spot and perp positions in one place with live P&amp;L, R-multiples and cost-basis overlays on the chart.</div></div>
+    <div class="feat"><div class="t">Alerts</div><div class="d">Price, indicator-state, trendline, formula, z-score, regime &amp; anomaly alerts — to web push, Telegram, Discord or email.</div></div>
+    <div class="feat"><div class="t">Multi-chart layouts</div><div class="d">Single, dual, stacked, tri and 2×2 quad layouts; rotate through your plays or favourites.</div></div>
+    <div class="feat"><div class="t">70+ indicators</div><div class="d">Consensio, EMA Ribbon, CPR, Bollinger Bands, Volume Profile, Key Levels, Smart-Money concepts and more — one registry, every chart.</div></div>
+    <div class="feat"><div class="t">Details &amp; Journal</div><div class="d">A whole-watchlist indicator heatmap with cockpit drill-down, plus a trade journal with win-rate, average-R and AI weekly review.</div></div>
+    <div class="feat"><div class="t">Mobile, Discord &amp; terminal</div><div class="d">Install as a full-screen mobile app, compare reads in the Discord, or pull a chart in the terminal — try <code>curl {{ site_host }}/btc</code> right now.</div></div>
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="/register?{{ _utm }}" target="_blank" rel="noopener">Start free →</a>
+    <a class="btn" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+  </div>
+</div>

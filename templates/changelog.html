@@ -1,0 +1,90 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Version History — Carrac{% endblock %}
+{% block description %}Latest updates and improvements to Carrac — release notes, new features, and changelog for the AI-enhanced trading platform.{% endblock %}
+{% block canonical %}{{ site_url }}/changelog{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Version History — Carrac","url":"{{ site_url }}/changelog","description":"Latest updates and improvements to Carrac."}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+  .changelog-list { display: flex; flex-direction: column; gap: 0; }
+  .changelog-entry {
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .changelog-entry:last-child { border-bottom: none; }
+  .changelog-entry-header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .changelog-version {
+    font-family: var(--font-mono);
+    font-size: 0.92rem; font-weight: 600;
+    color: var(--accent);
+    background: rgba(216,181,106,0.10);
+    border: 1px solid rgba(216,181,106,0.22);
+    border-radius: 14px; padding: 3px 11px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .changelog-version.is-current {
+    color: #fff;
+    background: rgba(216,181,106,0.22);
+    border-color: rgba(216,181,106,0.42);
+  }
+  .changelog-current-badge {
+    font-size: 0.7rem; font-weight: 600;
+    color: var(--accent);
+    background: rgba(216,181,106,0.10);
+    border: 1px solid rgba(216,181,106,0.18);
+    border-radius: 10px; padding: 2px 8px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .changelog-date {
+    font-size: 0.82rem; color: var(--fg3);
+    font-family: var(--font-mono);
+  }
+  .changelog-title {
+    font-size: 1.05rem; font-weight: 600;
+    color: var(--fg1); margin-bottom: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ========================= HERO ========================= -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Changelog · v{{ app_version }} current</span>
+    <h1>Version History.<br><span class="accent">Every release, documented.</span></h1>
+    <p class="lede">Latest updates and improvements to Carrac — new indicators, chart features, and platform improvements. Information &amp; analysis, never advice.</p>
+  </div>
+</section>
+
+<!-- ========================= ENTRIES ========================= -->
+<section class="section tight">
+  <div class="wrap">
+    <div class="changelog-list">
+      {% for entry in entries %}
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <span class="changelog-version {% if loop.first %}is-current{% endif %}">v{{ entry.version }}</span>
+          {% if loop.first %}<span class="changelog-current-badge">current</span>{% endif %}
+          <span class="changelog-date">{{ entry.date }}</span>
+        </div>
+        {% if entry.title %}
+        <div class="changelog-title">{{ entry.title }}</div>
+        {% endif %}
+        <ul class="checklist">
+          {% for change in entry.changes %}
+          <li><span class="mk"></span>{{ change }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

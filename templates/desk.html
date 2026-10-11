@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Trader's Desk — Carrac</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v={{ cache_version('css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/carrac-overhaul.css') }}?v={{ cache_version('css/carrac-overhaul.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/carrac-details.css') }}?v={{ cache_version('css/carrac-details.css') }}" nonce="{{ csp_nonce | default('') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/desk.css') }}?v={{ cache_version('css/desk.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/desk-stream.css') }}?v={{ cache_version('css/desk-stream.css') }}">
+</head>
+<body data-context="desk">
+  <header class="desk-topbar">
+    <div class="desk-brand">
+      <a href="/" class="dashboard-title" aria-label="Carrac home"><span class="wordmark">[Carrac]</span><span class="brand-mark mark-mobile">C<sup>4</sup></span></a>
+      <span class="desk-brand-label">Trader's Desk</span>
+    </div>
+    <div class="desk-pills" id="desk-regime"></div>
+    <a class="desk-link" href="/">Chart view</a>
+  </header>
+  <main class="desk-shell">
+    <aside id="desk-stream" aria-label="Event stream"></aside>
+    <section id="desk-grid-wrap">
+      <div id="desk-error" hidden></div>
+      <div id="desk-grid"></div>
+    </section>
+  </main>
+  <!-- drawer mount copied from index.html -->
+  <div class="cd-scrim" id="cd-scrim" hidden></div>
+  <aside class="cd-drawer" id="cd-drawer" aria-hidden="true"><div class="cd-drawer-inner" id="cd-drawer-body"></div></aside>
+  <script nonce="{{ csp_nonce }}">window._features = {detailsDrawer: true};</script>
+  <!-- csrf-utils.js: the single source of truth for CSRF-token retrieval
+       (reads the <meta name="csrf-token"> above) — reused as-is by the
+       watchlist star toggle in desk.js, same helper
+       static/js/watchlist.js's addToWatchlist()/removeFromWatchlist() use. -->
+  <script defer src="/static/js/shared-utils.js?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/csrf-utils.js?v={{ cache_version('js/csrf-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/price-formatting.js?v={{ cache_version('js/price-formatting.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/details-drawer.js?v={{ cache_version('js/details-drawer.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/signal-formatting.js?v={{ cache_version('js/signal-formatting.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/desk-grid.js?v={{ cache_version('js/desk-grid.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/desk-stream.js?v={{ cache_version('js/desk-stream.js') }}" nonce="{{ csp_nonce }}"></script>
+  <script defer src="/static/js/desk.js?v={{ cache_version('js/desk.js') }}" nonce="{{ csp_nonce }}"></script>
+</body>
+</html>

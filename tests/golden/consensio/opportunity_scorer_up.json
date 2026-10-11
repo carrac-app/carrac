@@ -1,0 +1,19 @@
+{
+  "classification": "trade_candidate",
+  "components": {
+    "momentum": 10,
+    "price_position": 10,
+    "trend_alignment": 30,
+    "volume": 10
+  },
+  "direction": "bullish",
+  "patterns": [
+    "consensio_aligned",
+    "ema_ribbon_aligned",
+    "ema_momentum",
+    "price_above_emas",
+    "volume_confirmed"
+  ],
+  "regime": "strong_trend",
+  "score": 60
+}

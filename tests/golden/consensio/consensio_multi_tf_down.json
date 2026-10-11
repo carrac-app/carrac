@@ -1,0 +1,21 @@
+{
+  "1D": {
+    "max_positions": 3,
+    "positions": 0,
+    "signal": -3
+  },
+  "1W": {
+    "max_positions": 3,
+    "positions": 0,
+    "signal": 0
+  },
+  "3D": {
+    "max_positions": 3,
+    "positions": 0,
+    "signal": -3
+  },
+  "total": {
+    "max_positions": 9,
+    "positions": 0
+  }
+}

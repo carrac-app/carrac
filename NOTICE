@@ -1,0 +1,168 @@
+Carrac
+Copyright (C) 2025-2026 Gyula Pál
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+General Public License for more details. You should have received a copy
+of the License along with this program, in the file LICENSE. If not, see
+<https://www.gnu.org/licenses/>.
+
+
+-------------------------------------------------------------------------
+NOT FINANCIAL ADVICE
+-------------------------------------------------------------------------
+
+Carrac is a market-analysis tool. It displays and summarises market data;
+it does not tell anyone what to do with money.
+
+Nothing this software produces — no indicator, score, scanner result,
+backtest, alert, generated report, or AI-written text — is investment,
+financial, legal, or tax advice, a recommendation, a solicitation, or an
+offer to buy or sell any instrument. The generated reports are written by
+large language models and can be wrong, including confidently wrong.
+Market data comes from third-party providers and may be delayed,
+incomplete, or incorrect.
+
+Trading carries risk, including total loss of capital. Past performance
+and backtested results do not predict future returns; backtests in
+particular are computed over historical data with hindsight and are not a
+claim about live performance.
+
+You are solely responsible for your own decisions. Use at your own risk.
+
+
+-------------------------------------------------------------------------
+TRADEMARKS
+-------------------------------------------------------------------------
+
+The AGPL-3.0 grants rights in the SOFTWARE. It does not grant rights in
+names or branding.
+
+"Carrac", the Carrac name, logo, wordmark, and the carrac.cc domain are
+not licensed under the AGPL and remain the property of the copyright
+holder. You may run, modify and redistribute this code under the terms of
+the AGPL, but you may not use the Carrac name or marks to name, brand or
+promote your version, or in any way that suggests it is endorsed by or
+affiliated with the original project.
+
+Please rename your fork. Nominative references — "a fork of Carrac",
+"based on Carrac" — are fine and expected.
+
+Third-party names appearing in this software (exchanges, data providers,
+model vendors) are the trademarks of their respective owners and are used
+nominatively to identify those services. Their appearance implies no
+endorsement, partnership, or affiliation in either direction.
+
+
+-------------------------------------------------------------------------
+THIRD-PARTY COMPONENTS
+-------------------------------------------------------------------------
+
+Vendored in this repository
+---------------------------
+
+The following are third-party libraries checked into static/js/ and
+redistributed with this software. Each retains its own license; the
+license text and copyright notice are preserved in the file header of
+each library.
+
+  KLineChart                    static/js/klinecharts.min.js
+    Copyright (c) 2019 lihu
+    Apache License 2.0
+    https://github.com/klinecharts/KLineChart
+
+  Lightweight Charts            static/js/lightweight-charts.min.js
+    Copyright (c) 2023 TradingView, Inc.
+    Apache License 2.0
+    https://github.com/tradingview/lightweight-charts
+
+  DOMPurify                     static/js/vendor/purify.min.js
+    Copyright (c) Cure53 and other contributors
+    Apache License 2.0 OR Mozilla Public License 2.0
+    https://github.com/cure53/DOMPurify
+
+  Sentry Browser SDK            static/js/vendor/sentry.bundle.min.js
+    Copyright (c) Functional Software, Inc. dba Sentry
+    MIT License
+    https://github.com/getsentry/sentry-javascript
+
+  Lucide                        icon path data in static/js/lucide-icons.js (v0.469.0)
+    Copyright (c) Lucide Contributors
+    ISC License
+    https://github.com/lucide-icons/lucide
+    Lucide is a fork of Feather Icons, Copyright (c) 2013-2022 Cole Bemis
+    (MIT), whose notice carries into the ISC grant.
+    static/js/lucide-icons.js is a first-party loader that embeds the
+    SVG path data of a few dozen of these icons; that icon data is under
+    the ISC/MIT terms above.
+
+A copy of the Apache License 2.0 is available at
+<https://www.apache.org/licenses/LICENSE-2.0>, and of the ISC License at
+<https://opensource.org/license/isc-license-txt>.
+
+Note: static/js/ta-lib.js is NOT vendored despite its name. It is
+first-party code in this repository — a dependency-free reimplementation
+of common indicator maths — and is covered by the AGPL like the rest of
+the project.
+
+
+Loaded from CDNs at runtime
+---------------------------
+
+These are not redistributed in this repository. Templates reference them
+by URL, so a deployment fetches them from the CDN at page load. They are
+listed because they are part of what the application runs.
+
+  Apache ECharts    Apache-2.0              apache/echarts
+  SortableJS        MIT                     SortableJS/Sortable
+  DOMPurify 3.4.16  Apache-2.0 OR MPL-2.0   cure53/DOMPurify (morning
+                                            report view template)
+  marked            MIT                     markedjs/marked
+  three.js          MIT                     mrdoob/three.js
+  Vanta.js          MIT                     tengbao/vanta
+  html2pdf.js       MIT                     eKoopmans/html2pdf.js
+  Swagger UI        Apache-2.0              swagger-api/swagger-ui
+  Lucide (UMD)      ISC                     lucide-icons/lucide (0.456.0,
+                                            two older marketing templates)
+
+Hosted third-party services are also referenced by the templates — Paddle
+(payments) and Cloudflare Turnstile (bot mitigation). These are services
+rather than redistributed code, and are governed by their own terms.
+
+
+Fonts
+-----
+
+Three typefaces are redistributed as web fonts under static/fonts/, each
+under the SIL Open Font License 1.1 (full text in static/fonts/OFL.txt):
+
+  Inter             Copyright (c) The Inter Project Authors
+  JetBrains Mono    Copyright (c) The JetBrains Mono Project Authors
+  Fraunces          Copyright (c) The Fraunces Project Authors
+
+
+Artwork
+-------
+
+  static/img/landing-v5/laptop-mockup.svg
+    "MacBook Pro with Asahi Linux logo" by marcan, based on "Apple MacBook
+    Pro SVG" by averywebdesign. Licensed CC BY-SA 4.0
+    <https://creativecommons.org/licenses/by-sa/4.0/>; used here with the
+    screen contents replaced. That illustration, and derivatives of it,
+    remain under CC BY-SA 4.0 rather than the AGPL.
+
+
+Python dependencies
+-------------------
+
+Runtime Python dependencies are declared in requirements.txt and pinned in
+requirements.lock, and are installed from PyPI rather than redistributed
+here. Each retains its own license. The notable copyleft-adjacent ones
+are psycopg2-binary (LGPL-3.0, with exceptions) and frozendict
+(LGPL-3.0, pulled in by yfinance). Both are used unmodified and loaded
+dynamically, so their terms do not propagate to this work.

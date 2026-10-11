@@ -1,0 +1,483 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Trade Journal Guide — Carrac{% endblock %}
+{% block description %}Step-by-step guide to the Carrac trade journal: logging, closing, reviewing trades, analytics, sessions, playbooks, goals, Kelly sizing, AI features, and import/export.{% endblock %}
+{% block canonical %}{{ site_url }}/journal/guide{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Trade Journal Guide — Carrac","url":"{{ site_url }}/journal/guide","description":"Step-by-step guide to the Carrac trade journal: logging, closing, reviewing trades, analytics, sessions, playbooks, goals, Kelly sizing, AI features, and import/export."}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+/* ---- journal guide page-specific styles ---- */
+
+/* where-badge chips */
+.where {
+  display: inline-block; padding: 2px 9px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em; border-radius: 20px;
+  line-height: 1.6; vertical-align: middle; margin-right: 6px;
+}
+.where-sidebar { background: var(--purple-soft, #8957e510); color: var(--purple, #d2a8ff); border: 1px solid var(--purple-line, #8957e530); }
+.where-page    { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+.where-both    { background: var(--yellow-soft, #d2992210); color: var(--yellow, #d29922); border: 1px solid var(--yellow-line, #d2992230); }
+
+/* numbered-step cards */
+.j-step {
+  display: flex; gap: 14px; margin-bottom: 12px;
+  padding: 14px 18px; background: var(--panel-2);
+  border: 1px solid var(--border-faint); border-radius: var(--r);
+}
+.j-step-num {
+  flex-shrink: 0; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid var(--accent-line); border-radius: 50%;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+}
+.j-step-body  { flex: 1; min-width: 0; }
+.j-step-title { font-size: var(--t-sm); font-weight: 600; color: var(--fg1); margin-bottom: 4px; }
+.j-step-desc  { font-size: var(--t-sm); color: var(--fg3); line-height: 1.6; }
+
+/* tip callout */
+.j-tip {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 14px; margin: 12px 0;
+  background: var(--panel); border-left: 3px solid var(--blue, #58a6ff);
+  border-radius: 0 var(--r) var(--r) 0;
+  font-size: var(--t-sm); color: var(--fg3); line-height: 1.6;
+}
+.j-tip-icon { color: var(--blue, #58a6ff); flex-shrink: 0; font-size: var(--t-base); }
+
+/* kbd chip */
+.kbd {
+  display: inline-block; padding: 1px 7px;
+  background: var(--panel-3); border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg2);
+}
+
+/* reference tables */
+.j-table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); margin: 12px 0 4px; }
+.j-table thead th {
+  text-align: left; padding: 8px 12px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--fg4); font-weight: 500;
+  border-bottom: 1px solid var(--border); background: var(--panel-2);
+}
+.j-table tbody td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border-faint); color: var(--fg3);
+  vertical-align: top;
+}
+.j-table tbody tr:last-child td { border-bottom: none; }
+.j-table tbody tr:hover td { background: var(--panel-2); }
+.j-table tbody td:first-child { color: var(--fg1); font-weight: 500; }
+
+/* sub-heading inside ref sections */
+.ref-section h3 {
+  font-size: var(--t-sm); font-weight: 600; color: var(--fg1);
+  margin: 20px 0 10px;
+}
+.ref-section h3:first-child { margin-top: 0; }
+
+/* inline code chips in prose */
+.ref-section code,
+.j-tip code,
+.j-step-desc code {
+  font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent);
+  background: var(--accent-soft); padding: 1px 6px; border-radius: var(--r-sm);
+}
+
+/* TOC link hover (was inline onmouseover/onmouseout) */
+.toc-link {
+  display: block; padding: 5px 8px;
+  font-size: var(--t-sm); color: var(--fg3);
+  border-radius: var(--r-sm);
+  transition: color .15s, background .15s;
+}
+.toc-link:hover { color: var(--fg1); background: var(--panel-2); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Journal</span>
+    <h1>Trade Journal &mdash;<br><span class="accent">Step-by-Step Guide</span></h1>
+    <p class="lede">The trade journal has two interfaces: a <strong>sidebar panel</strong> on the dashboard (for quick actions next to the chart) and a <strong>dedicated page</strong> at <strong>/journal</strong> (for review and analytics). This guide walks through every workflow step by step.</p>
+  </div>
+</section>
+
+<!-- ============================ MAIN CONTENT ============================ -->
+<section class="section tight">
+  <div class="wrap">
+    <div class="split" style="gap:56px;align-items:start">
+
+      <!-- ===== LEFT COLUMN: TOC ===== -->
+      <div class="col" style="max-width:210px;flex:0 0 210px">
+        <nav aria-label="Sections" style="position:sticky;top:80px">
+          <span class="eyebrow" style="margin-bottom:16px;display:block">Contents</span>
+          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px">
+            <li><a href="#where-to-find" class="toc-link">Where to find things</a></li>
+            <li><a href="#logging" class="toc-link">1. Logging a New Trade</a></li>
+            <li><a href="#closing" class="toc-link">2. Closing a Trade</a></li>
+            <li><a href="#editing" class="toc-link">3. Editing a Trade</a></li>
+            <li><a href="#reviewing" class="toc-link">4. Reviewing Your Trades</a></li>
+            <li><a href="#analytics" class="toc-link">5. Analytics</a></li>
+            <li><a href="#sessions" class="toc-link">6. Sessions</a></li>
+            <li><a href="#playbooks" class="toc-link">7. Playbooks &amp; Goals</a></li>
+            <li><a href="#kelly" class="toc-link">8. Kelly Position Sizing</a></li>
+            <li><a href="#ai-features" class="toc-link">9. AI Features</a></li>
+            <li><a href="#import-export" class="toc-link">10. Import &amp; Export</a></li>
+            <li><a href="#this-asset" class="toc-link">11. This Asset (Sidebar)</a></li>
+            <li><a href="#quick-ref" class="toc-link">Quick Reference</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- ===== RIGHT COLUMN: CONTENT ===== -->
+      <div class="col" style="min-width:0">
+
+        <!-- ============ WHERE TO FIND THINGS ============ -->
+        <div class="ref-section panel" id="where-to-find" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Where to find things</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:10px">
+            <span class="where where-sidebar">Sidebar</span>
+            Click the <strong>Journal</strong> button in the right panel's view mode strip (dashboard page).
+            Best for: logging trades while charting, checking open positions, quick closes.
+          </p>
+          <p style="font-size:var(--t-sm);color:var(--fg2)">
+            <span class="where where-page">Full Page</span>
+            Navigate to <strong>/journal</strong> from the sidebar's "Full Journal" link or the header menu.
+            Best for: reviewing trades, analytics, calendar, sessions, playbooks, goals, AI review.
+          </p>
+        </div>
+
+        <!-- ============ 1. LOGGING A NEW TRADE ============ -->
+        <div class="ref-section panel" id="logging" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">1. Logging a New Trade</span>
+
+          <h3>From the sidebar <span class="where where-sidebar">Sidebar</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Switch to Journal view</div>
+              <div class="j-step-desc">Click the <strong>Journal</strong> button in the right panel's vertical strip. The panel shows your stats, open trades, and recent closed trades.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">2</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "+ Log Trade"</div>
+              <div class="j-step-desc">An inline form appears with the <strong>current chart asset pre-filled</strong>. Enter your entry price, stop loss, take profit, direction, and setup type.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">3</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "Open Trade"</div>
+              <div class="j-step-desc">The trade is created and appears in the Open Trades section. You can keep charting &mdash; the trade is next to you.</div>
+            </div>
+          </div>
+          <div class="j-tip">
+            <span class="j-tip-icon">&#9432;</span>
+            <span>You can also create trades from chart <strong>drawings</strong>. Draw a position overlay on the chart (press <span class="kbd">B</span>), then click "Import Drawings" in the sidebar to auto-create journal entries from your drawn levels.</span>
+          </div>
+
+          <h3>From the full page <span class="where where-page">Full Page</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "+ Log Trade"</div>
+              <div class="j-step-desc">A modal opens with all fields: asset, timeframe, direction, entry, stop, target, size, fees, setup type, confidence, mood, notes, tags, and pre-trade checklist.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">2</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Fill in the details and save</div>
+              <div class="j-step-desc">Required: asset and entry price. Everything else is optional but more data = better analytics.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 2. CLOSING A TRADE ============ -->
+        <div class="ref-section panel" id="closing" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">2. Closing a Trade</span>
+
+          <h3>From the sidebar <span class="where where-sidebar">Sidebar</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Find the trade in Open Trades</div>
+              <div class="j-step-desc">Your open trades are listed with entry price and TP. The "This Asset" section at the top highlights trades for the asset you're currently charting.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">2</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "Close"</div>
+              <div class="j-step-desc">An inline form expands. Enter exit price, select exit reason (TP hit, SL hit, manual, etc.), and optionally add close notes.</div>
+            </div>
+          </div>
+
+          <h3>From the full page <span class="where where-page">Full Page</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Find the trade and click "Close"</div>
+              <div class="j-step-desc">A modal opens showing trade context (direction, asset, entry, SL, TP) at the top. Enter exit price, exit reason, select mistake tags, and add notes.</div>
+            </div>
+          </div>
+          <div class="j-tip">
+            <span class="j-tip-icon">&#9432;</span>
+            <span>R-multiple, MFE/MAE, and exit efficiency are calculated automatically from your entry, stop, and exit prices.</span>
+          </div>
+        </div>
+
+        <!-- ============ 3. EDITING A TRADE ============ -->
+        <div class="ref-section panel" id="editing" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">3. Editing a Trade</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2)"><span class="where where-both">Both</span> Click on any trade card in the sidebar to expand an edit form, or click the <strong>Edit</strong> button on the full page. You can modify entry/stop/target prices, direction, setup type, notes, tags, and more. Changes are saved instantly.</p>
+        </div>
+
+        <!-- ============ 4. REVIEWING YOUR TRADES ============ -->
+        <div class="ref-section panel" id="reviewing" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">4. Reviewing Your Trades</span>
+
+          <h3>Trade details <span class="where where-page">Full Page</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "Details" on any trade</div>
+              <div class="j-step-desc">Expands a panel showing notes, checklist results, tags, MFE/MAE, exit efficiency, AI review, grade, screenshots, and trade metadata.</div>
+            </div>
+          </div>
+
+          <h3>AI review <span class="where where-page">Full Page</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Click "Generate AI Review" in trade details</div>
+              <div class="j-step-desc">The AI analyzes your trade using both your journal data and the <strong>market context at entry and exit</strong> &mdash; the 12-point scanner score (trend, momentum, RSI, structure, level, macro), market regime, Fear &amp; Greed index, and setup classification. It grades setup quality, execution, exit timing, and discipline, then points out patterns in how you planned, entered and exited. The review compares entry vs exit conditions to assess whether your exit was justified by changing market data. Uses AI credits. You can regenerate anytime.</div>
+            </div>
+          </div>
+
+          <h3>Calendar view <span class="where where-page">Full Page</span></h3>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Switch to the Calendar tab</div>
+              <div class="j-step-desc">A monthly heatmap shows your daily P&amp;L in R-multiples. Green = profitable day, red = losing day. Click any day to see its trades.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 5. ANALYTICS ============ -->
+        <div class="ref-section panel" id="analytics" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">5. Analytics</span>
+
+          <h3>Sidebar analytics <span class="where where-sidebar">Sidebar</span></h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">Click <strong>Analytics</strong> in the journal sidebar to expand key metrics: expectancy, profit factor, average hold time, win/loss streaks, and breakdowns by setup/asset/direction/timeframe/weekday. Also shows monthly equity bars and Kelly position sizing.</p>
+
+          <h3>Full analytics <span class="where where-page">Full Page</span></h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:12px">The <strong>Analytics</strong> tab on the full page adds:</p>
+          <div class="j-step">
+            <div class="j-step-num">&bull;</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Equity curve</div>
+              <div class="j-step-desc">Canvas-drawn cumulative R over time with drawdown shading. Select 30d/90d/180d/1y range.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">&bull;</div>
+            <div class="j-step-body">
+              <div class="j-step-title">R-multiple histogram</div>
+              <div class="j-step-desc">Distribution of your trade outcomes in R. Shows your average R with a dashed line.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">&bull;</div>
+            <div class="j-step-body">
+              <div class="j-step-title">MFE/MAE scatter plot</div>
+              <div class="j-step-desc">Maximum Favorable vs Adverse Excursion for each trade. Reveals if you're leaving profit on the table or letting losers run.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 6. SESSIONS ============ -->
+        <div class="ref-section panel" id="sessions" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">6. Sessions</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px"><span class="where where-page">Full Page</span> Sessions track your trading day structure.</p>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Create a session before trading</div>
+              <div class="j-step-desc">Click "+ New Session" in the Sessions tab. Write your pre-session plan: market outlook, focus areas, rules to follow.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">2</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Trade normally</div>
+              <div class="j-step-desc">Log and close trades as usual. They're automatically linked to the session by date.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">3</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Review the session after trading</div>
+              <div class="j-step-desc">Edit the session and fill in post-session notes. What went well? What to improve? Click "AI Summary" to get an AI-generated debrief based on your actual trades.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 7. PLAYBOOKS & GOALS ============ -->
+        <div class="ref-section panel" id="playbooks" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">7. Playbooks &amp; Goals</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px"><span class="where where-page">Full Page</span> Both live under the Playbooks tab.</p>
+
+          <h3>Playbooks</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">Document your trading setups. Each playbook has a name, setup type, description, ideal conditions, entry rules, and exit rules. When you tag trades with the same setup type, the playbook shows stats (trades, win rate, net R, avg R) automatically.</p>
+
+          <h3>Monthly goals</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2)">Set targets for each month: max daily loss, max trades/day, min R:R target, max consecutive losses before stopping. Progress bars show where you stand. Green = within target, yellow = close, red = breached.</p>
+        </div>
+
+        <!-- ============ 8. KELLY POSITION SIZING ============ -->
+        <div class="ref-section panel" id="kelly" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">8. Kelly Position Sizing</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px"><span class="where where-sidebar">Sidebar</span> Available in the sidebar analytics panel.</p>
+          <div class="j-step">
+            <div class="j-step-num">1</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Enter your account size</div>
+              <div class="j-step-desc">The calculator uses your actual win rate and avg win/loss from your trade history.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">2</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Select Kelly fraction</div>
+              <div class="j-step-desc">15% (safe), 25% (standard), or 50% (aggressive). This is the fraction of Kelly optimal to use &mdash; full Kelly is too volatile for real trading.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">3</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Enter entry and stop for your current trade</div>
+              <div class="j-step-desc">The calculator tells you the exact position size in dollars and units based on your Kelly-derived risk per trade.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 9. AI FEATURES ============ -->
+        <div class="ref-section panel" id="ai-features" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">9. AI Features</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">AI features use credits (shown in the header on the full page). Rate limit: 10 calls per minute.</p>
+          <table class="j-table">
+            <thead>
+              <tr><th>Feature</th><th>Where</th><th>What it does</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Trade review</td>
+                <td>Full page (trade details)</td>
+                <td>AI analyzes a single trade using market context at entry and exit &mdash; scanner score, regime, Fear &amp; Greed, setup classification. Grades setup, execution, exit, discipline</td>
+              </tr>
+              <tr>
+                <td>Session summary</td>
+                <td>Full page (sessions)</td>
+                <td>AI reviews all trades in a session with per-trade market context. Shows dominant regime, average entry score, and whether trades aligned with conditions</td>
+              </tr>
+              <tr>
+                <td>Weekly review</td>
+                <td>Sidebar + full page</td>
+                <td>AI summary with performance-by-regime and performance-by-entry-score correlation &mdash; shows which market conditions you trade best in</td>
+              </tr>
+              <tr>
+                <td>NL query</td>
+                <td>Full page (analytics)</td>
+                <td>Ask questions in plain English &mdash; now includes market context data. Try "win rate when regime was Risk-Off" or "show trades where entry verdict was STRONG"</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ============ 10. IMPORT & EXPORT ============ -->
+        <div class="ref-section panel" id="import-export" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">10. Import &amp; Export</span>
+
+          <h3>Import from chart drawings</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px"><span class="where where-sidebar">Sidebar</span> Click "Import Drawings". Any position overlays drawn on charts (press <span class="kbd">B</span> on the chart) are converted to journal trades with entry, stop, target, and direction pre-filled.</p>
+
+          <h3>Export</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:12px"><span class="where where-page">Full Page</span> Two options in the Playbooks tab:</p>
+          <div class="j-step">
+            <div class="j-step-num">&bull;</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Export Trades CSV</div>
+              <div class="j-step-desc">All trades (including open) as a CSV file. Good for spreadsheet analysis.</div>
+            </div>
+          </div>
+          <div class="j-step">
+            <div class="j-step-num">&bull;</div>
+            <div class="j-step-body">
+              <div class="j-step-title">Export All JSON</div>
+              <div class="j-step-desc">Full backup: trades, sessions, playbooks, goals. Can be used for migration or backup.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 11. THIS ASSET (SIDEBAR) ============ -->
+        <div class="ref-section panel" id="this-asset" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">11. This Asset (Sidebar)</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2)"><span class="where where-sidebar">Sidebar</span> When you switch to Journal view, the top section shows <strong>your trade history for the asset currently on the chart</strong>. Navigate to BTC and you see your BTC trades. Switch to ETH and it updates automatically. This lets you see your track record on an asset while analyzing it.</p>
+        </div>
+
+        <!-- ============ QUICK REFERENCE ============ -->
+        <div class="ref-section panel" id="quick-ref" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Quick Reference</span>
+          <table class="j-table">
+            <thead>
+              <tr><th>Action</th><th>Sidebar</th><th>Full Page</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Log trade</td><td>+ Log Trade (pre-fills asset)</td><td>+ Log Trade (full modal)</td></tr>
+              <tr><td>Close trade</td><td>Close button (inline form)</td><td>Close button (modal with mistakes)</td></tr>
+              <tr><td>Edit trade</td><td>Click trade card</td><td>Edit button</td></tr>
+              <tr><td>View details</td><td>Click trade card</td><td>Details button (notes, AI, screenshots)</td></tr>
+              <tr><td>AI review</td><td>&mdash;</td><td>Generate AI Review (in details)</td></tr>
+              <tr><td>Calendar</td><td>&mdash;</td><td>Calendar tab</td></tr>
+              <tr><td>Analytics</td><td>Analytics toggle (compact)</td><td>Analytics tab (charts + breakdowns)</td></tr>
+              <tr><td>Sessions</td><td>&mdash;</td><td>Sessions tab</td></tr>
+              <tr><td>Playbooks</td><td>&mdash;</td><td>Playbooks tab</td></tr>
+              <tr><td>Goals</td><td>&mdash;</td><td>Playbooks tab (bottom)</td></tr>
+              <tr><td>Kelly sizing</td><td>Analytics panel</td><td>&mdash;</td></tr>
+              <tr><td>Asset history</td><td>Auto (top section)</td><td>Filter by asset</td></tr>
+              <tr><td>Import drawings</td><td>Import Drawings button</td><td>Import Drawings button</td></tr>
+              <tr><td>Export</td><td>&mdash;</td><td>CSV / JSON buttons</td></tr>
+              <tr><td>Weekly review</td><td>Weekly Review button</td><td>&mdash;</td></tr>
+              <tr><td>NL query</td><td>&mdash;</td><td>Analytics tab</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div><!-- /right col -->
+    </div><!-- /split -->
+  </div><!-- /wrap -->
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-center" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Get started</span>
+    <h2 class="mega-head" style="margin-top:14px">Log, review, improve. <span class="accent">Trade better.</span></h2>
+    <p class="section-desc">The trade journal &mdash; information &amp; analysis, never advice.</p>
+    <div class="cta-row">
+      <a href="/register" class="btn btn-primary btn-lg">Create account <i data-lucide="arrow-right"></i></a>
+      <a href="/journal" class="btn btn-secondary btn-lg">Open journal</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

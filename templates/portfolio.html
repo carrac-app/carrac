@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Portfolio — Carrac</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style nonce="{{ csp_nonce }}">
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0d1117; color: #d1d4dc;
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile */
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        /* ── Scrollbar (matches dashboard) ── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3fb950; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #56d364; }
+        * { scrollbar-width: thin; scrollbar-color: #3fb950 transparent; }
+
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#0d1117;color:#3fb950;z-index:9999}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid #3fb950;outline-offset:2px}
+
+        /* ── Header ── */
+        .pf-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; border-bottom: 1px solid #21262d;
+            position: sticky; top: 0; z-index: 100; background: #0d1117;
+            /* Standalone PWA has no browser chrome — pad under the status bar
+               so the header doesn't draw underneath it (same safe-area padding as main.css). */
+            padding-top: calc(12px + env(safe-area-inset-top, 0));
+        }
+        .pf-header-left { display: flex; align-items: center; gap: 16px; }
+        .pf-header h1 { font-size: 0.85rem; font-weight: 600; color: #e6edf3; letter-spacing: 0.02em; }
+        .pf-back {
+            font-size: 0.72rem; color: #8b949e; text-decoration: none;
+            transition: color 0.15s;
+        }
+        .pf-back:hover { color: #3fb950; }
+
+        /* ── Page ── */
+        .pf-page { padding: 20px; max-width: 1280px; margin: 0 auto; }
+
+        .pf-hero {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            margin-bottom: 20px;
+        }
+        .pf-tile {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 14px 16px;
+        }
+        .pf-tile-primary { border-color: #3fb950; }
+        .pf-tile-label { font-size: 0.65rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; }
+        .pf-tile-value { font-size: 1.3rem; font-weight: 600; color: #e6edf3; margin-top: 4px; }
+        .pf-tile-sub { font-size: 0.65rem; color: #8b949e; margin-top: 2px; }
+
+        .pf-excluded {
+            background: #2d1a0d; border: 1px solid #7d4e17; color: #d29922;
+            border-radius: 6px; padding: 10px 14px; font-size: 0.72rem;
+            margin-bottom: 20px;
+        }
+
+        .pf-empty {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 24px 20px; text-align: center; color: #8b949e;
+            font-size: 0.78rem; line-height: 1.5;
+        }
+
+        .pf-caption {
+            font-size: 0.62rem; color: #8b949e; margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .pf-section {
+            background: #161b22; border: 1px solid #21262d; border-radius: 6px;
+            padding: 16px; margin-bottom: 20px;
+        }
+        .pf-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .pf-section h2 { font-size: 0.78rem; font-weight: 600; color: #e6edf3; }
+        .pf-range {
+            background: #0d1117; border: 1px solid #30363d; color: #d1d4dc;
+            font-family: inherit; font-size: 0.68rem; padding: 4px 8px; border-radius: 4px;
+            min-height: 44px; /* touch target */
+        }
+
+        /* Adaptive, not fixed-pixel: a fixed height clips or blanks the
+           ECharts container on short mobile viewports. */
+        .pf-chart { width: 100%; min-height: 220px; height: 32vh; }
+        .pf-chart-tall { min-height: 260px; height: 42vh; }
+
+        .pf-section-split {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+        .pf-section-split h2 { margin-bottom: 12px; }
+
+        /* Table scrolls within its own container — the page itself must
+           never scroll sideways, especially with no browser chrome to
+           signal it in the standalone PWA. */
+        .pf-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; position: relative; }
+        .pf-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.72rem; }
+        .pf-table th {
+            text-align: left; color: #8b949e; font-weight: 500; padding: 8px 10px;
+            border-bottom: 1px solid #21262d; text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.62rem;
+        }
+        .pf-table td { padding: 8px 10px; border-bottom: 1px solid #21262d; }
+
+        @media (max-width: 768px) {
+            .pf-hero { grid-template-columns: repeat(2, 1fr); }
+            .pf-section-split { grid-template-columns: 1fr; }
+            .pf-page { padding: 12px; }
+            .pf-header { padding-left: 12px; padding-right: 12px; }
+            /* Sortable headers need a real touch target on a phone.
+               min-height isn't reliably honoured on th/td — padding alone
+               gets the effective row height where it needs to be. */
+            .pf-table th { padding: 14px 10px; }
+            /* At 360px the table (min-width 640px) shows roughly 4 of 10
+               columns, and mobile browsers + the installed PWA largely hide
+               scrollbars, so nothing else signals more columns exist. A
+               pure-CSS edge fade on the wrap's right side is the cheapest
+               possible affordance — no second render path, matches the
+               section background so it reads as a fade, not a hard edge. */
+            .pf-table-wrap::after {
+                content: '';
+                position: absolute;
+                top: 0; right: 0; bottom: 0;
+                width: 20px;
+                pointer-events: none;
+                background: linear-gradient(to right, transparent, #161b22);
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Header -->
+    <div class="pf-header">
+        <div class="pf-header-left">
+            <a href="/" class="pf-back">&larr; Dashboard</a>
+            <h1>Portfolio</h1>
+        </div>
+    </div>
+
+    <main id="main-content">
+    <div class="pf-page">
+      <div class="pf-hero">
+        <div class="pf-tile pf-tile-primary">
+          <div class="pf-tile-label">Book value</div>
+          <div class="pf-tile-value" id="pf-book-value">&mdash;</div>
+          <div class="pf-tile-sub" id="pf-book-split"></div>
+        </div>
+        <div class="pf-tile">
+          <div class="pf-tile-label">Today</div>
+          <div class="pf-tile-value" id="pf-day-change">&mdash;</div>
+          <div class="pf-tile-sub">Open positions only &mdash; not realised gains or cash</div>
+        </div>
+        <div class="pf-tile">
+          <div class="pf-tile-label">Unrealised</div>
+          <div class="pf-tile-value" id="pf-unrealized">&mdash;</div>
+          <div class="pf-tile-sub" id="pf-cost-basis"></div>
+        </div>
+        <div class="pf-tile">
+          <div class="pf-tile-label">Positions</div>
+          <div class="pf-tile-value" id="pf-position-count">&mdash;</div>
+        </div>
+      </div>
+
+      <div class="pf-excluded" id="pf-excluded" style="display:none;"></div>
+
+      <!-- Zero-position empty state — every new account on day one.
+           Toggled by portfolio.js's loadSummary() alongside #pf-sections below. -->
+      <div class="pf-empty" id="pf-empty" style="display:none;">
+        No open positions yet. Log a trade or place a position and it will show up here &mdash; book value, allocation and P&amp;L.
+      </div>
+
+      <div id="pf-sections">
+      <section class="pf-section">
+        <div class="pf-section-head">
+          <h2>Book value</h2>
+          <select id="pf-curve-range" class="pf-range">
+            <option value="30">30d</option>
+            <option value="90" selected>90d</option>
+            <option value="365">1y</option>
+            <option value="1825">All</option>
+          </select>
+        </div>
+        <div id="pf-curve" class="pf-chart pf-chart-tall"></div>
+        <div class="pf-caption">This tracks open positions only &mdash; realised gains and cash are not tracked here. Closing a winning position can still make both lines drop, and the Today tile can read red, on the day you took profit.</div>
+      </section>
+
+      <section class="pf-section pf-section-split">
+        <div>
+          <h2>Allocation</h2>
+          <div id="pf-donut" class="pf-chart"></div>
+        </div>
+        <div>
+          <h2>Composition</h2>
+          <div id="pf-split" class="pf-chart"></div>
+        </div>
+      </section>
+
+      <section class="pf-section">
+        <h2>Positions</h2>
+        <div class="pf-table-wrap">
+        <table class="pf-table">
+          <thead>
+            <tr>
+              <th data-sort="asset">Asset</th><th data-sort="kind">Type</th>
+              <th data-sort="direction">Side</th><th data-sort="size">Size</th>
+              <th data-sort="entry_price">Entry</th><th data-sort="current_price">Price</th>
+              <th data-sort="book_contribution">Value</th>
+              <th data-sort="unrealized_pnl_usd">P&amp;L</th>
+              <th data-sort="weight_pct">Weight</th><th data-sort="opened_at">Opened</th>
+            </tr>
+          </thead>
+          <tbody id="pf-table-body"></tbody>
+        </table>
+        </div>
+      </section>
+      </div>
+    </div>
+    </main>
+
+    <script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous" defer></script>
+    <script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/portfolio-charts.js') }}?v={{ cache_version('js/portfolio-charts.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/portfolio.js') }}?v={{ cache_version('js/portfolio.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+</body>
+</html>

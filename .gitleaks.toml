@@ -1,0 +1,32 @@
+# gitleaks configuration.
+#
+# Extends the default ruleset. The allowlist below names test FIXTURES and
+# placeholders by their exact value, never by path: a real key pasted into a
+# test must still fail. Each entry is one string that gitleaks' generic rules
+# flag and a human has read. Add to it only with the value spelled out here.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "reviewed fixtures and placeholders (exact values)"
+regexes = [
+  'ABCDEFGHIJKL1234',                          # tests/test_exchange_sync.py fake exchange key
+  'my_secret_api_key_12345',                   # tests/test_quant.py fake FRED key
+  'fakefinnhubtoken0123456789abcdefghij',      # tests/test_quant.py synthetic leaked-token stand-in
+  'cvx_w_abcdef1234567890abcdef1234567890',    # tests/test_rate_pools.py fake API token
+  'slowapi==0\.1\.9',                          # requirements.txt — a version pin, not a key
+  'desk_columns_v1',                           # static/js/desk-grid.js localStorage key name
+  'your-key-here',                             # templates/settings.html curl example placeholder
+]
+
+# Narrow path-AND-value entries: both must match, so the same string anywhere
+# else (or any other string in these files) still fails.
+[[allowlists]]
+description = "test placeholder key in the prod-config boot test"
+condition = "AND"
+paths = ['''tests/test_oss_config_defaults\.py''']
+regexes = ['''Zk3-9fQvLm2xT7pRw8aYb4NcDe6HsUj1''']
+
+[[allowlists]]
+description = "fake test key used as an example in notes"
+regexes = ['''test-key-abc123''']

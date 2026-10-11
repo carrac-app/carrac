@@ -1,0 +1,20 @@
+{
+  "alerts": [
+    "v_cpr"
+  ],
+  "classification": "trade",
+  "components": {
+    "divergence": 0,
+    "ema_convergence": 0,
+    "price_position": 35,
+    "volume": 10
+  },
+  "direction": "bearish",
+  "has_alert": true,
+  "patterns": [
+    "below_emas",
+    "adx_sweet_spot"
+  ],
+  "regime": "trend_forming",
+  "score": 55
+}

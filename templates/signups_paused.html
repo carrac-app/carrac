@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration closed — Carrac</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="{{ site_url }}/register">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #05060a; color: #d1d4dc;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            max-width: 520px; width: 100%;
+            background: #0d1117; border: 1px solid #21262d; border-radius: 12px;
+            padding: 36px 28px; text-align: center;
+        }
+        .brand { color: #3fb950; font-weight: 600; letter-spacing: 0.5px; font-size: 13px; margin-bottom: 14px; }
+        h1 { font-size: 22px; color: #e6edf3; margin-bottom: 10px; font-weight: 600; }
+        p { color: #8b949e; font-size: 14px; line-height: 1.6; margin-bottom: 18px; }
+        form { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+        input[type=email] {
+            flex: 1; min-width: 0;
+            padding: 10px 12px; background: #161b22; color: #e6edf3;
+            border: 1px solid #30363d; border-radius: 6px; font-family: inherit; font-size: 14px;
+        }
+        input[type=email]:focus { outline: none; border-color: #58a6ff; }
+        button {
+            padding: 10px 18px; background: #238636; color: #fff;
+            border: 0; border-radius: 6px; font-family: inherit; font-weight: 600;
+            font-size: 14px; cursor: pointer;
+        }
+        button:hover { background: #2ea043; }
+        .ok { color: #3fb950; margin-top: 16px; font-size: 14px; }
+        .links { margin-top: 22px; font-size: 13px; }
+        .links a { color: #58a6ff; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="brand">[Carrac]</div>
+        <h1>Registration is closed</h1>
+        {% if waitlisted %}
+        <p>Thanks — <strong>{{ submitted_email }}</strong> is on this instance&rsquo;s waitlist. The operator can contact you if registration reopens.</p>
+        {% else %}
+        <p>Registration is closed on this instance. Leave your email and the operator can let you know if it reopens.</p>
+        <form method="POST" action="/register" autocomplete="email">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="utm_source" value="{{ (request.args.get('src') or request.args.get('utm_source', ''))[:80] }}">
+            <input type="email" name="email" required placeholder="you@example.com" autofocus>
+            <button type="submit">Notify me</button>
+        </form>
+        {% endif %}
+        <div class="links">
+            <a href="/login">Already have an account? Sign in</a>
+            &nbsp;·&nbsp;
+            <a href="/">Back to home</a>
+        </div>
+    </div>
+</body>
+</html>

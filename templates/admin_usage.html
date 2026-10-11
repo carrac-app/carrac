@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API &amp; MCP Usage - Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+        .header-actions { display: flex; gap: 8px; }
+        .btn { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; border: none; cursor: pointer; }
+        .btn-secondary { background: #242b35; color: #b0b8c4; border: 1px solid #2a3140; }
+        .btn-secondary:hover { background: #2a3140; color: #e6edf3; }
+        .btn-active { background: #26a69a; color: #fff; }
+
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .card { background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 16px; }
+        .card-label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .card-value { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .card-sub { font-size: 0.7rem; color: #545e6e; margin-top: 2px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid #2a3140; }
+        td { font-size: 0.8rem; padding: 8px 12px; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        .cost-cell { color: #26a69a; font-weight: 600; }
+        .tier-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; background: #1e2430; color: #b0b8c4; }
+        .tier-badge.admin { background: rgba(248,81,73,0.15); color: #f85149; }
+        .tier-badge.tester { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        .tier-badge.member { background: rgba(63,185,80,0.15); color: #3fb950; }
+        .tier-badge.premium { background: rgba(255,152,0,0.15); color: #ff9800; }
+
+        .section { margin-bottom: 32px; }
+        .section h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: #b0b8c4; }
+        .loading { color: #545e6e; font-size: 0.85rem; padding: 20px; }
+        .error { color: #ef5350; }
+        .user-link { color: #58a6ff; text-decoration: none; }
+        .user-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set admin_page = 'usage' %}
+    {% include 'admin_nav.html' %}
+    <div class="header">
+        <h1>API &amp; MCP Usage</h1>
+        <div class="header-actions">
+            <button class="btn btn-active" data-period="7d">7 Days</button>
+            <button class="btn btn-secondary" data-period="30d">30 Days</button>
+            <button class="btn btn-secondary" data-period="all">All Time</button>
+        </div>
+    </div>
+
+    <div class="summary-cards" id="summary-cards">
+        <div class="card"><div class="card-label">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Top Users by AI Usage</h2>
+        <div id="top-ai-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Recently Active API Keys</h2>
+        <div id="recent-keys-table"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
+var _currentPeriod = '7d';
+
+function loadUsage(period) {
+    _currentPeriod = period;
+    document.querySelectorAll('[data-period]').forEach(function(b) {
+        b.className = b.dataset.period === period ? 'btn btn-active' : 'btn btn-secondary';
+    });
+    document.getElementById('summary-cards').innerHTML = '<div class="card"><div class="card-label loading">Loading...</div></div>';
+    document.getElementById('top-ai-table').innerHTML = '<div class="loading">Loading...</div>';
+    document.getElementById('recent-keys-table').innerHTML = '<div class="loading">Loading...</div>';
+
+    fetch('/api/admin/usage?period=' + period)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            renderSummary(data);
+            renderTopAI(data.top_ai_users || []);
+            renderRecentKeys(data.recent_api_keys || []);
+            if (data.errors && data.errors.length) {
+                console.warn('[admin/usage] backend errors:', data.errors);
+            }
+        })
+        .catch(function(err) {
+            document.getElementById('summary-cards').innerHTML =
+                '<div class="card"><div class="card-label error">' + escapeHtml(err.message) + '</div></div>';
+        });
+}
+
+function fmtTokens(n) {
+    n = n || 0;
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n;
+}
+
+function fmtCost(usd) {
+    return '$' + (usd || 0).toFixed(4);
+}
+
+function tierBadge(tier) {
+    return '<span class="tier-badge ' + escapeHtml(tier || 'free') + '">' + escapeHtml(tier || 'free') + '</span>';
+}
+
+function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; }
+    catch(e) { return escapeHtml(s); }
+}
+
+function renderSummary(data) {
+    var t = data.totals || {};
+    var html = '';
+    html += '<div class="card"><div class="card-label">Total AI Queries</div>'
+          + '<div class="card-value">' + (t.ai_queries || 0) + '</div>'
+          + '<div class="card-sub">period: ' + escapeHtml(_currentPeriod) + '</div></div>';
+    html += '<div class="card"><div class="card-label">Active API Keys</div>'
+          + '<div class="card-value">' + (t.active_api_keys || 0) + '</div>'
+          + '<div class="card-sub">across all users</div></div>';
+
+    // Cost totals derived from top_ai_users
+    var totalCost = 0, totalTokens = 0;
+    (data.top_ai_users || []).forEach(function(u) {
+        totalCost += u.cost_usd || 0;
+        totalTokens += u.tokens || 0;
+    });
+    html += '<div class="card"><div class="card-label">AI Cost (top 25)</div>'
+          + '<div class="card-value cost-cell">$' + totalCost.toFixed(4) + '</div>'
+          + '<div class="card-sub">' + fmtTokens(totalTokens) + ' tokens</div></div>';
+
+    document.getElementById('summary-cards').innerHTML = html;
+}
+
+function renderTopAI(users) {
+    var el = document.getElementById('top-ai-table');
+    if (!users.length) { el.innerHTML = '<div class="loading">No AI usage in this period</div>'; return; }
+    var html = '<table><thead><tr>'
+             + '<th>User</th><th>Tier</th><th>Queries</th><th>Cost</th><th>Tokens</th>'
+             + '</tr></thead><tbody>';
+    users.forEach(function(u) {
+        html += '<tr>'
+              + '<td><a class="user-link" href="/admin/user/' + escapeHtml(u.user_id) + '">' + escapeHtml(u.email) + '</a></td>'
+              + '<td>' + tierBadge(u.tier) + '</td>'
+              + '<td>' + (u.queries || 0) + '</td>'
+              + '<td class="cost-cell">' + fmtCost(u.cost_usd) + '</td>'
+              + '<td>' + fmtTokens(u.tokens) + '</td>'
+              + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderRecentKeys(keys) {
+    var el = document.getElementById('recent-keys-table');
+    if (!keys.length) { el.innerHTML = '<div class="loading">No active API keys</div>'; return; }
+    var html = '<table><thead><tr>'
+             + '<th>User</th><th>Key Name</th><th>Suffix</th><th>Scope</th><th>Last Used</th>'
+             + '</tr></thead><tbody>';
+    keys.forEach(function(k) {
+        html += '<tr>'
+              + '<td>' + escapeHtml(k.email || '—') + '</td>'
+              + '<td>' + escapeHtml(k.name || '—') + '</td>'
+              + '<td>' + escapeHtml(k.token_suffix || '—') + '</td>'
+              + '<td>' + escapeHtml(k.scope || 'full') + '</td>'
+              + '<td>' + fmtDate(k.last_used_at) + '</td>'
+              + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+// CSP: delegated handler for data-period buttons
+document.querySelector('.header-actions').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-period]');
+    if (!btn) return;
+    loadUsage(btn.dataset.period);
+});
+
+loadUsage('7d');
+</script>
+</body>
+</html>

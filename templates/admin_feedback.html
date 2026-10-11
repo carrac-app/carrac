@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback — Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #30363d;
+        }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        .header-actions { display: flex; gap: 12px; }
+        .btn {
+            padding: 8px 16px; font-size: 14px; font-weight: 500;
+            border: 1px solid #30363d; border-radius: 6px; cursor: pointer;
+            transition: all 0.2s; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn-secondary { background: #21262d; color: #c9d1d9; }
+        .btn-secondary:hover { background: #30363d; }
+        .section {
+            background: #161b22; border: 1px solid #30363d;
+            border-radius: 12px; padding: 24px; margin-bottom: 24px;
+        }
+        .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+        .alert-success { background: rgba(35,134,54,0.1); border: 1px solid rgba(35,134,54,0.4); color: #3fb950; }
+        .alert-error { background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.4); color: #f85149; }
+        .badge {
+            display: inline-block; padding: 2px 8px; font-size: 12px;
+            font-weight: 500; border-radius: 12px;
+        }
+        .badge-bug { background: rgba(248,81,73,0.2); color: #f85149; }
+        .badge-feature { background: rgba(88,166,255,0.2); color: #58a6ff; }
+        .badge-new { background: rgba(210,153,34,0.2); color: #d29922; }
+        .badge-reviewed { background: rgba(88,166,255,0.2); color: #58a6ff; }
+        .badge-done { background: rgba(35,134,54,0.2); color: #3fb950; }
+        .badge-dismissed { background: rgba(139,148,158,0.2); color: #8b949e; }
+        .feedback-card {
+            border: 1px solid #21262d; border-radius: 8px; padding: 16px;
+            margin-bottom: 12px; background: #0d1117;
+        }
+        .feedback-card:hover { border-color: #30363d; }
+        .feedback-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+        }
+        .feedback-meta { font-size: 12px; color: #8b949e; }
+        .feedback-body { margin-bottom: 12px; }
+        .feedback-body h4 { font-size: 13px; color: #8b949e; margin: 8px 0 4px; }
+        .feedback-body p { font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+        .feedback-actions { display: flex; gap: 6px; align-items: center; }
+        .feedback-actions select {
+            background: #0d1117; color: #c9d1d9; border: 1px solid #30363d;
+            border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer;
+        }
+        .empty-state { text-align: center; padding: 40px; color: #8b949e; }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 4px 12px; font-size: 13px; background: #21262d; color: #8b949e;
+            border: 1px solid #30363d; border-radius: 16px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .filter-btn:hover { color: #c9d1d9; }
+        .filter-btn.active { background: #30363d; color: #c9d1d9; border-color: #58a6ff; }
+        .count { font-size: 11px; color: #8b949e; margin-left: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% set admin_page = 'feedback' %}
+        {% include 'admin_nav.html' %}
+        <div class="header">
+            <h1>Feedback</h1>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="section">
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="all">All<span class="count">({{ feedback|length }})</span></button>
+                <button class="filter-btn" data-filter="new">New<span class="count">({{ feedback|selectattr('status', 'equalto', 'new')|list|length }})</span></button>
+                <button class="filter-btn" data-filter="bug">Bugs<span class="count">({{ feedback|selectattr('type', 'equalto', 'bug')|list|length }})</span></button>
+                <button class="filter-btn" data-filter="feature">Features<span class="count">({{ feedback|selectattr('type', 'equalto', 'feature')|list|length }})</span></button>
+                <button class="filter-btn" data-filter="reviewed">Reviewed</button>
+                <button class="filter-btn" data-filter="done">Done</button>
+                <button class="filter-btn" data-filter="dismissed">Dismissed</button>
+            </div>
+
+            {% if feedback %}
+                {% for fb in feedback %}
+                <div class="feedback-card" data-type="{{ fb.type }}" data-status="{{ fb.status }}">
+                    <div class="feedback-header">
+                        <div>
+                            <span class="badge badge-{{ fb.type }}">{{ fb.type|capitalize }}</span>
+                            <span class="badge badge-{{ fb.status }}">{{ fb.status }}</span>
+                            {% if fb.area %}<span style="color:#8b949e;font-size:13px;margin-left:6px;">{{ fb.area }}</span>{% endif %}
+                        </div>
+                        <div class="feedback-meta">
+                            #{{ fb.id }} &middot; {{ fb.user_email }} &middot; {{ fb.created_at|fmtdt }}
+                        </div>
+                    </div>
+                    <div class="feedback-body">
+                        <p>{{ fb.description }}</p>
+                        {% if fb.expected %}
+                        <h4>Expected</h4>
+                        <p>{{ fb.expected }}</p>
+                        {% endif %}
+                        {% if fb.actual %}
+                        <h4>Actual</h4>
+                        <p>{{ fb.actual }}</p>
+                        {% endif %}
+                        {% if fb.how_should_work %}
+                        <h4>How it should work</h4>
+                        <p>{{ fb.how_should_work }}</p>
+                        {% endif %}
+                        {% if fb.extra %}
+                        <h4>Additional details</h4>
+                        <p>{{ fb.extra }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="feedback-actions">
+                        <form method="POST" action="{{ url_for('admin.admin_update_feedback_status', feedback_id=fb.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" data-change="submitForm">
+                                <option value="new" {% if fb.status == 'new' %}selected{% endif %}>New</option>
+                                <option value="reviewed" {% if fb.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                                <option value="done" {% if fb.status == 'done' %}selected{% endif %}>Done</option>
+                                <option value="dismissed" {% if fb.status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">No feedback yet</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script nonce="{{ csp_nonce }}">
+        document.addEventListener('change', function(e) {
+            var el = e.target.closest('[data-change]');
+            if (!el) return;
+            if (el.dataset.change === 'submitForm') el.form.submit();
+        });
+        document.querySelectorAll('.filter-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var filter = btn.dataset.filter;
+                document.querySelectorAll('.feedback-card').forEach(function(card) {
+                    if (filter === 'all') { card.style.display = ''; return; }
+                    var matchType = card.dataset.type === filter;
+                    var matchStatus = card.dataset.status === filter;
+                    card.style.display = (matchType || matchStatus) ? '' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

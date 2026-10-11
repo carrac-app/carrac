@@ -1,0 +1,19 @@
+{
+  "alerts": [],
+  "classification": "watch",
+  "components": {
+    "adx_modifier": -18,
+    "divergence": 20,
+    "ema_convergence": 0,
+    "price_position": 25,
+    "volume": 15
+  },
+  "direction": "bullish",
+  "has_alert": false,
+  "patterns": [
+    "above_emas",
+    "mature_penalty"
+  ],
+  "regime": "strong_trend",
+  "score": 42
+}

@@ -1,0 +1,16 @@
+{
+  "changes": {
+    "improved": true,
+    "positions_delta": 2
+  },
+  "direction": "bullish",
+  "momentum": {
+    "count": 0,
+    "direction": "flat"
+  },
+  "patterns": [
+    "divergence",
+    "rsi_oversold"
+  ],
+  "score": 50
+}

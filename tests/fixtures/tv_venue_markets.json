@@ -1,0 +1,895 @@
+{
+ "_meta": {
+  "captured": "2026-09-23",
+  "ccxt": "4.5.59",
+  "how": "exchange.load_markets() per venue, spot only, active markets, quote USDT/USD; Binance BTC-quoted pairs from /api/v3/exchangeInfo PRICE_FILTER.tickSize",
+  "refresh": "regenerate when the map in instrument_master.py gains a pair; tests/test_instrument_master_tv.py fails naming the missing pair",
+  "what": "ccxt spot markets (unified symbol -> venue id + price tick) for the pairs the TradingView symbol map uses"
+ },
+ "binance": {
+  "1INCH/USDT": {
+   "id": "1INCHUSDT",
+   "tick": 0.0001
+  },
+  "AAVE/USDT": {
+   "id": "AAVEUSDT",
+   "tick": 0.01
+  },
+  "ACH/USDT": {
+   "id": "ACHUSDT",
+   "tick": 1e-05
+  },
+  "ADA/USDT": {
+   "id": "ADAUSDT",
+   "tick": 0.0001
+  },
+  "AERO/USDT": {
+   "id": "AEROUSDT",
+   "tick": 0.0001
+  },
+  "AI/USDT": {
+   "id": "AIUSDT",
+   "tick": 0.0001
+  },
+  "AIXBT/USDT": {
+   "id": "AIXBTUSDT",
+   "tick": 1e-05
+  },
+  "ALGO/USDT": {
+   "id": "ALGOUSDT",
+   "tick": 0.0001
+  },
+  "ALICE/USDT": {
+   "id": "ALICEUSDT",
+   "tick": 0.0001
+  },
+  "ANIME/USDT": {
+   "id": "ANIMEUSDT",
+   "tick": 1e-05
+  },
+  "ANKR/USDT": {
+   "id": "ANKRUSDT",
+   "tick": 1e-05
+  },
+  "APE/USDT": {
+   "id": "APEUSDT",
+   "tick": 0.0001
+  },
+  "APT/USDT": {
+   "id": "APTUSDT",
+   "tick": 0.0001
+  },
+  "AR/USDT": {
+   "id": "ARUSDT",
+   "tick": 0.001
+  },
+  "ARB/USDT": {
+   "id": "ARBUSDT",
+   "tick": 0.0001
+  },
+  "ARKM/USDT": {
+   "id": "ARKMUSDT",
+   "tick": 0.0001
+  },
+  "ASTER/USDT": {
+   "id": "ASTERUSDT",
+   "tick": 0.0001
+  },
+  "ASTR/USDT": {
+   "id": "ASTRUSDT",
+   "tick": 1e-06
+  },
+  "ATOM/USDT": {
+   "id": "ATOMUSDT",
+   "tick": 0.001
+  },
+  "AVAX/BTC": {
+   "id": "AVAXBTC",
+   "tick": 1e-07
+  },
+  "AVAX/USDT": {
+   "id": "AVAXUSDT",
+   "tick": 0.001
+  },
+  "AXL/USDT": {
+   "id": "AXLUSDT",
+   "tick": 0.0001
+  },
+  "AXS/USDT": {
+   "id": "AXSUSDT",
+   "tick": 0.001
+  },
+  "BAND/USDT": {
+   "id": "BANDUSDT",
+   "tick": 0.0001
+  },
+  "BAT/USDT": {
+   "id": "BATUSDT",
+   "tick": 0.0001
+  },
+  "BCH/USDT": {
+   "id": "BCHUSDT",
+   "tick": 0.1
+  },
+  "BERA/USDT": {
+   "id": "BERAUSDT",
+   "tick": 0.0001
+  },
+  "BIGTIME/USDT": {
+   "id": "BIGTIMEUSDT",
+   "tick": 1e-05
+  },
+  "BIO/USDT": {
+   "id": "BIOUSDT",
+   "tick": 1e-05
+  },
+  "BLUR/USDT": {
+   "id": "BLURUSDT",
+   "tick": 1e-05
+  },
+  "BNB/USDT": {
+   "id": "BNBUSDT",
+   "tick": 0.01
+  },
+  "BOME/USDT": {
+   "id": "BOMEUSDT",
+   "tick": 1e-07
+  },
+  "BONK/USDT": {
+   "id": "BONKUSDT",
+   "tick": 1e-08
+  },
+  "BTC/USDT": {
+   "id": "BTCUSDT",
+   "tick": 0.01
+  },
+  "CAKE/USDT": {
+   "id": "CAKEUSDT",
+   "tick": 0.001
+  },
+  "CELO/USDT": {
+   "id": "CELOUSDT",
+   "tick": 1e-05
+  },
+  "CETUS/USDT": {
+   "id": "CETUSUSDT",
+   "tick": 1e-05
+  },
+  "CFX/USDT": {
+   "id": "CFXUSDT",
+   "tick": 1e-05
+  },
+  "CGPT/USDT": {
+   "id": "CGPTUSDT",
+   "tick": 1e-05
+  },
+  "CHZ/USDT": {
+   "id": "CHZUSDT",
+   "tick": 1e-05
+  },
+  "CKB/USDT": {
+   "id": "CKBUSDT",
+   "tick": 1e-06
+  },
+  "COMP/USDT": {
+   "id": "COMPUSDT",
+   "tick": 0.01
+  },
+  "COTI/USDT": {
+   "id": "COTIUSDT",
+   "tick": 1e-05
+  },
+  "COW/USDT": {
+   "id": "COWUSDT",
+   "tick": 0.0001
+  },
+  "CRV/USDT": {
+   "id": "CRVUSDT",
+   "tick": 0.0001
+  },
+  "DASH/USDT": {
+   "id": "DASHUSDT",
+   "tick": 0.01
+  },
+  "DCR/USDT": {
+   "id": "DCRUSDT",
+   "tick": 0.01
+  },
+  "DODO/USDT": {
+   "id": "DODOUSDT",
+   "tick": 1e-05
+  },
+  "DOGE/USDT": {
+   "id": "DOGEUSDT",
+   "tick": 1e-05
+  },
+  "DOGS/USDT": {
+   "id": "DOGSUSDT",
+   "tick": 1e-08
+  },
+  "DOT/USDT": {
+   "id": "DOTUSDT",
+   "tick": 0.001
+  },
+  "DYDX/USDT": {
+   "id": "DYDXUSDT",
+   "tick": 1e-05
+  },
+  "DYM/USDT": {
+   "id": "DYMUSDT",
+   "tick": 1e-05
+  },
+  "EGLD/USDT": {
+   "id": "EGLDUSDT",
+   "tick": 0.001
+  },
+  "EIGEN/USDT": {
+   "id": "EIGENUSDT",
+   "tick": 0.0001
+  },
+  "ENA/USDT": {
+   "id": "ENAUSDT",
+   "tick": 0.0001
+  },
+  "ENJ/USDT": {
+   "id": "ENJUSDT",
+   "tick": 1e-05
+  },
+  "ENS/USDT": {
+   "id": "ENSUSDT",
+   "tick": 0.01
+  },
+  "ETC/USDT": {
+   "id": "ETCUSDT",
+   "tick": 0.01
+  },
+  "ETH/BTC": {
+   "id": "ETHBTC",
+   "tick": 1e-05
+  },
+  "ETH/USDT": {
+   "id": "ETHUSDT",
+   "tick": 0.01
+  },
+  "ETHFI/USDT": {
+   "id": "ETHFIUSDT",
+   "tick": 0.0001
+  },
+  "FET/USDT": {
+   "id": "FETUSDT",
+   "tick": 0.0001
+  },
+  "FIDA/USDT": {
+   "id": "FIDAUSDT",
+   "tick": 1e-05
+  },
+  "FIL/USDT": {
+   "id": "FILUSDT",
+   "tick": 0.0001
+  },
+  "FLOKI/USDT": {
+   "id": "FLOKIUSDT",
+   "tick": 1e-08
+  },
+  "FLOW/USDT": {
+   "id": "FLOWUSDT",
+   "tick": 1e-05
+  },
+  "FLUX/USDT": {
+   "id": "FLUXUSDT",
+   "tick": 0.0001
+  },
+  "FORM/USDT": {
+   "id": "FORMUSDT",
+   "tick": 0.0001
+  },
+  "FRAX/USDT": {
+   "id": "FRAXUSDT",
+   "tick": 0.0001
+  },
+  "FTT/USDT": {
+   "id": "FTTUSDT",
+   "tick": 0.0001
+  },
+  "GALA/USDT": {
+   "id": "GALAUSDT",
+   "tick": 1e-06
+  },
+  "GLM/USDT": {
+   "id": "GLMUSDT",
+   "tick": 0.0001
+  },
+  "GMT/USDT": {
+   "id": "GMTUSDT",
+   "tick": 1e-05
+  },
+  "GMX/USDT": {
+   "id": "GMXUSDT",
+   "tick": 0.01
+  },
+  "GRT/USDT": {
+   "id": "GRTUSDT",
+   "tick": 1e-05
+  },
+  "HBAR/USDT": {
+   "id": "HBARUSDT",
+   "tick": 1e-05
+  },
+  "HMSTR/USDT": {
+   "id": "HMSTRUSDT",
+   "tick": 1e-07
+  },
+  "HUMA/USDT": {
+   "id": "HUMAUSDT",
+   "tick": 1e-05
+  },
+  "HYPER/USDT": {
+   "id": "HYPERUSDT",
+   "tick": 0.0001
+  },
+  "ICP/USDT": {
+   "id": "ICPUSDT",
+   "tick": 0.001
+  },
+  "ILV/USDT": {
+   "id": "ILVUSDT",
+   "tick": 0.01
+  },
+  "IMX/USDT": {
+   "id": "IMXUSDT",
+   "tick": 0.0001
+  },
+  "INIT/USDT": {
+   "id": "INITUSDT",
+   "tick": 1e-05
+  },
+  "INJ/USDT": {
+   "id": "INJUSDT",
+   "tick": 0.001
+  },
+  "IO/USDT": {
+   "id": "IOUSDT",
+   "tick": 0.0001
+  },
+  "IOTA/USDT": {
+   "id": "IOTAUSDT",
+   "tick": 0.0001
+  },
+  "JASMY/USDT": {
+   "id": "JASMYUSDT",
+   "tick": 1e-05
+  },
+  "JTO/USDT": {
+   "id": "JTOUSDT",
+   "tick": 0.0001
+  },
+  "JUP/USDT": {
+   "id": "JUPUSDT",
+   "tick": 0.0001
+  },
+  "KAITO/USDT": {
+   "id": "KAITOUSDT",
+   "tick": 0.0001
+  },
+  "KAVA/USDT": {
+   "id": "KAVAUSDT",
+   "tick": 1e-05
+  },
+  "KERNEL/USDT": {
+   "id": "KERNELUSDT",
+   "tick": 0.0001
+  },
+  "KMNO/USDT": {
+   "id": "KMNOUSDT",
+   "tick": 1e-05
+  },
+  "KSM/USDT": {
+   "id": "KSMUSDT",
+   "tick": 0.01
+  },
+  "LAYER/USDT": {
+   "id": "LAYERUSDT",
+   "tick": 0.0001
+  },
+  "LDO/USDT": {
+   "id": "LDOUSDT",
+   "tick": 0.0001
+  },
+  "LINK/USDT": {
+   "id": "LINKUSDT",
+   "tick": 0.001
+  },
+  "LISTA/USDT": {
+   "id": "LISTAUSDT",
+   "tick": 0.0001
+  },
+  "LQTY/USDT": {
+   "id": "LQTYUSDT",
+   "tick": 0.0001
+  },
+  "LTC/USDT": {
+   "id": "LTCUSDT",
+   "tick": 0.01
+  },
+  "LUNA/USDT": {
+   "id": "LUNAUSDT",
+   "tick": 0.0001
+  },
+  "LUNC/USDT": {
+   "id": "LUNCUSDT",
+   "tick": 1e-08
+  },
+  "MAGIC/USDT": {
+   "id": "MAGICUSDT",
+   "tick": 0.0001
+  },
+  "MANA/USDT": {
+   "id": "MANAUSDT",
+   "tick": 0.0001
+  },
+  "MANTA/USDT": {
+   "id": "MANTAUSDT",
+   "tick": 1e-05
+  },
+  "METIS/USDT": {
+   "id": "METISUSDT",
+   "tick": 0.01
+  },
+  "MINA/USDT": {
+   "id": "MINAUSDT",
+   "tick": 0.0001
+  },
+  "MORPHO/USDT": {
+   "id": "MORPHOUSDT",
+   "tick": 0.001
+  },
+  "MOVE/USDT": {
+   "id": "MOVEUSDT",
+   "tick": 1e-06
+  },
+  "NEAR/USDT": {
+   "id": "NEARUSDT",
+   "tick": 0.001
+  },
+  "NEIRO/USDT": {
+   "id": "NEIROUSDT",
+   "tick": 1e-08
+  },
+  "NEO/USDT": {
+   "id": "NEOUSDT",
+   "tick": 0.001
+  },
+  "NEXO/USDT": {
+   "id": "NEXOUSDT",
+   "tick": 0.001
+  },
+  "NMR/USDT": {
+   "id": "NMRUSDT",
+   "tick": 0.01
+  },
+  "NOT/USDT": {
+   "id": "NOTUSDT",
+   "tick": 1e-06
+  },
+  "ONDO/USDT": {
+   "id": "ONDOUSDT",
+   "tick": 0.0001
+  },
+  "ONE/USDT": {
+   "id": "ONEUSDT",
+   "tick": 1e-06
+  },
+  "OP/USDT": {
+   "id": "OPUSDT",
+   "tick": 0.0001
+  },
+  "ORCA/USDT": {
+   "id": "ORCAUSDT",
+   "tick": 0.001
+  },
+  "ORDI/USDT": {
+   "id": "ORDIUSDT",
+   "tick": 0.001
+  },
+  "OSMO/USDT": {
+   "id": "OSMOUSDT",
+   "tick": 0.0001
+  },
+  "PAXG/USDT": {
+   "id": "PAXGUSDT",
+   "tick": 0.01
+  },
+  "PENDLE/USDT": {
+   "id": "PENDLEUSDT",
+   "tick": 0.001
+  },
+  "PENGU/USDT": {
+   "id": "PENGUUSDT",
+   "tick": 1e-06
+  },
+  "PEOPLE/USDT": {
+   "id": "PEOPLEUSDT",
+   "tick": 1e-05
+  },
+  "PEPE/USDT": {
+   "id": "PEPEUSDT",
+   "tick": 1e-08
+  },
+  "PIXEL/USDT": {
+   "id": "PIXELUSDT",
+   "tick": 1e-05
+  },
+  "PLUME/USDT": {
+   "id": "PLUMEUSDT",
+   "tick": 1e-05
+  },
+  "PNUT/USDT": {
+   "id": "PNUTUSDT",
+   "tick": 0.0001
+  },
+  "POL/USDT": {
+   "id": "POLUSDT",
+   "tick": 1e-05
+  },
+  "PORTAL/USDT": {
+   "id": "PORTALUSDT",
+   "tick": 1e-05
+  },
+  "PUMP/USDT": {
+   "id": "PUMPUSDT",
+   "tick": 1e-06
+  },
+  "PYTH/USDT": {
+   "id": "PYTHUSDT",
+   "tick": 1e-05
+  },
+  "QNT/USDT": {
+   "id": "QNTUSDT",
+   "tick": 0.01
+  },
+  "RAY/USDT": {
+   "id": "RAYUSDT",
+   "tick": 0.0001
+  },
+  "RENDER/USDT": {
+   "id": "RENDERUSDT",
+   "tick": 0.001
+  },
+  "RONIN/USDT": {
+   "id": "RONINUSDT",
+   "tick": 0.0001
+  },
+  "ROSE/USDT": {
+   "id": "ROSEUSDT",
+   "tick": 1e-05
+  },
+  "RPL/USDT": {
+   "id": "RPLUSDT",
+   "tick": 0.001
+  },
+  "RSR/USDT": {
+   "id": "RSRUSDT",
+   "tick": 1e-06
+  },
+  "RUNE/USDT": {
+   "id": "RUNEUSDT",
+   "tick": 0.001
+  },
+  "RVN/USDT": {
+   "id": "RVNUSDT",
+   "tick": 1e-06
+  },
+  "S/USDT": {
+   "id": "SUSDT",
+   "tick": 1e-05
+  },
+  "SAGA/USDT": {
+   "id": "SAGAUSDT",
+   "tick": 1e-05
+  },
+  "SAND/USDT": {
+   "id": "SANDUSDT",
+   "tick": 1e-05
+  },
+  "SC/USDT": {
+   "id": "SCUSDT",
+   "tick": 1e-06
+  },
+  "SEI/USDT": {
+   "id": "SEIUSDT",
+   "tick": 1e-05
+  },
+  "SHELL/USDT": {
+   "id": "SHELLUSDT",
+   "tick": 1e-05
+  },
+  "SHIB/USDT": {
+   "id": "SHIBUSDT",
+   "tick": 1e-08
+  },
+  "SIGN/USDT": {
+   "id": "SIGNUSDT",
+   "tick": 1e-05
+  },
+  "SKL/USDT": {
+   "id": "SKLUSDT",
+   "tick": 1e-05
+  },
+  "SNX/USDT": {
+   "id": "SNXUSDT",
+   "tick": 0.0001
+  },
+  "SOL/USDT": {
+   "id": "SOLUSDT",
+   "tick": 0.01
+  },
+  "SSV/USDT": {
+   "id": "SSVUSDT",
+   "tick": 0.001
+  },
+  "STRK/USDT": {
+   "id": "STRKUSDT",
+   "tick": 1e-05
+  },
+  "STX/USDT": {
+   "id": "STXUSDT",
+   "tick": 0.0001
+  },
+  "SUI/USDT": {
+   "id": "SUIUSDT",
+   "tick": 0.0001
+  },
+  "SUPER/USDT": {
+   "id": "SUPERUSDT",
+   "tick": 0.0001
+  },
+  "SUSHI/USDT": {
+   "id": "SUSHIUSDT",
+   "tick": 0.0001
+  },
+  "TAO/USDT": {
+   "id": "TAOUSDT",
+   "tick": 0.1
+  },
+  "THETA/USDT": {
+   "id": "THETAUSDT",
+   "tick": 0.0001
+  },
+  "TIA/USDT": {
+   "id": "TIAUSDT",
+   "tick": 0.0001
+  },
+  "TNSR/USDT": {
+   "id": "TNSRUSDT",
+   "tick": 0.0001
+  },
+  "TRUMP/USDT": {
+   "id": "TRUMPUSDT",
+   "tick": 0.001
+  },
+  "TRX/USDT": {
+   "id": "TRXUSDT",
+   "tick": 0.0001
+  },
+  "TURBO/USDT": {
+   "id": "TURBOUSDT",
+   "tick": 1e-06
+  },
+  "UNI/USDT": {
+   "id": "UNIUSDT",
+   "tick": 0.001
+  },
+  "USUAL/USDT": {
+   "id": "USUALUSDT",
+   "tick": 1e-05
+  },
+  "VET/USDT": {
+   "id": "VETUSDT",
+   "tick": 1e-06
+  },
+  "VIRTUAL/USDT": {
+   "id": "VIRTUALUSDT",
+   "tick": 0.0001
+  },
+  "W/USDT": {
+   "id": "WUSDT",
+   "tick": 1e-05
+  },
+  "WAL/USDT": {
+   "id": "WALUSDT",
+   "tick": 1e-05
+  },
+  "WIF/USDT": {
+   "id": "WIFUSDT",
+   "tick": 0.0001
+  },
+  "WLD/USDT": {
+   "id": "WLDUSDT",
+   "tick": 0.0001
+  },
+  "WLFI/USDT": {
+   "id": "WLFIUSDT",
+   "tick": 0.0001
+  },
+  "XLM/USDT": {
+   "id": "XLMUSDT",
+   "tick": 0.0001
+  },
+  "XPL/USDT": {
+   "id": "XPLUSDT",
+   "tick": 1e-05
+  },
+  "XRP/BTC": {
+   "id": "XRPBTC",
+   "tick": 1e-08
+  },
+  "XRP/USDT": {
+   "id": "XRPUSDT",
+   "tick": 0.0001
+  },
+  "XTZ/USDT": {
+   "id": "XTZUSDT",
+   "tick": 0.0001
+  },
+  "YGG/USDT": {
+   "id": "YGGUSDT",
+   "tick": 1e-05
+  },
+  "ZEC/USDT": {
+   "id": "ZECUSDT",
+   "tick": 0.01
+  },
+  "ZEN/USDT": {
+   "id": "ZENUSDT",
+   "tick": 0.001
+  },
+  "ZIL/USDT": {
+   "id": "ZILUSDT",
+   "tick": 1e-06
+  },
+  "ZK/USDT": {
+   "id": "ZKUSDT",
+   "tick": 1e-05
+  },
+  "ZRO/USDT": {
+   "id": "ZROUSDT",
+   "tick": 0.001
+  }
+ },
+ "bybit": {
+  "BRETT/USDT": {
+   "id": "BRETTUSDT",
+   "tick": 1e-06
+  },
+  "CHILLGUY/USDT": {
+   "id": "CHILLGUYUSDT",
+   "tick": 1e-06
+  },
+  "LIT/USDT": {
+   "id": "LITUSDT",
+   "tick": 0.001
+  }
+ },
+ "coinbase": {
+  "AKT/USD": {
+   "id": "AKT-USD",
+   "tick": 0.0001
+  },
+  "BEAM/USD": {
+   "id": "BEAM-USD",
+   "tick": 1e-06
+  },
+  "BTC/USD": {
+   "id": "BTC-USD",
+   "tick": 0.01
+  },
+  "DEEP/USD": {
+   "id": "DEEP-USD",
+   "tick": 1e-05
+  },
+  "ETH/USD": {
+   "id": "ETH-USD",
+   "tick": 0.01
+  },
+  "FARTCOIN/USD": {
+   "id": "FARTCOIN-USD",
+   "tick": 1e-05
+  },
+  "GRASS/USD": {
+   "id": "GRASS-USD",
+   "tick": 0.0001
+  },
+  "HYPE/USD": {
+   "id": "HYPE-USD",
+   "tick": 0.01
+  },
+  "LTC/USD": {
+   "id": "LTC-USD",
+   "tick": 0.001
+  },
+  "MON/USD": {
+   "id": "MON-USD",
+   "tick": 1e-06
+  },
+  "PRIME/USD": {
+   "id": "PRIME-USD",
+   "tick": 1e-05
+  },
+  "SOL/USD": {
+   "id": "SOL-USD",
+   "tick": 0.01
+  },
+  "STORJ/USD": {
+   "id": "STORJ-USD",
+   "tick": 1e-05
+  },
+  "VVV/USD": {
+   "id": "VVV-USD",
+   "tick": 0.0001
+  }
+ },
+ "gate": {
+  "MLC/USDT": {
+   "id": "MLC_USDT",
+   "tick": 1e-05
+  },
+  "PIPPIN/USDT": {
+   "id": "PIPPIN_USDT",
+   "tick": 1e-06
+  },
+  "RDNT/USDT": {
+   "id": "RDNT_USDT",
+   "tick": 1e-07
+  }
+ },
+ "kraken": {
+  "ARC/USD": {
+   "id": "ARCUSD",
+   "tick": 1e-05
+  },
+  "BTC/USD": {
+   "id": "XXBTZUSD",
+   "tick": 0.1
+  },
+  "CC/USD": {
+   "id": "CCUSD",
+   "tick": 1e-05
+  },
+  "CHEX/USD": {
+   "id": "CHEXUSD",
+   "tick": 0.0001
+  },
+  "GRIFFAIN/USD": {
+   "id": "GRIFFAINUSD",
+   "tick": 1e-05
+  },
+  "KAS/USD": {
+   "id": "KASUSD",
+   "tick": 1e-05
+  },
+  "WBT/USD": {
+   "id": "WBTUSD",
+   "tick": 0.01
+  },
+  "XMR/USD": {
+   "id": "XXMRZUSD",
+   "tick": 0.01
+  }
+ },
+ "kucoin": {
+  "DSYNC/USDT": {
+   "id": "DSYNC-USDT",
+   "tick": 1e-05
+  },
+  "ICX/USDT": {
+   "id": "ICX-USDT",
+   "tick": 1e-05
+  }
+ },
+ "mexc": {
+  "PURR/USDT": {
+   "id": "PURRUSDT",
+   "tick": 1e-05
+  }
+ }
+}

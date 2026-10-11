@@ -1,0 +1,183 @@
+/* static/css/desk-stream.css — Desk stream rail, radar parity
+   (type tabs + counts, Stream/By-asset toggle, by-asset grouping).
+   Self-contained — desk-stream.js's markup uses its own
+   `dstream-*` class family (not desk.css's v1 `.desk-chips`/`.chip`/
+   `.desk-ev*`, which desk.css keeps).
+   Tokens only, all defined in carrac-overhaul.css (loaded before this file
+   on desk.html): --s1/--s2/--hairline/--fg1/--fg2/--fg3/--blue. --gold is
+   not defined in that sheet, so it carries a
+   same-family fallback (matches desk.css's own `var(--bg, #0a0d13)` /
+   `var(--red, #ff5f6e)` pattern). No --line/--s0 (not part of this
+   design system). */
+
+.dstream-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--s1);
+}
+
+.dstream-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--fg2);
+  cursor: pointer;
+}
+
+.dstream-tab:hover { background: var(--s2); }
+
+.dstream-tab.on {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.dstream-tab-count {
+  font-size: 10px;
+  color: var(--fg3);
+  background: var(--s2);
+  border-radius: 999px;
+  padding: 0 5px;
+  line-height: 1.6;
+}
+
+.dstream-tab.on .dstream-tab-count { color: var(--blue); }
+
+.dstream-viewtoggle {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--s1);
+}
+
+.dstream-viewbtn {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 0;
+  border-radius: 5px;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  text-align: center;
+}
+
+.dstream-viewbtn:hover { color: var(--fg2); }
+
+.dstream-viewbtn.on {
+  border-color: var(--gold, #c6a96f);
+  color: var(--gold, #c6a96f);
+  background: var(--s2);
+}
+
+.dstream-body { overflow-y: auto; }
+
+.dstream-empty {
+  padding: 22px 14px;
+  font-size: 12px;
+  color: var(--fg3);
+  text-align: center;
+}
+
+/* Stream (chronological) rows — mirrors the by-asset subrow chrome below so
+   both views feel like one system. */
+.dstream-row {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+}
+
+.dstream-row:hover { background: var(--s2); }
+
+.dstream-row[data-rt="event"] { cursor: default; }
+.dstream-row[data-rt="event"]:hover { background: transparent; }
+
+.dstream-row-sym {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--fg1);
+  margin-right: 8px;
+}
+
+.dstream-row-tag {
+  font-size: 9.5px;
+  letter-spacing: .06em;
+  color: var(--blue);
+}
+
+.dstream-row-time {
+  float: right;
+  font-size: 10.5px;
+  color: var(--fg3);
+}
+
+.dstream-row-msg {
+  font-size: 12px;
+  color: var(--fg2);
+  margin-top: 2px;
+}
+
+/* By-asset grouped view */
+.dstream-group { border-bottom: 1px solid var(--hairline); }
+
+.dstream-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.dstream-group-head:hover { background: var(--s2); }
+
+.dstream-group-chev {
+  font-size: 9px;
+  color: var(--fg3);
+  width: 10px;
+  flex: none;
+}
+
+.dstream-group-sym {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--fg1);
+}
+
+.dstream-group-sym.nolink { color: var(--fg3); }
+
+.dstream-group-count {
+  font-size: 10.5px;
+  color: var(--fg3);
+}
+
+.dstream-group-tag {
+  margin-left: auto;
+  font-size: 9.5px;
+  letter-spacing: .06em;
+  color: var(--gold, #c6a96f);
+}
+
+.dstream-group-rows { display: none; }
+
+.dstream-group.open .dstream-group-rows { display: block; }
+
+.dstream-subrow {
+  padding: 7px 14px 7px 32px;
+  border-top: 1px solid var(--hairline);
+  cursor: pointer;
+}
+
+.dstream-subrow:hover { background: var(--s2); }
+
+.dstream-subrow[data-rt="event"] { cursor: default; opacity: .7; }
+.dstream-subrow[data-rt="event"]:hover { background: transparent; }
+
+.dstream-subrow .dstream-row-msg { margin-top: 1px; }

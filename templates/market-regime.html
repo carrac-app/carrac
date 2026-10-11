@@ -1,0 +1,171 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Market Regime Detection (Live HMM) — Carrac{% endblock %}
+{% block description %}Carrac runs a live two-state hidden Markov model that classifies the current market regime — risk-on or risk-off — across crypto and traditional assets. Context for your analysis, never advice.{% endblock %}
+{% block canonical %}{{ site_url }}/market-regime{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"TechArticle","headline":"Market Regime Detection (Live HMM) — Carrac","description":"Carrac runs a live two-state hidden Markov model that classifies the current market regime — risk-on or risk-off — across crypto and traditional assets. Context for your analysis, never advice.","url":"{{ site_url }}/market-regime","author":{"@type":"Organization","name":"Carrac"},"publisher":{"@type":"Organization","name":"Carrac","url":"{{ site_url }}"}}</script>{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Quant Engine · 2-State HMM · Risk-On / Risk-Off</span>
+    <h1>Is the market risk-on or risk-off?<br><span class="accent">Carrac classifies it — live.</span></h1>
+    <p class="lede">Carrac's quant engine runs a live <strong>two-state hidden Markov model (HMM)</strong> that continuously classifies the current market regime. Not a signal — <strong>context for your own analysis, updated as the market evolves.</strong></p>
+  </div>
+</section>
+
+<!-- ============================ WHAT IS A REGIME ============================ -->
+<section class="section" id="what">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:24px">What is a market regime?</span>
+    <div class="statrow reveal">
+      <div class="big">2<span class="u">States · HMM · live</span></div>
+      <div>
+        <h2>The market has moods. Knowing which one you're in changes everything.</h2>
+        <p>A market regime is the underlying character of current conditions — whether the broad environment favours risk-taking or risk-aversion. Prices, correlations, and volatility all behave differently depending on which regime is active.</p>
+        <p style="margin-top:16px">Regime awareness doesn't tell you what to trade. It describes <em>what kind of market you are trading in</em>; what you do with that is your call.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Risk-on: the state the model associates with stronger risk-asset returns, lower volatility and tighter credit spreads</li>
+          <li><span class="mk"></span> Risk-off: the state it associates with weaker risk-asset returns, higher volatility and wider credit spreads</li>
+          <li><span class="mk"></span> The regime is a probabilistic classification — not a certainty, and never a trade recommendation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ THE ENGINE ============================ -->
+<section class="section" id="engine" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">The live engine</span>
+    <h2 class="mega-head">Two-state HMM. <span class="accent">Running continuously.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p>A <strong>hidden Markov model</strong> is a statistical model that infers a hidden state — in this case, the market regime — from observable signals. Unlike a rule-based system with hardcoded thresholds, an HMM learns the statistical structure of the data and updates its classification as new information arrives.</p>
+        <p style="margin-top:16px">Carrac's implementation uses a two-state HMM: one state corresponds to conditions generally characterised as risk-on, the other as risk-off. The model runs continuously so the current regime classification is always fresh.</p>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> <strong>Hidden Markov model</strong> — learns structure from data, not hardcoded rules</li>
+          <li><span class="mk"></span> <strong>Two states</strong> — risk-on and risk-off regime classification</li>
+          <li><span class="mk"></span> <strong>Live</strong> — classification updates continuously as the market moves</li>
+          <li><span class="mk"></span> <strong>Probabilistic</strong> — a model output, not a certainty or a prediction</li>
+          <li><span class="mk"></span> Part of Carrac's broader <strong>quant engine</strong> alongside correlations, lead-lag, and anomaly detection</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HISTORY & TRANSITIONS ============================ -->
+<section class="section" id="history" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Regime history &amp; transitions</span>
+    <h2 class="mega-head">See how the regime has shifted <span class="accent">over time.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p><strong>Regime history</strong> gives you the full record of how the HMM has classified conditions over time. You can see when the regime was risk-on, when it flipped to risk-off, how long each state persisted, and how frequently the market has switched between them.</p>
+        <p style="margin-top:16px">This historical view is useful for understanding what recent market conditions have looked like and for putting the current regime in context — not for predicting what comes next.</p>
+      </div>
+      <div class="col">
+        <p><strong>Regime transitions</strong> surface each moment when the HMM's classification changed — the discrete flip points where conditions shifted from one state to the other. Knowing when transitions have historically occurred can inform how you think about current positioning.</p>
+        <ul class="checklist" style="margin-top:16px">
+          <li><span class="mk"></span> Full regime history — time-series record of past classifications</li>
+          <li><span class="mk"></span> Transition log — every regime flip, timestamped</li>
+          <li><span class="mk"></span> Duration data — how long each regime state has lasted</li>
+          <li><span class="mk"></span> Queryable via the <a href="/mcp">Carrac MCP server</a> for AI-assisted analysis</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ALERTS ============================ -->
+<section class="section" id="alerts" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:24px">Regime-change alerts</span>
+    <div class="statrow reveal">
+      <div class="big">HMM<span class="u">flip → alert</span></div>
+      <div>
+        <h2>Get notified when the regime flips.</h2>
+        <p>You don't need to watch the dashboard constantly. Carrac's regime-change alerts fire the moment the HMM's classification transitions from one state to the other — so you're informed when the character of the market shifts, not after the fact.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Alert triggers on regime-state transition, not on arbitrary thresholds</li>
+          <li><span class="mk"></span> Configure once — receive notifications via your preferred channel</li>
+          <li><span class="mk"></span> Regime-change alerts are part of Carrac's broader conditions and alerts engine</li>
+          <li><span class="mk"></span> Information to evaluate — not an instruction to act</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ QUANT ENGINE + MCP ============================ -->
+<section class="section" id="quant" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Part of the quant engine</span>
+    <h2 class="mega-head">Regime is one layer. <span class="accent">The quant engine runs deeper.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p>The regime surface is one component of Carrac's quant engine — a set of quantitative tools that run continuously across the covered asset universe. Alongside regime detection, the engine includes cross-asset correlations, lead-lag projected moves, transmission chains, anomaly clusters, and a derivatives regime derived from the full options chain.</p>
+        <p style="margin-top:16px">Each layer adds a different kind of context. Regime tells you the broad character of current conditions; correlations show how assets are moving together; lead-lag and transmission chains map how signals propagate; anomaly detection flags statistically unusual behaviour.</p>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> <strong>Market regime</strong> — 2-state HMM: risk-on / risk-off classification</li>
+          <li><span class="mk"></span> <strong>Cross-asset correlations</strong> — FDR-adjusted significance</li>
+          <li><span class="mk"></span> <strong>Lead-lag</strong> — projected moves with confidence intervals</li>
+          <li><span class="mk"></span> <strong>Transmission chains</strong> — how signals travel between assets</li>
+          <li><span class="mk"></span> <strong>Anomaly clusters</strong> — statistically unusual behaviour across the universe</li>
+          <li><span class="mk"></span> <strong>Derivatives regime</strong> — from perpetual-futures funding, open interest and long/short balance</li>
+        </ul>
+        <p style="margin-top:24px">All of this is queryable over the <a href="/mcp">Carrac MCP server</a> — bring any MCP-compatible AI client, use your own model and API key, and query the quant engine directly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ NON-ADVICE POSTURE ============================ -->
+<section class="quote" id="posture">
+  <div class="wrap">
+    <blockquote>A regime is context for your analysis — not a buy signal, not a sell signal, <span class="accent">not a recommendation of any kind.</span></blockquote>
+  </div>
+</section>
+
+<section class="section" id="posture-detail" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Information, not advice</span>
+    <div class="split reveal" style="margin-top:8px">
+      <div class="col">
+        <h2>Regime = context. What you do with it is your decision.</h2>
+        <p>Carrac's regime classification is a statistical model output. It describes the current inferred state of the market — it does not tell you whether to buy, sell, hold, or do anything at all. The appropriate response to any regime classification depends entirely on your own strategy, risk tolerance, timeframe, and analysis.</p>
+        <p style="margin-top:16px">Nothing on this page or anywhere on Carrac constitutes financial advice, investment advice, or a recommendation to take any position in any asset.</p>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> Regime data is information to evaluate — not a signal to act on</li>
+          <li><span class="mk"></span> The HMM output is probabilistic — classifications can be wrong</li>
+          <li><span class="mk"></span> No threshold, alert, or transition implies a recommended trade</li>
+          <li><span class="mk"></span> Your decisions, your responsibility — Carrac provides context, not advice</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-center">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Get started</span>
+    <h2 class="mega-head" style="margin-top:14px">Live regime classification. <span class="accent">Free to start.</span></h2>
+    <p class="section-desc">Create a free account to access the live regime engine, history, transitions, and alerts. See the <a href="/guide">guide</a> for setup — information &amp; context, never advice.</p>
+    <div class="ed-cta-row">
+      <a href="/register" class="ed-btn primary"><span class="lbl">Create account</span><i data-lucide="arrow-right"></i></a>
+      <a href="/mcp" class="ed-btn ghost"><span class="lbl">Explore MCP</span></a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

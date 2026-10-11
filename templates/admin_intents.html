@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Intents - Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+        .header-sub { font-size: 0.78rem; color: #7a8494; margin-top: 2px; }
+
+        .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 12px; margin-bottom: 20px; }
+        .filters select, .filters input[type="date"], .filters input[type="text"] {
+            background: #0a0e14; color: #e6edf3; border: 1px solid #2a3140; border-radius: 6px;
+            padding: 6px 10px; font-size: 0.8rem; font-family: inherit;
+        }
+        .filters input[type="text"] { min-width: 220px; flex: 1; }
+        .filters label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+        .btn { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; border: none; cursor: pointer; }
+        .btn-secondary { background: #242b35; color: #b0b8c4; border: 1px solid #2a3140; }
+        .btn-secondary:hover { background: #2a3140; color: #e6edf3; }
+
+        .section { margin-bottom: 28px; }
+        .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .section h2 { font-size: 0.95rem; font-weight: 600; color: #b0b8c4; }
+        .section-meta { font-size: 0.7rem; color: #545e6e; }
+
+        .unmet-panel { border: 1px solid #ff9800; border-radius: 8px; background: rgba(255,152,0,0.06); padding: 4px 0 0 0; }
+        .unmet-panel .section-head { padding: 10px 14px 0 14px; margin-bottom: 6px; }
+        .unmet-panel h2 { color: #ff9800; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.68rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 10px; border-bottom: 1px solid #2a3140; white-space: nowrap; }
+        td { font-size: 0.78rem; padding: 7px 10px; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; vertical-align: top; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        .intent-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #c9d1d9; max-width: 380px; white-space: normal; word-break: break-word; }
+        .unmet-text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ff9800; max-width: 320px; white-space: normal; word-break: break-word; }
+        .muted { color: #545e6e; }
+        .tool-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; background: #1e2430; color: #58a6ff; }
+        .tier-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; background: #1e2430; color: #b0b8c4; }
+        .tier-badge.admin { background: rgba(248,81,73,0.15); color: #f85149; }
+        .tier-badge.tester { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        .tier-badge.member { background: rgba(63,185,80,0.15); color: #3fb950; }
+        .tier-badge.premium { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .ok-badge { font-weight: 600; }
+        .ok-badge.ok { color: #3fb950; }
+        .ok-badge.fail { color: #f85149; }
+        .empty-flag { color: #7a8494; }
+
+        .loading { color: #545e6e; font-size: 0.85rem; padding: 20px; }
+        .error { color: #ef5350; }
+        .table-scroll { overflow-x: auto; }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set admin_page = 'intents' %}
+    {% include 'admin_nav.html' %}
+
+    <div class="header">
+        <div>
+            <h1>MCP Request Intents</h1>
+            <div class="header-sub">Model-authored user_intent / unmet_need telemetry from MCP tool calls &middot; auto-refreshes every 60s</div>
+        </div>
+        <button class="btn btn-secondary" id="refresh-now">Refresh now</button>
+    </div>
+
+    <div class="section">
+        <div class="unmet-panel">
+            <div class="section-head">
+                <h2>Unmet Needs</h2>
+                <span class="section-meta" id="unmet-meta">last 30 days</span>
+            </div>
+            <div class="table-scroll" id="unmet-table"><div class="loading">Loading...</div></div>
+        </div>
+    </div>
+
+    <div class="filters">
+        <div>
+            <label for="f-tool">Tool</label>
+            <select id="f-tool"><option value="">All tools</option></select>
+        </div>
+        <div>
+            <label for="f-tier">Tier</label>
+            <select id="f-tier"><option value="">All tiers</option></select>
+        </div>
+        <div>
+            <label for="f-date">Date</label>
+            <input type="date" id="f-date">
+        </div>
+        <input type="text" id="f-q" placeholder="Search tool / intent / unmet need...">
+        <button class="btn btn-secondary" id="f-clear">Clear filters</button>
+    </div>
+
+    <div class="section">
+        <div class="section-head">
+            <h2>Live Feed</h2>
+            <span class="section-meta" id="feed-meta"></span>
+        </div>
+        <div class="table-scroll" id="feed-table"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
+
+function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s.replace(' ', 'T') + (s.indexOf('Z') === -1 && s.indexOf('+') === -1 ? 'Z' : '')).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'; }
+    catch (e) { return escapeHtml(s); }
+}
+
+function tierBadge(tier) {
+    return '<span class="tier-badge ' + escapeHtml(tier || 'free') + '">' + escapeHtml(tier || 'free') + '</span>';
+}
+
+function okBadge(row) {
+    if (row.ok) return '<span class="ok-badge ok">ok</span>';
+    return '<span class="ok-badge fail">' + escapeHtml(row.error_kind || 'error') + '</span>';
+}
+
+function emptyFlag(row) {
+    return row.result_empty ? '<span class="empty-flag">empty</span>' : '';
+}
+
+// ── Filter dropdowns (populated once from the feed response) ──────────────
+var _filtersPopulated = false;
+function populateFilterOptions(tools, tiers) {
+    if (_filtersPopulated) return;
+    _filtersPopulated = true;
+    var toolSel = document.getElementById('f-tool');
+    (tools || []).forEach(function(t) {
+        var o = document.createElement('option'); o.value = t; o.textContent = t;
+        toolSel.appendChild(o);
+    });
+    var tierSel = document.getElementById('f-tier');
+    (tiers || []).forEach(function(t) {
+        var o = document.createElement('option'); o.value = t; o.textContent = t;
+        tierSel.appendChild(o);
+    });
+}
+
+// ── Live feed ───────────────────────────────────────────────────────────
+function currentFilters() {
+    var params = new URLSearchParams();
+    var tool = document.getElementById('f-tool').value;
+    var tier = document.getElementById('f-tier').value;
+    var date = document.getElementById('f-date').value;
+    var q = document.getElementById('f-q').value.trim();
+    if (tool) params.set('tool', tool);
+    if (tier) params.set('tier', tier);
+    if (date) params.set('date', date);
+    if (q) params.set('q', q);
+    return params;
+}
+
+function renderFeed(rows) {
+    var el = document.getElementById('feed-table');
+    if (!rows.length) { el.innerHTML = '<div class="loading">No matching intent rows</div>'; return; }
+    var html = '<table><thead><tr>'
+             + '<th>Time</th><th>Tool</th><th>Tier</th><th>User Intent</th><th>Unmet Need</th>'
+             + '<th>Latency</th><th>Status</th><th>Prev Tool</th>'
+             + '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+        html += '<tr>'
+              + '<td>' + fmtDate(r.ts) + '</td>'
+              + '<td><span class="tool-badge">' + escapeHtml(r.tool) + '</span></td>'
+              + '<td>' + tierBadge(r.tier) + '</td>'
+              + '<td class="intent-text">' + escapeHtml(r.user_intent || '—') + '</td>'
+              + '<td class="unmet-text">' + escapeHtml(r.unmet_need || '') + '</td>'
+              + '<td>' + Math.round(r.latency_ms || 0) + 'ms</td>'
+              + '<td>' + okBadge(r) + ' ' + emptyFlag(r) + '</td>'
+              + '<td class="muted">' + escapeHtml(r.prev_tool || '—') + '</td>'
+              + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function loadFeed() {
+    var params = currentFilters();
+    fetch('/api/admin/intents?' + params.toString())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            populateFilterOptions(data.tools, data.tiers);
+            renderFeed(data.rows || []);
+            document.getElementById('feed-meta').textContent = (data.count || 0) + ' row(s) &middot; last refreshed ' + new Date().toISOString().slice(11, 19) + ' UTC';
+        })
+        .catch(function(err) {
+            document.getElementById('feed-table').innerHTML = '<div class="loading error">' + escapeHtml(err.message) + '</div>';
+        });
+}
+
+// ── Unmet needs (pinned, independent of the feed filters) ──────────────────
+function renderUnmet(rows) {
+    var el = document.getElementById('unmet-table');
+    if (!rows.length) { el.innerHTML = '<div class="loading">No unmet needs reported</div>'; return; }
+    var html = '<table><thead><tr>'
+             + '<th>Time</th><th>Tool</th><th>Tier</th><th>Unmet Need</th>'
+             + '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+        html += '<tr>'
+              + '<td>' + fmtDate(r.ts) + '</td>'
+              + '<td><span class="tool-badge">' + escapeHtml(r.tool) + '</span></td>'
+              + '<td>' + tierBadge(r.tier) + '</td>'
+              + '<td class="unmet-text">' + escapeHtml(r.unmet_need) + '</td>'
+              + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function loadUnmet() {
+    fetch('/api/admin/intents/unmet?days=30&limit=100')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            renderUnmet(data.rows || []);
+            document.getElementById('unmet-meta').textContent = 'last ' + (data.days || 30) + ' days &middot; ' + (data.count || 0) + ' row(s)';
+        })
+        .catch(function(err) {
+            document.getElementById('unmet-table').innerHTML = '<div class="loading error">' + escapeHtml(err.message) + '</div>';
+        });
+}
+
+function loadAll() {
+    loadFeed();
+    loadUnmet();
+}
+
+// Filter changes re-query the feed immediately (unmet panel stays pinned/independent).
+['f-tool', 'f-tier', 'f-date'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', loadFeed);
+});
+var _qTimer = null;
+document.getElementById('f-q').addEventListener('input', function() {
+    clearTimeout(_qTimer);
+    _qTimer = setTimeout(loadFeed, 300);
+});
+document.getElementById('f-clear').addEventListener('click', function() {
+    document.getElementById('f-tool').value = '';
+    document.getElementById('f-tier').value = '';
+    document.getElementById('f-date').value = '';
+    document.getElementById('f-q').value = '';
+    loadFeed();
+});
+document.getElementById('refresh-now').addEventListener('click', loadAll);
+
+loadAll();
+// Plain 60s polling — NOT SSE.
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>

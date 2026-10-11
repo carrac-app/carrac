@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrac — Coming Soon</title>
+    <meta name="description" content="Carrac is launching soon.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="{{ site_url }}/">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#05060a;color:#3fb950;z-index:9999}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid #3fb950;outline-offset:2px}
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #05060a;
+            --text: #d1d4dc;
+            --text-dim: #787b86;
+            --green: #3fb950;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 30%, rgba(63, 185, 80, 0.08), transparent 70%),
+                radial-gradient(ellipse 60% 40% at 50% 80%, rgba(88, 166, 255, 0.05), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 560px;
+        }
+
+        .brand {
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+            margin-bottom: 28px;
+        }
+
+        .brand .c3 { color: var(--green); }
+
+        .headline {
+            font-size: clamp(20px, 4vw, 28px);
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 14px;
+            letter-spacing: -0.01em;
+        }
+
+        .sub {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-dim);
+        }
+
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            margin-right: 10px;
+            vertical-align: middle;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <main id="main-content">
+        <div class="brand">[Carrac<span class="c3">.cc</span>]</div>
+        <div class="headline"><span class="dot"></span>Coming soon</div>
+        <p class="sub">We're putting the finishing touches on something for macro-aware traders. Check back shortly.</p>
+    </main>
+</body>
+</html>

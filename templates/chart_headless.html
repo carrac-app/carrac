@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LOADING</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: #131722; overflow: hidden; }
+        #chart-container { width: 100%; height: 100%; }
+        #error { color: #ef5350; font-family: monospace; padding: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div id="chart-container"></div>
+    <div id="error"></div>
+    {% if headless_share %}
+    <!-- Frozen, PII-stripped drawings for the slug-scoped share
+         render — never a live /api/drawings fetch. See getDrawingsPromise()
+         below. -->
+    <script type="application/json" id="carrac-headless-share-data">{{ headless_share | tojson }}</script>
+    {% endif %}
+
+    <script src="/static/js/klinecharts.min.js" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/carrac-indicator-pack.js" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="/static/js/kline-share-render.js" nonce="{{ csp_nonce | default('') }}"></script>
+
+    <script nonce="{{ csp_nonce }}">
+    if (window.KlineShareRender) KlineShareRender.registerOverlays();
+
+    (function() {
+        // slug-scoped headless share mode. When the server
+        // injected a frozen-share data block, asset/timeframe/drawings come
+        // from THAT (the share's own frozen, PII-stripped snapshot) instead
+        // of the URL path + a live /api/drawings fetch — see
+        // getDrawingsPromise() further below for why the live fetch is
+        // never used in this mode.
+        var shareDataEl = document.getElementById('carrac-headless-share-data');
+        var shareData = null;
+        if (shareDataEl) {
+            try { shareData = JSON.parse(shareDataEl.textContent || 'null'); } catch (e) { shareData = null; }
+        }
+
+        // Parse URL: /chart-headless/BTC/1D?indicators=CPR,EMA_RIBBON
+        // (or /chart-headless/share/<slug>?indicators=... when shareData is set)
+        var parts = window.location.pathname.split('/');
+        // Expected: ['', 'chart-headless', 'ASSET', 'TIMEFRAME']
+        var asset = shareData ? (shareData.symbol || '') : (parts[2] || '');
+        var timeframe = shareData ? (shareData.timeframe || '1D') : (parts[3] || '1D');
+        var params = new URLSearchParams(window.location.search);
+        var indicators = (params.get('indicators') || '').split(',').filter(Boolean);
+
+        if (!asset) {
+            showError('No asset specified');
+            return;
+        }
+
+        // Determine mode from timeframe
+        var tfLower = timeframe.toLowerCase();
+        var ltfSet = ['1m','3m','5m','15m','30m','1h','4h'];
+        var mode = ltfSet.indexOf(tfLower) >= 0 ? 'ltf' : 'htf';
+
+        // Fetch chart data from internal API
+        var maxBars = (mode === 'ltf') ? 2500 : 1500;
+        var url = '/api/chart-internal/' + encodeURIComponent(asset) +
+                  '?days=' + maxBars + '&mode=' + mode + '&timeframe=' + encodeURIComponent(timeframe);
+
+        fetch(url)
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function(data) {
+                renderChart(data, asset, timeframe, indicators);
+            })
+            .catch(function(e) {
+                showError(e.message);
+            });
+
+        function renderChart(data, symbol, tf, activeIndicators) {
+            var container = document.getElementById('chart-container');
+
+            var chart = klinecharts.init(container, {
+                styles: {
+                    grid: {
+                        show: true,
+                        horizontal: { color: '#2a2e39' },
+                        vertical: { color: '#2a2e39' }
+                    },
+                    candle: {
+                        type: 'candle_solid',
+                        priceMark: { show: true },
+                        bar: {
+                            upColor: '#d1d4dc',
+                            downColor: '#4a4e59',
+                            upBorderColor: '#d1d4dc',
+                            downBorderColor: '#4a4e59',
+                            upWickColor: '#d1d4dc',
+                            downWickColor: '#4a4e59'
+                        }
+                    },
+                    indicator: {
+                        lastValueMark: { show: true }
+                    },
+                    xAxis: {
+                        axisLine: { color: '#2a2e39' },
+                        tickLine: { color: '#2a2e39' },
+                        tickText: { color: '#787b86' }
+                    },
+                    yAxis: {
+                        axisLine: { color: '#2a2e39' },
+                        tickLine: { color: '#2a2e39' },
+                        tickText: { color: '#787b86' }
+                    },
+                    crosshair: { show: false },
+                    overlay: {
+                        point: { color: '#2962ff' }
+                    },
+                    separator: { size: 1, color: '#2a2e39' }
+                }
+            });
+
+            window._chart = chart;  // debug access
+            // Convert data for KLineChart
+            var klineData = data.ohlcv.map(function(c) {
+                return {
+                    timestamp: c.time * 1000,
+                    open: c.open,
+                    high: c.high,
+                    low: c.low,
+                    close: c.close,
+                    volume: 0
+                };
+            });
+
+            if (data.volume && data.volume.length > 0) {
+                data.volume.forEach(function(v, i) {
+                    if (klineData[i]) {
+                        klineData[i].volume = v.value || 0;
+                    }
+                });
+            }
+
+            chart.applyNewData(klineData);
+
+            // Add VOL (green/red bars + MA20)
+            chart.createIndicator({ name: 'VOL', calcParams: [20] }, false, { id: 'volume_pane', height: 60, minHeight: 40 });
+
+            // Add RSI(14)
+            chart.createIndicator({ name: 'RSI', calcParams: [14] }, false, { id: 'rsi_pane', height: 100, minHeight: 60 });
+
+            // Enable requested indicators
+            if (typeof indicatorPackConfig !== 'undefined' && typeof drawIndicatorPack === 'function') {
+                var indicatorMap = {
+                    'DAILY_EMA': 'dailyEma',
+                    'WEEKLY_MA': 'weeklyMa',
+                    'BULL_BAND': 'bullMarketBand',
+                    'CM_ULTIMATE': 'cmUltimate',
+                    'KELTNER_TIGHT': 'keltnerTight',
+                    'EMA_RIBBON': 'emaRibbon',
+                    'CPR': 'cpr',
+                    'CPR_HISTORY': 'cprHistory',
+                    'TTM_SQUEEZE': 'ttmSqueeze',
+                    'AUTO_FIB': 'autoFib',
+                    'KEY_LEVELS': 'keyLevels',
+                    'SR_CHANNELS': 'srChannels',
+                    'FVG': 'fvg',
+                    'ALLIGATOR': 'alligator',
+                    'PI_CYCLE': 'piCycle',
+                    'SMA_SIGNAL': 'smaSignal'
+                };
+
+                // Disable all first
+                Object.values(indicatorMap).forEach(function(key) {
+                    if (indicatorPackConfig[key]) {
+                        indicatorPackConfig[key].enabled = false;
+                    }
+                });
+
+                // Enable requested
+                activeIndicators.forEach(function(ind) {
+                    var key = indicatorMap[ind.toUpperCase()];
+                    if (key && indicatorPackConfig[key]) {
+                        indicatorPackConfig[key].enabled = true;
+                    }
+                });
+
+                // Set CPR timeframe to monthly for morning report
+                if (indicatorPackConfig.cpr && indicatorPackConfig.cpr.enabled) {
+                    indicatorPackConfig.cpr.timeframe = 'monthly';
+                    // Auto-enable CPR History on headless charts
+                    if (indicatorPackConfig.cprHistory) {
+                        indicatorPackConfig.cprHistory.enabled = true;
+                    }
+                }
+
+                try {
+                    drawIndicatorPack(chart, klineData, data);
+                } catch (e) {
+                    console.error('[Headless] Indicator error:', e);
+                }
+            }
+
+            // Add title overlay
+            var titleText = symbol + ' · ' + tf;
+            chart.createOverlay({
+                name: 'simpleAnnotation',
+                lock: true,
+                points: [{ timestamp: klineData[Math.floor(klineData.length * 0.02)].timestamp, value: data.ohlcv[data.ohlcv.length - 1].high * 1.01 }],
+                styles: {
+                    text: { color: '#787b86', size: 14, family: 'monospace', weight: 'bold' }
+                },
+                extendData: titleText
+            });
+
+            // Fetch (or, in share mode, synchronously supply) drawings, then
+            // signal READY. share mode NEVER calls the live
+            // /api/drawings endpoint — it requires per-user auth (session or
+            // a cvx_k_ per-user API key) and 401s under the shared internal
+            // render key anyway; "fixing" that by aligning header names
+            // would make the resolved user ambiguous under an admin-key
+            // context, which is a cross-user drawing leak risk. Instead the
+            // share's OWN frozen, PII-stripped drawings (_freeze_drawings'
+            // output, embedded server-side at request time via the public
+            // share loader) are rendered directly.
+            function getDrawingsPromise() {
+                if (shareData) {
+                    return Promise.resolve(Array.isArray(shareData.drawings) ? shareData.drawings : []);
+                }
+                return fetch('/api/drawings?asset=' + encodeURIComponent(symbol) + '&timeframe=' + encodeURIComponent(timeframe))
+                    .then(function(r) { return r.ok ? r.json() : {drawings: []}; })
+                    .then(function(response) { return response.drawings || []; });
+            }
+
+            getDrawingsPromise()
+                .then(function(drawings) {
+                    var res = (window.KlineShareRender)
+                        ? KlineShareRender.renderFrozenDrawings(chart, drawings, klineData)
+                        : { v2ScenarioIds: [] };
+                    console.log('[Headless] Rendered', (drawings || []).length, 'user drawings for', symbol, tf);
+                    // v2 scenario children: live mode only (frozen drawings
+                    // carry no id; share mode avoids per-user endpoints).
+                    if (res.v2ScenarioIds.length > 0 && !shareData) {
+                        return Promise.all(res.v2ScenarioIds.map(function(sid) {
+                            return fetch('/api/drawings/scenario/' + sid + '/children')
+                                .then(function(r) { return r.ok ? r.json() : {drawings: []}; })
+                                .then(function(childData) {
+                                    var children = childData.drawings || [];
+                                    KlineShareRender.renderFrozenDrawings(chart, children, klineData);
+                                    console.log('[Headless] Rendered', children.length, 'children for scenario', sid);
+                                });
+                        }));
+                    }
+                })
+                .catch(function(e) { console.warn('[Headless] Drawings fetch error:', e); })
+                .finally(function() {
+                    // Signal ready after drawings are rendered (or failed)
+                    setTimeout(function() { document.title = 'READY'; }, 500);
+                });
+        }
+
+        function showError(msg) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = 'Error: ' + msg;
+            document.title = 'ERROR';
+        }
+    })();
+    </script>
+</body>
+</html>

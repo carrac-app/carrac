@@ -1,0 +1,13 @@
+# Dev and CI tooling; not installed into the production image.
+# requirements.txt has the runtime dependencies and requirements.lock the exact
+# production set. Install: pip install -r requirements.lock -r requirements-dev.txt
+
+ruff==0.15.18          # same version `make lint` and CI run
+pytest>=8.0
+pytest-cov>=4.1.0
+pytest-xdist>=3.5.0
+pip-audit>=2.7
+
+# Tests import httpx directly (tests/test_readonly_scope_asgi.py and the FastAPI
+# TestClient suites); declared here so a runtime-dependency change cannot remove it.
+httpx>=0.27,<0.29

@@ -1,0 +1,17 @@
+{
+  "classification": "ignore",
+  "components": {
+    "ema_position": 10,
+    "freshness": 0,
+    "volume": 10
+  },
+  "direction": "bullish",
+  "patterns": [
+    "unknown",
+    "volume_above_avg",
+    "price_above_ema20",
+    "mature_trend_penalty"
+  ],
+  "regime": "strong_trend",
+  "score": 12
+}

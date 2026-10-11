@@ -1,0 +1,570 @@
+/* ============================================================================
+   CARRAC — ASSET DETAILS DRAWER  (namespaced under #cd-drawer / #cd-scrim)
+   All rules scoped to avoid collisions with the live app.
+   Token bridge maps prototype tokens → live carrac-overhaul.css tokens.
+   ============================================================================ */
+
+/* ============================================================================
+   TOKEN BRIDGE — prototype tokens → live carrac-overhaul.css tokens
+   Every var() used in this file must be defined here or exist in carrac-overhaul.css
+   ============================================================================ */
+#cd-drawer, #cd-scrim, body.cd-restyle #right-panel {
+  /* surface / panel */
+  --panel:   var(--s1);
+  --panel-2: var(--s2);
+  --panel-3: var(--s3);
+  --bg-page: var(--bg);
+  --bg-raised: var(--s1);
+
+  /* borders */
+  --border-faint:  var(--hairline);
+  --border-strong: var(--border-2);
+
+  /* accent */
+  --accent: var(--blue);
+  --blue-soft: color-mix(in srgb, var(--blue) 16%, transparent);
+
+  /* semantic color aliases (orange→amber) */
+  --orange:      var(--amber, #d6a72b);
+  --orange-soft: var(--amber-soft, rgba(214,167,43,.14));
+  --orange-line: var(--amber-line, rgba(214,167,43,.42));
+
+  /* stronger green/red variants + line/border accents */
+  --green-strong: var(--green-2, #2ea043);
+  --red-strong:   var(--red-2, #d83a50);
+  --green-line:   color-mix(in srgb, var(--green) 42%, transparent);
+  --red-line:     color-mix(in srgb, var(--red) 42%, transparent);
+
+  /* shadow */
+  --shadow-3: var(--el3, 0 10px 28px rgba(0,0,0,.5), 0 3px 8px rgba(0,0,0,.4));
+
+  /* radius */
+  --r-md:   var(--r, 8px);
+  --r-lg:   12px;
+  --r-full: var(--pill, 999px);
+
+  /* type scale — defined as px literals (not in carrac-overhaul.css) */
+  --t-2xs:  11px;
+  --t-xs:   13px;
+  --t-sm:   14px;
+  --t-h4:   19px;
+  --t-h2:   32px;
+}
+
+/* ============================================================================
+   SIGNAL BADGES  (used inside drawer badge-row)
+   ============================================================================ */
+#cd-drawer .sbadge { font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: .02em; padding: 2px 5px; border-radius: var(--r-sm);
+  color: var(--fg3); background: var(--panel-2); border: 1px solid var(--border); }
+#cd-drawer .sbadge.g { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
+#cd-drawer .sbadge.r { color: var(--red); background: var(--red-soft); border-color: var(--red-line); }
+#cd-drawer .sbadge.o { color: var(--orange); background: var(--orange-soft); border-color: var(--orange-line); }
+#cd-drawer .sbadge.b { color: var(--blue); background: var(--blue-soft); border-color: rgba(88,166,255,.28); }
+
+/* ============================================================================
+   SCRIM
+   ============================================================================ */
+#cd-scrim { position: absolute; inset: 0; background: rgba(2,3,7,0.55); opacity: 0; pointer-events: none; transition: opacity .26s ease; z-index: 40; }
+#cd-scrim.show { opacity: 1; pointer-events: auto; }
+
+/* ============================================================================
+   DRAWER
+   ============================================================================ */
+#cd-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 484px; max-width: 92vw; z-index: 50;
+  background: var(--panel); border-left: 1px solid var(--border-strong); box-shadow: var(--shadow-3);
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.22,.61,.36,1); display: flex; flex-direction: column; }
+#cd-drawer.open { transform: translateX(0); }
+#cd-drawer .cd-drawer-inner { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+#cd-drawer .cd-drawer-inner::-webkit-scrollbar { width: 10px; }
+#cd-drawer .cd-drawer-inner::-webkit-scrollbar-thumb { background: var(--panel-3); border-radius: 6px; border: 3px solid var(--panel); }
+
+/* ============================================================================
+   DRAWER HEADER
+   ============================================================================ */
+#cd-drawer .dhead { position: sticky; top: 0; z-index: 6; background: linear-gradient(var(--panel), var(--panel) 70%, rgba(13,15,22,0)); padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border); }
+#cd-drawer .dh-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+#cd-drawer .dh-top .back { width: 30px; height: 30px; display: grid; place-items: center; color: var(--fg3); background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); font-family: inherit; cursor: pointer; }
+#cd-drawer .dh-top .back:hover { color: var(--fg1); border-color: var(--border-strong); }
+#cd-drawer .dh-top .back svg { width: 15px; height: 15px; }
+#cd-drawer .dh-top .star { color: var(--fg4); background: none; border: none; font-size: 16px; padding: 4px; cursor: pointer; font-family: inherit; }
+#cd-drawer .dh-top .star.on { color: var(--orange); }
+#cd-drawer .dh-top .spread { flex: 1; }
+#cd-drawer .dh-act { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: var(--r-md);
+  font-size: var(--t-xs); font-weight: 500; border: 1px solid var(--border); background: var(--panel-2); color: var(--fg2); transition: all .14s; cursor: pointer; font-family: inherit; }
+#cd-drawer .dh-act:hover { color: var(--fg1); border-color: var(--border-strong); background: var(--panel-3); }
+#cd-drawer .dh-act svg { width: 14px; height: 14px; }
+#cd-drawer .dh-act.primary { color: #04210b; background: var(--green); border-color: var(--green); }
+#cd-drawer .dh-act.primary:hover { background: var(--green-strong); }
+
+#cd-drawer .dh-id { display: flex; align-items: flex-end; gap: 14px; }
+#cd-drawer .dh-id .symwrap { display: flex; flex-direction: column; gap: 3px; }
+#cd-drawer .dh-id .sym { font-family: var(--font-mono); font-size: var(--t-h2); font-weight: 700; color: var(--fg1); line-height: 1; letter-spacing: -0.02em; }
+#cd-drawer .dh-id .name { font-size: var(--t-xs); color: var(--fg3); }
+#cd-drawer .dh-id .name .cls { text-transform: uppercase; letter-spacing: .06em; color: var(--fg4); margin-left: 6px; font-size: 10px; }
+#cd-drawer .dh-id .pxwrap { margin-left: auto; text-align: right; }
+#cd-drawer .dh-id .px { font-family: var(--font-mono); font-size: var(--t-h4); font-weight: 600; color: var(--fg1); }
+#cd-drawer .dh-id .pxchg { font-family: var(--font-mono); font-size: var(--t-sm); }
+#cd-drawer .dh-id .pxchg.pos { color: var(--green); }
+#cd-drawer .dh-id .pxchg.neg { color: var(--red); }
+
+#cd-drawer .verdict-band { display: flex; align-items: center; gap: 9px; margin-top: 13px; padding: 9px 12px; border-radius: var(--r-md);
+  background: var(--panel-2); border: 1px solid var(--border); }
+#cd-drawer .verdict-band .vb-ic { width: 26px; height: 26px; display: grid; place-items: center; border-radius: var(--r); flex: 0 0 auto; }
+#cd-drawer .verdict-band .vb-ic svg { width: 15px; height: 15px; }
+#cd-drawer .verdict-band .vb-t { font-size: var(--t-xs); color: var(--fg3); }
+#cd-drawer .verdict-band .vb-t b { display: block; font-size: var(--t-sm); color: var(--fg1); font-weight: 600; }
+#cd-drawer .verdict-band.bull .vb-ic { color: var(--green); background: var(--green-soft); }
+#cd-drawer .verdict-band.bear .vb-ic { color: var(--red); background: var(--red-soft); }
+#cd-drawer .verdict-band.neutral .vb-ic { color: var(--blue); background: var(--blue-soft); }
+#cd-drawer .verdict-band .vb-score { margin-left: auto; font-family: var(--font-mono); font-size: var(--t-h4); font-weight: 700; color: var(--fg1); }
+#cd-drawer .verdict-band .vb-score .u { font-size: var(--t-xs); color: var(--fg4); font-weight: 500; }
+
+#cd-drawer .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+
+/* ============================================================================
+   DRAWER SECTIONS
+   ============================================================================ */
+#cd-drawer .section { padding: 16px 18px; border-bottom: 1px solid var(--border-faint); }
+#cd-drawer .sec-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+#cd-drawer .sec-hd .si { width: 15px; height: 15px; color: var(--green); flex: 0 0 auto; }
+#cd-drawer .sec-hd .si svg { width: 15px; height: 15px; }
+#cd-drawer .sec-hd h4 { margin: 0; font-size: var(--t-2xs); letter-spacing: .09em; text-transform: uppercase; color: var(--fg3); font-weight: 600; }
+#cd-drawer .sec-hd .avail { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--fg4); font-family: var(--font-mono); }
+#cd-drawer .sec-hd .avail .d { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+#cd-drawer .sec-hd .scope { margin-left: auto; font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg4); padding: 2px 7px; border: 1px solid var(--border); border-radius: var(--r-full); }
+
+/* ---- TECHNICALS --------------------------------------------------- */
+#cd-drawer .tech-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#cd-drawer .tile { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px; }
+#cd-drawer .tile.wide { grid-column: 1 / -1; }
+#cd-drawer .tile .tl { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--fg4); font-weight: 600; margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; }
+#cd-drawer .tile .tl .hint { font-family: var(--font-mono); color: var(--fg4); letter-spacing: 0; text-transform: none; }
+
+/* consensio block */
+#cd-drawer .cons-block { display: flex; align-items: center; gap: 16px; }
+#cd-drawer .cons-big { display: grid; place-items: center; width: 74px; height: 74px; border-radius: var(--r-lg); flex: 0 0 auto; position: relative; }
+#cd-drawer .cons-big .x { font-family: var(--font-mono); font-size: 30px; font-weight: 700; line-height: 1; }
+#cd-drawer .cons-big .of { font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--fg4); margin-top: 2px; }
+#cd-drawer .cons-big.t0 { background: var(--red-soft); border: 1px solid var(--red-line); }
+#cd-drawer .cons-big.t0 .x { color: var(--red); }
+#cd-drawer .cons-big.tlow { background: var(--panel-3); border: 1px solid var(--border); }
+#cd-drawer .cons-big.tlow .x { color: var(--fg2); }
+#cd-drawer .cons-big.tmid { background: var(--orange-soft); border: 1px solid var(--orange-line); }
+#cd-drawer .cons-big.tmid .x { color: var(--orange); }
+#cd-drawer .cons-big.tgood, #cd-drawer .cons-big.thigh { background: var(--green-soft); border: 1px solid var(--green-line); }
+#cd-drawer .cons-big.tgood .x, #cd-drawer .cons-big.thigh .x { color: var(--green); }
+#cd-drawer .cons-tfs { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+#cd-drawer .ctf { display: grid; grid-template-columns: 30px 1fr 26px; align-items: center; gap: 9px; }
+#cd-drawer .ctf .lab { font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--fg3); }
+#cd-drawer .ctf .div { position: relative; height: 8px; background: var(--panel-3); border-radius: 2px; }
+#cd-drawer .ctf .div .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--border-strong); }
+#cd-drawer .ctf .div i { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+#cd-drawer .ctf .div i.up { left: 50%; background: var(--green); }
+#cd-drawer .ctf .div i.dn { right: 50%; background: var(--red); }
+#cd-drawer .ctf .v { font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 600; text-align: right; }
+#cd-drawer .ctf .v.up { color: var(--green); }
+#cd-drawer .ctf .v.dn { color: var(--red); }
+#cd-drawer .ctf .v.z { color: var(--fg4); }
+#cd-drawer .aligned-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: var(--green); margin-top: 2px; }
+#cd-drawer .aligned-tag svg { width: 11px; height: 11px; }
+
+/* horizontal gauge (rsi / adx) */
+#cd-drawer .gauge { position: relative; height: 34px; }
+#cd-drawer .gauge .track { position: absolute; left: 0; right: 0; top: 16px; height: 5px; border-radius: 3px; background: var(--panel-3); overflow: hidden; display: flex; }
+#cd-drawer .gauge .zone { height: 100%; }
+#cd-drawer .gauge .tick { position: absolute; top: 13px; width: 2px; height: 11px; background: var(--border-strong); border-radius: 1px; transform: translateX(-50%); }
+#cd-drawer .gauge .mk { position: absolute; top: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--fg1); border: 2px solid var(--panel-2); box-shadow: 0 0 0 1px var(--border-strong); transform: translateX(-50%); z-index: 2; }
+#cd-drawer .gauge .lbls { position: absolute; left: 0; right: 0; top: 24px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; color: var(--fg4); }
+#cd-drawer .gauge-val { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+#cd-drawer .gauge-val .gv { font-family: var(--font-mono); font-size: var(--t-h4); font-weight: 600; color: var(--fg1); }
+#cd-drawer .gauge-val .gl { font-size: var(--t-2xs); color: var(--fg3); }
+
+/* simple stat tiles */
+#cd-drawer .statline { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#cd-drawer .statline .sv { font-family: var(--font-mono); font-size: var(--t-h4); font-weight: 600; color: var(--fg1); }
+#cd-drawer .statline .sl { font-size: var(--t-2xs); color: var(--fg3); }
+#cd-drawer .statline .sl.warn { color: var(--orange); }
+#cd-drawer .bb-gauge { display: inline-flex; gap: 3px; align-items: flex-end; height: 20px; margin-top: 8px; }
+#cd-drawer .bb-gauge i { width: 5px; border-radius: 1px; background: var(--panel-3); }
+#cd-drawer .bb-gauge i:nth-child(1) { height: 7px; }
+#cd-drawer .bb-gauge i:nth-child(2) { height: 11px; }
+#cd-drawer .bb-gauge i:nth-child(3) { height: 15px; }
+#cd-drawer .bb-gauge i:nth-child(4) { height: 20px; }
+#cd-drawer .bb-gauge.sqz i.f { background: var(--orange); }
+#cd-drawer .bb-gauge.norm i.f { background: var(--blue); }
+#cd-drawer .bb-gauge.wide i.f { background: var(--fg3); }
+
+/* ema ribbon */
+#cd-drawer .ema { display: inline-flex; align-items: center; gap: 7px; font-size: var(--t-xs); font-weight: 500; }
+#cd-drawer .ema .d { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+#cd-drawer .ema.above { color: var(--green); }
+#cd-drawer .ema.above .d { background: var(--green); }
+#cd-drawer .ema.below { color: var(--red); }
+#cd-drawer .ema.below .d { background: var(--red); }
+#cd-drawer .ema.inside { color: var(--orange); }
+#cd-drawer .ema.inside .d { background: var(--orange); }
+
+/* structure */
+#cd-drawer .struct { font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 600; }
+#cd-drawer .struct.up { color: var(--green); }
+#cd-drawer .struct.down { color: var(--red); }
+#cd-drawer .struct.mix { color: var(--orange); }
+
+/* ---- LEVELS LADDER ----------------------------------------------- */
+#cd-drawer .cpr-switch { display: inline-flex; padding: 2px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); }
+#cd-drawer .cpr-switch button { height: 24px; padding: 0 11px; border: none; background: none; color: var(--fg3); font-size: var(--t-2xs); font-weight: 500; border-radius: var(--r-sm); cursor: pointer; font-family: inherit; }
+#cd-drawer .cpr-switch button.on { background: var(--panel-3); color: var(--fg1); }
+#cd-drawer .ladder { position: relative; margin-top: 14px; height: 300px; padding: 6px 0; }
+#cd-drawer .ladder .axis { position: absolute; left: 128px; top: 0; bottom: 0; width: 2px; background: var(--panel-3); }
+#cd-drawer .lvl { position: absolute; left: 0; right: 0; display: flex; align-items: center; height: 0; transform: translateY(-50%); }
+#cd-drawer .lvl .lname { width: 88px; text-align: right; padding-right: 10px; font-family: var(--font-mono); font-size: var(--t-2xs); flex: 0 0 auto; }
+#cd-drawer .lvl .lnode { width: 10px; height: 10px; border-radius: 50%; margin-left: 33px; flex: 0 0 auto; position: relative; z-index: 2; }
+#cd-drawer .lvl .lprice { font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--fg3); margin-left: 11px; }
+#cd-drawer .lvl .ldist { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); margin-left: auto; padding-right: 6px; }
+#cd-drawer .lvl.res .lname { color: var(--red); }
+#cd-drawer .lvl.res .lnode { background: var(--red); }
+#cd-drawer .lvl.sup .lname { color: var(--green); }
+#cd-drawer .lvl.sup .lnode { background: var(--green); }
+#cd-drawer .lvl.piv .lname { color: var(--blue); }
+#cd-drawer .lvl.piv .lnode { background: var(--blue); }
+#cd-drawer .lvl.prior .lname { color: var(--fg3); }
+#cd-drawer .lvl.prior .lnode { background: var(--fg4); width: 7px; height: 7px; }
+/* current price */
+#cd-drawer .price-now { position: absolute; left: 0; right: 0; transform: translateY(-50%); z-index: 3; display: flex; align-items: center; }
+#cd-drawer .price-now .pn-line { position: absolute; left: 128px; right: 8px; height: 0; border-top: 1px dashed var(--fg2); opacity: .5; }
+#cd-drawer .price-now .pn-tag { margin-left: auto; font-family: var(--font-mono); font-size: var(--t-2xs); font-weight: 600; color: var(--bg-page); background: var(--fg1); padding: 2px 7px; border-radius: var(--r-sm); }
+#cd-drawer .price-now .pn-dot { position: absolute; left: 124px; width: 10px; height: 10px; border-radius: 50%; background: var(--fg1); box-shadow: 0 0 0 3px var(--panel); }
+
+/* ---- SCANNER ----------------------------------------------------- */
+#cd-drawer .scan-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#cd-drawer .scan-side { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 13px; }
+#cd-drawer .scan-side .sh { display: flex; align-items: center; gap: 7px; font-size: var(--t-2xs); text-transform: uppercase; letter-spacing: .06em; color: var(--fg3); font-weight: 600; margin-bottom: 10px; }
+#cd-drawer .scan-side .sh svg { width: 13px; height: 13px; }
+#cd-drawer .scan-side.long .sh { color: var(--green); }
+#cd-drawer .scan-side.short .sh { color: var(--red); }
+#cd-drawer .scan-side .sc { display: flex; align-items: baseline; gap: 6px; }
+#cd-drawer .scan-side .sc .n { font-family: var(--font-mono); font-size: var(--t-h2); font-weight: 700; line-height: 1; color: var(--fg1); }
+#cd-drawer .scan-side .sc .d { font-family: var(--font-mono); font-size: var(--t-sm); color: var(--fg4); }
+#cd-drawer .scan-side .vd { font-size: var(--t-xs); margin-top: 7px; font-weight: 600; }
+#cd-drawer .scan-side.long .vd { color: var(--green); }
+#cd-drawer .scan-side.short .vd { color: var(--red); }
+#cd-drawer .scan-side .meter { display: flex; gap: 3px; margin-top: 9px; }
+#cd-drawer .scan-side .meter i { flex: 1; height: 4px; border-radius: 1px; background: var(--panel-3); }
+#cd-drawer .scan-side.long .meter i.f { background: var(--green); }
+#cd-drawer .scan-side.short .meter i.f { background: var(--red); }
+#cd-drawer .best-tag { margin-top: 11px; font-size: var(--t-xs); color: var(--fg3); display: flex; align-items: center; gap: 7px; }
+#cd-drawer .best-tag b { color: var(--fg1); }
+#cd-drawer .best-tag svg { width: 13px; height: 13px; flex: 0 0 auto; }
+
+/* ---- SENTIMENT --------------------------------------------------- */
+#cd-drawer .regime { display: flex; align-items: center; gap: 13px; }
+#cd-drawer .regime .rchip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: var(--r-md); font-weight: 600; font-size: var(--t-sm); }
+#cd-drawer .regime .rchip.on { color: var(--green); background: var(--green-soft); border: 1px solid var(--green-line); }
+#cd-drawer .regime .rchip.off { color: var(--red); background: var(--red-soft); border: 1px solid var(--red-line); }
+#cd-drawer .regime .rchip.neu { color: var(--blue); background: var(--blue-soft); border: 1px solid rgba(88,166,255,.28); }
+#cd-drawer .regime .rbar { flex: 1; }
+#cd-drawer .regime .rbar .t { display: flex; justify-content: space-between; font-size: 10px; color: var(--fg4); font-family: var(--font-mono); margin-bottom: 5px; }
+#cd-drawer .regime .rbar .track { height: 6px; border-radius: 3px; background: var(--panel-3); position: relative; overflow: hidden; }
+#cd-drawer .regime .rbar .track i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; background: linear-gradient(90deg, var(--red), var(--orange), var(--green)); }
+
+/* ---- USER LISTS -------------------------------------------------- */
+#cd-drawer .ulist { display: flex; flex-direction: column; gap: 8px; }
+#cd-drawer .urow { display: flex; align-items: center; gap: 11px; padding: 11px 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); }
+#cd-drawer .urow .ut { flex: 1; min-width: 0; }
+#cd-drawer .urow .ut .a { font-size: var(--t-sm); color: var(--fg1); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+#cd-drawer .urow .ut .b { font-size: var(--t-xs); color: var(--fg3); margin-top: 2px; font-family: var(--font-mono); }
+#cd-drawer .dirtag { font-family: var(--font-mono); font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--r-sm); }
+#cd-drawer .dirtag.long { color: var(--green); background: var(--green-soft); }
+#cd-drawer .dirtag.short { color: var(--red); background: var(--red-soft); }
+#cd-drawer .statustag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: var(--r-full); border: 1px solid transparent; }
+#cd-drawer .statustag.armed { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
+#cd-drawer .statustag.watch { color: var(--orange); background: var(--orange-soft); border-color: var(--orange-line); }
+#cd-drawer .statustag.idle { color: var(--fg3); background: var(--panel-3); border-color: var(--border); }
+#cd-drawer .cond { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--fg2); }
+#cd-drawer .cond b { color: var(--green); }
+#cd-drawer .pnl { font-family: var(--font-mono); font-size: var(--t-sm); font-weight: 600; }
+#cd-drawer .pnl.pos { color: var(--green); }
+#cd-drawer .pnl.neg { color: var(--red); }
+#cd-drawer .urow .uright { text-align: right; flex: 0 0 auto; }
+#cd-drawer .urow .uright .small { font-size: 10px; color: var(--fg4); font-family: var(--font-mono); }
+#cd-drawer .urow .price { font-family: var(--font-mono); font-size: var(--t-sm); color: var(--fg2); }
+
+/* degraded / empty */
+#cd-drawer .degraded { display: flex; align-items: center; gap: 10px; padding: 13px; border: 1px dashed var(--border-strong); border-radius: var(--r-md); color: var(--fg4); font-size: var(--t-xs); }
+#cd-drawer .degraded svg { width: 15px; height: 15px; flex: 0 0 auto; }
+#cd-drawer .degraded .retry { margin-left: auto; color: var(--blue); background: none; border: none; font-size: var(--t-xs); cursor: pointer; font-family: inherit; }
+#cd-drawer .uempty { padding: 13px; text-align: center; color: var(--fg4); font-size: var(--t-xs); border: 1px dashed var(--border); border-radius: var(--r-md); }
+
+/* non-advice footer */
+#cd-drawer .nonadvice { display: flex; gap: 9px; padding: 14px 18px 22px; color: var(--fg4); font-size: 10px; line-height: 1.5; }
+#cd-drawer .nonadvice svg { width: 13px; height: 13px; flex: 0 0 auto; margin-top: 1px; }
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 560px) {
+  #cd-drawer .tech-grid, #cd-drawer .scan-row { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   DETAIL-SCREENER RESTYLE (gated body.cd-restyle)
+   Every rule scoped to  body.cd-restyle #right-panel
+
+   CLASS MAP (prototype-state → real live class):
+   ─────────────────────────────────────────────
+   CONSENSIO (span.consensio inside td.consensio-col):
+     .consensio-neg  → t0   (bearish, 0/max)  — red-strong fill
+     .consensio-low  → tlow (weak bull, 0<r<0.4) — muted panel-3 fill
+     .consensio-med  → tmid (mid bull, 0.4≤r<0.7) — amber fill
+     .consensio-high → thigh (strong bull, r≥0.7)  — green fill
+     Note: prototype has tgood (≥0.4 green-dim) + thigh (≥0.7 green).
+           We map consensio-high → thigh (brightest) for simplicity since
+           getConsensioClass only emits one level per row.
+
+   SIGNAL ±CHIPS (td.signal.signal-1d-col / .signal-3d-col / .signal-1w-col):
+     .signal-pos → tf3 p2 style (bright green, +N)
+     .signal-neg → tf3 n2 style (bright red,  −N)
+     .signal-neu → tf3 z  style (dim fg4)
+
+   W-RSI (td.rsi.rsi-col  — class on the <td> itself):
+     .rsi-oversold   → wrsi.lo style (blue — oversold=strong potential)
+     .rsi-overbought → wrsi.hi style (orange — overbought=extended)
+     .rsi-neutral    → wrsi default (fg2)
+
+   CPR CHIP (span.cpr-level inside td.cpr-col):
+     .cpr-below  → cprchip.bear style (red  soft chip)
+     .cpr-inside → cprchip.bal  style (blue soft chip, inside the CPR zone)
+     .cpr-above  → cprchip.bull style (green soft chip)
+     .cpr-neutral → plain fg3 (no chip)
+
+   BB (span.bb inside td.bb-col):
+     .bb-squeeze         → bb.sqz style (orange, bold)
+     .bb-extreme-squeeze → bb.sqz style (stronger — orange + bold, same class intent)
+     .bb-expansion       → faded fg4
+     .bb-normal          → fg4 (default dim)
+
+   EMA RIBBON (span.ema-ribbon-dot / span.ema-ribbon-label inside td.ema-ribbon-col):
+     .bull  → green dot + green label
+     .bear  → red dot + red label
+     .neutral → orange dot + orange label (inside ribbon)
+
+   STRUCTURE (span.structure inside td.structure-col):
+     .structure-bullish → struct.up  (green, mono bold)
+     .structure-bearish → struct.down (red, mono bold)
+     .structure-neutral → struct.mix (orange, mono bold)
+
+   ADX (span.adx-cell inside td.adx-col):
+     .adx-strong  → adx.strong (blue, bold)
+     .adx-weak    → adx.weak   (fg4, dim)
+     .adx-forming → adx default (fg3, normal)
+
+   SIGNAL BADGES (span.signal-badge inside td.signals-col):
+     .signal-bull → sbadge.g (green soft chip)
+     .signal-bear → sbadge.r (red   soft chip)
+     .signal-warn → sbadge.o (orange soft chip)
+     .signal-info → sbadge.b (blue   soft chip)
+     all others   → sbadge default (fg3, panel-2 bg)
+   ============================================================================ */
+
+/* ── CONSENSIO BADGE ────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel span.consensio {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs, 13px);
+  font-weight: 700;
+  letter-spacing: .01em;
+  border: none;
+}
+body.cd-restyle #right-panel span.consensio.consensio-neg {
+  color: #fff;
+  background: var(--red-strong);
+}
+body.cd-restyle #right-panel span.consensio.consensio-low {
+  color: var(--fg2);
+  background: var(--s3);
+}
+body.cd-restyle #right-panel span.consensio.consensio-med {
+  color: #2b1d02;
+  background: var(--orange);
+}
+body.cd-restyle #right-panel span.consensio.consensio-high {
+  color: #04210b;
+  background: var(--green);
+}
+
+/* ── SIGNAL ± CHIPS (1D / 3D / 1W) ─────────────────────────────────────── */
+body.cd-restyle #right-panel td.signal {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm, 14px);
+  font-weight: 600;
+}
+body.cd-restyle #right-panel td.signal.signal-pos {
+  color: var(--green);
+}
+body.cd-restyle #right-panel td.signal.signal-neg {
+  color: var(--red);
+}
+body.cd-restyle #right-panel td.signal.signal-neu {
+  color: var(--fg4);
+}
+
+/* ── W-RSI ──────────────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel td.rsi {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm, 14px);
+  color: var(--fg2);
+}
+body.cd-restyle #right-panel td.rsi.rsi-oversold {
+  color: var(--blue);
+}
+body.cd-restyle #right-panel td.rsi.rsi-overbought {
+  color: var(--orange);
+}
+body.cd-restyle #right-panel td.rsi.rsi-neutral {
+  color: var(--fg2);
+}
+/* Override bullish-bias flip under cd-restyle — keep semantic wrsi colors */
+body.bullish-bias.cd-restyle #right-panel td.rsi.rsi-oversold  { color: var(--blue); }
+body.bullish-bias.cd-restyle #right-panel td.rsi.rsi-overbought { color: var(--orange); }
+
+/* ── CPR CHIP ───────────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel span.cpr-level {
+  display: inline-grid;
+  place-items: center;
+  min-width: 48px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-sm, 6px);
+  font-size: var(--t-xs, 13px);
+  font-weight: 500;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg3);
+}
+body.cd-restyle #right-panel span.cpr-level.cpr-below {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: var(--red-line);
+}
+body.cd-restyle #right-panel span.cpr-level.cpr-inside {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: rgba(68, 147, 248, .28);
+}
+body.cd-restyle #right-panel span.cpr-level.cpr-above {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+body.cd-restyle #right-panel span.cpr-level.cpr-neutral {
+  color: var(--fg3);
+  background: transparent;
+  border-color: transparent;
+}
+
+/* ── BB SQUEEZE ─────────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel span.bb {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs, 13px);
+  color: var(--fg4);
+}
+body.cd-restyle #right-panel span.bb.bb-squeeze,
+body.cd-restyle #right-panel span.bb.bb-extreme-squeeze {
+  color: var(--orange);
+  font-weight: 600;
+}
+body.cd-restyle #right-panel span.bb.bb-expansion {
+  color: var(--fg4);
+  opacity: .6;
+}
+
+/* ── EMA RIBBON DOT + LABEL ─────────────────────────────────────────────── */
+body.cd-restyle #right-panel .ema-ribbon-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--t-xs, 13px);
+  font-weight: 500;
+}
+body.cd-restyle #right-panel .ema-ribbon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+body.cd-restyle #right-panel .ema-ribbon-dot.bull  { background: var(--green); }
+body.cd-restyle #right-panel .ema-ribbon-dot.bear  { background: var(--red); }
+body.cd-restyle #right-panel .ema-ribbon-dot.neutral { background: var(--orange); }
+body.cd-restyle #right-panel .ema-ribbon-label.bull  { color: var(--green); }
+body.cd-restyle #right-panel .ema-ribbon-label.bear  { color: var(--red); }
+body.cd-restyle #right-panel .ema-ribbon-label.neutral { color: var(--orange); }
+
+/* ── STRUCTURE ──────────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel span.structure {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs, 13px);
+  font-weight: 600;
+}
+body.cd-restyle #right-panel span.structure.structure-bullish { color: var(--green); }
+body.cd-restyle #right-panel span.structure.structure-bearish { color: var(--red); }
+body.cd-restyle #right-panel span.structure.structure-neutral { color: var(--orange); }
+
+/* ── ADX ────────────────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel span.adx-cell {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm, 14px);
+  color: var(--fg3);
+}
+body.cd-restyle #right-panel span.adx-cell.adx-strong {
+  color: var(--blue);
+  font-weight: 600;
+}
+body.cd-restyle #right-panel span.adx-cell.adx-weak {
+  color: var(--fg4);
+}
+body.cd-restyle #right-panel span.adx-cell.adx-forming {
+  color: var(--fg3);
+}
+
+/* ── SIGNAL BADGES ──────────────────────────────────────────────────────── */
+body.cd-restyle #right-panel .signal-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 2px 5px;
+  border-radius: var(--r-sm, 6px);
+  border: 1px solid var(--border);
+  color: var(--fg3);
+  background: var(--s2);
+}
+body.cd-restyle #right-panel .signal-badge.signal-bull {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+body.cd-restyle #right-panel .signal-badge.signal-bear {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: var(--red-line);
+}
+body.cd-restyle #right-panel .signal-badge.signal-warn {
+  color: var(--orange);
+  background: var(--orange-soft);
+  border-color: var(--orange-line);
+}
+body.cd-restyle #right-panel .signal-badge.signal-info {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: rgba(68, 147, 248, .28);
+}
+
+/* Desk context — drawer conditions checklist (details-drawer.js conditionsSection) */
+.cd-conditions { display:grid; gap:6px; }
+.cd-cond { display:flex; justify-content:space-between; font-size:12.5px; }
+.cd-cond span { color:var(--fg3); }

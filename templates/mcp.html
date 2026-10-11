@@ -1,0 +1,180 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block extra_head %}<style>
+  .quote blockquote .accent { color: var(--accent); }
+</style>{% endblock %}
+
+{% block title %}Carrac MCP Server — Market Data for AI Agents — Carrac{% endblock %}
+{% block description %}Connect any MCP-compatible AI client to Carrac's market data, quant engine, and analysis. Bring your own AI — we never see your usage.{% endblock %}
+{% block canonical %}{{ site_url }}/mcp{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Carrac MCP Server","applicationCategory":"DeveloperApplication","url":"{{ site_url }}/mcp","description":"Model Context Protocol server that gives any MCP-compatible AI client access to Carrac's market data, quant engine, and analysis tools.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">MCP · Model Context Protocol</span>
+    <h1>Bring your own AI<br><span class="accent">to the markets — over MCP.</span></h1>
+    <p class="lede">Carrac's MCP server connects any MCP-compatible AI client to real-time market data, a full quant engine, and structured trading workflows. Your model, your API key — <strong>Carrac supplies data and structure. We never see your usage.</strong></p>
+  </div>
+</section>
+
+<!-- ============================ WHAT IS IT ============================ -->
+<section class="section" id="what">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:24px">What it is</span>
+    <div class="statrow reveal">
+      <div class="big">BYO<span class="u">AI — your model, your key</span></div>
+      <div>
+        <h2>A data layer for any AI client.</h2>
+        <p>Carrac implements the <strong>Model Context Protocol</strong> — a standard that lets AI assistants call structured tools. When you connect Claude Desktop, Claude Code, Cursor, or any other MCP client, it gains access to Carrac's full market-data and analysis surface through your own model. The AI computation runs on your side.</p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Connect with Claude Desktop, Claude Code, Cursor, or any MCP client</li>
+          <li><span class="mk"></span> Use your own model and API key — Carrac never processes your queries</li>
+          <li><span class="mk"></span> Structured tools, resources, and prompt workflows — not a chat wrapper</li>
+          <li><span class="mk"></span> Every tool is available to your own model through one MCP endpoint</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CAPABILITIES ============================ -->
+<section class="section" id="capabilities" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">What you can query</span>
+    <h2 class="mega-head">Market data. Quant engine. <span class="accent">Analysis toolkit.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p><strong>Real-time market data</strong></p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Market overview — cross-asset snapshot</li>
+          <li><span class="mk"></span> Per-asset detail with chart data</li>
+          <li><span class="mk"></span> Symbol search across all covered markets</li>
+          <li><span class="mk"></span> Economic calendar</li>
+          <li><span class="mk"></span> Volume profile</li>
+        </ul>
+        <p style="margin-top:24px"><strong>Quant engine</strong></p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Cross-asset correlations with FDR-adjusted significance</li>
+          <li><span class="mk"></span> Lead-lag projected moves with confidence intervals</li>
+          <li><span class="mk"></span> Market-regime detection (2-state HMM)</li>
+          <li><span class="mk"></span> Transmission chains — how signals travel between assets</li>
+          <li><span class="mk"></span> Anomaly clusters across the covered universe</li>
+          <li><span class="mk"></span> Derivatives regime from the full options chain</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p><strong>Indicators &amp; formulas</strong></p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Full indicator library — definitions, states, signals</li>
+          <li><span class="mk"></span> Custom formula engine with backtesting</li>
+          <li><span class="mk"></span> Confluence zones and condition evaluation</li>
+        </ul>
+        <p style="margin-top:24px"><strong>Plays, scenarios &amp; journal</strong></p>
+        <ul class="checklist">
+          <li><span class="mk"></span> Trade plays and scenario management</li>
+          <li><span class="mk"></span> Conditions and alerts engine</li>
+          <li><span class="mk"></span> Trading journal — log, review, and analyse trades</li>
+        </ul>
+        <p style="margin-top:24px"><strong>Morning reports</strong></p>
+        <ul class="checklist">
+          <li><span class="mk"></span> AI-generated morning reports — raw and by section</li>
+          <li><span class="mk"></span> Regime history and transition data</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HOW TO CONNECT ============================ -->
+<section class="section" id="connect" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">How to connect</span>
+    <h2 class="mega-head">Any MCP client. <span class="accent">Your own key.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p>Carrac's MCP server works with any client that supports the Model Context Protocol. Tested clients include <strong>Claude Desktop</strong>, <strong>Claude Code</strong>, and <strong>Cursor</strong> — any other MCP-compatible agent or IDE extension should connect the same way.</p>
+        <p style="margin-top:16px">Configuration details and the full connection guide are in the <a href="/guide">Carrac guide</a>. MCP requires a Carrac account and an API key.</p>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> <strong>Claude Desktop</strong> — add Carrac as an MCP server in your config</li>
+          <li><span class="mk"></span> <strong>Claude Code</strong> — wire Carrac's MCP endpoint into your project</li>
+          <li><span class="mk"></span> <strong>Cursor</strong> — add as a custom MCP server in Cursor settings</li>
+          <li><span class="mk"></span> <strong>Any MCP client</strong> — standard protocol, any compatible client</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ RESOURCES & PROMPTS ============================ -->
+<section class="section" id="resources" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Resources &amp; prompts</span>
+    <h2 class="mega-head">Grounded context. <span class="accent">Structured workflows.</span></h2>
+    <div class="split reveal" style="margin-top:32px">
+      <div class="col">
+        <p><strong>MCP Resources</strong> give your AI client structured reference material it can read before calling tools — reducing hallucination and keeping responses grounded in Carrac's actual data model.</p>
+        <ul class="checklist" style="margin-top:16px">
+          <li><span class="mk"></span> <strong>Indicator glossary</strong> — definitions for every indicator and quant term Carrac uses</li>
+          <li><span class="mk"></span> <strong>Anti-hallucination grounding rules</strong> — hard constraints on what the model should and should not assert about market data</li>
+          <li><span class="mk"></span> <strong>Live macro facts</strong> — current ground-truth values (rates, yields, key levels) updated regularly so the model doesn't rely on stale training memory</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p><strong>MCP Prompts</strong> are structured, reusable workflows that surface in your client's prompt picker. Each guides the AI through a specific analytical task using Carrac data.</p>
+        <ul class="checklist" style="margin-top:16px">
+          <li><span class="mk"></span> <strong>validate-trade</strong> — systematic checklist to evaluate a trade idea against current market regime, correlations, and indicator state</li>
+          <li><span class="mk"></span> <strong>design-trade</strong> — structure a trade from thesis to entry conditions, risk parameters, and scenario branches</li>
+          <li><span class="mk"></span> <strong>analyze-asset</strong> — full cross-layer analysis of a single asset: price structure, quant signals, regime context, and sentiment</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DATA OWNERSHIP & POSTURE ============================ -->
+<section class="quote" id="posture">
+  <div class="wrap">
+    <blockquote>Data is information to evaluate — not a buy or sell signal. <span class="accent">Your analysis stays yours. Carrac never sees it.</span></blockquote>
+  </div>
+</section>
+
+<section class="section" id="ownership" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:18px">Data ownership &amp; posture</span>
+    <div class="split reveal" style="margin-top:8px">
+      <div class="col">
+        <h2>Your AI. Your conclusions.</h2>
+        <p>Because Carrac's MCP server is a data provider — not an inference provider — the model that interprets Carrac's data runs entirely on your side, under your API key. Carrac does not log your prompts, does not see your queries, and does not influence your model's outputs.</p>
+        <p style="margin-top:16px">The <a href="/market-regime">market regime</a> surface, the quant signals, and the indicator data are all information for you to evaluate. Carrac presents data; it never says buy, sell, or what position to take.</p>
+      </div>
+      <div class="col">
+        <ul class="checklist" style="margin-top:0">
+          <li><span class="mk"></span> Your model, your API key — inference runs on your side</li>
+          <li><span class="mk"></span> Carrac does not process or log your MCP queries</li>
+          <li><span class="mk"></span> Data is auditable — every source is named</li>
+          <li><span class="mk"></span> Non-advice posture: information to evaluate, never a recommendation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-center">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Get started</span>
+    <h2 class="mega-head" style="margin-top:14px">Market data over MCP. <span class="accent">Free to start.</span></h2>
+    <p class="section-desc">Create a free account to access the Carrac MCP server. See the <a href="/guide">guide</a> for setup instructions — information &amp; analysis, never advice.</p>
+    <div class="cta-row">
+      <a href="/register" class="btn btn-primary btn-lg">Create account <i data-lucide="arrow-right"></i></a>
+      <a href="/guide" class="btn btn-secondary btn-lg">Read the guide</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

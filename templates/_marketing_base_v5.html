@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Carrac — a market-analysis workstation{% endblock %}</title>
+  <meta name="description" content="{% block description %}A market-analysis workstation: charts, a statistical engine, plays and alerts, a trade journal and an MCP server for AI agents.{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}{{ site_url }}/{% endblock %}">
+  {% block analytics %}{% include '_posthog_marketing.html' %}{% endblock %}
+
+  {% block og %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Carrac">
+  <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ self.description() }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ self.canonical() }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ site_url }}/static/og-dashboard.png{% endblock %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{{ self.description() }}{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ site_url }}/static/og-dashboard.png{% endblock %}">
+  {% endblock %}
+  {% block jsonld %}{% endblock %}
+  <script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">
+  {"@context":"https://schema.org","@type":"Organization","name":"Carrac","url":"{{ site_url }}","logo":"{{ site_url }}/static/icons/icon-512.png"}
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/colors_and_type.css') }}?v={{ cache_version('css/colors_and_type.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/marketing.css') }}?v={{ cache_version('css/marketing.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/marketing-extra.css') }}?v={{ cache_version('css/marketing-extra.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/marketing-v5.css') }}?v={{ cache_version('css/marketing-v5.css') }}">
+  {% block extra_head %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing-hybrid.css') }}?v={{ cache_version('css/landing-hybrid.css') }}">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="cursor-glow" aria-hidden="true"></div>
+
+<!-- ============================ NAV ============================ -->
+<header class="ed-nav" id="edNav">
+  <div class="nav-shell">
+    <a class="brand" href="/" aria-label="Carrac home"><span>Carrac</span></a>
+    <nav class="nav-menu">
+      <div class="nav-item has-drop">
+        <button class="nav-link" aria-expanded="false">Product <i class="cv" data-lucide="chevron-down"></i></button>
+        <div class="nav-drop">
+          <a href="/markets"><span class="dt">Markets</span><span class="ds">Every venue &amp; asset class, named</span></a>
+          <a href="/intelligence"><span class="dt">Quant engine</span><span class="ds">Regimes, correlations, lead-lag</span></a>
+          <a href="/market-regime"><span class="dt">Market regime</span><span class="ds">The live regime read</span></a>
+          <a href="/indicators"><span class="dt">Indicators</span><span class="ds">Every built-in, all free</span></a>
+          <a href="/integrations"><span class="dt">Integrations</span><span class="ds">MCP, terminal &amp; your own AI</span></a>
+        </div>
+      </div>
+      <a class="nav-link" href="/mcp">MCP</a>
+      <a class="nav-link" href="/guide">Docs</a>
+    </nav>
+    <div class="nav-right">
+      <a href="/login" class="nav-login">Sign in</a>
+      <a href="/register" class="nav-cta">Create account</a>
+    </div>
+    <button class="nav-toggle" type="button" aria-label="Open menu" aria-controls="nav-mobile" aria-expanded="false">
+      <i data-lucide="menu"></i>
+    </button>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <a href="/markets">Markets</a>
+    <a href="/intelligence">Quant engine</a>
+    <a href="/indicators">Indicators</a>
+    <a href="/mcp">MCP</a>
+    <a href="/integrations">Integrations</a>
+    <a href="/guide">Docs</a>
+    <div class="m-cta">
+      <a href="/login" class="ed-btn ghost sm">Sign in</a>
+      <a href="/register" class="ed-btn primary sm">Create account</a>
+    </div>
+  </div>
+</header>
+
+<main id="main-content">
+{% block content %}{% endblock %}
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="ed-foot" id="footer">
+  <div class="foot-glow"></div>
+  <span class="foot-wash"></span>
+  <span class="foot-pulse"></span>
+  <span class="foot-edge"></span>
+  <div class="foot-top">
+    <div class="foot-brand-col">
+      <a class="brand" href="/"><span>Carrac</span></a>
+      <p>A market-analysis workstation. Every data source named.</p>
+      <div class="foot-social">
+        <a href="https://github.com/carrac-app" target="_blank" rel="noopener" aria-label="GitHub"><i data-lucide="github"></i></a>
+      </div>
+    </div>
+    <div class="foot-cols">
+      <div class="fc">
+        <h5>Product</h5>
+        <a href="/markets">Markets</a>
+        <a href="/indicators">Indicators</a>
+        <a href="/intelligence">Quant engine</a>
+        <a href="/market-regime">Market regime</a>
+      </div>
+      <div class="fc">
+        <h5>Build</h5>
+        <a href="/guide">Guide / Docs</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/mcp">MCP server</a>
+      </div>
+      <div class="fc">
+        <h5>Project</h5>
+        <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        <a href="/register">Create account</a>
+      </div>
+      <div class="fc">
+        <h5>Legal</h5>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/disclaimer">Disclaimer</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <p class="disc"><b>Carrac is an information &amp; analysis tool — not financial advice.</b> Nothing here is a recommendation to enter or exit any position. Markets carry risk; evaluate everything yourself.</p>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="Back to top" title="Back to top"><i data-lucide="arrow-up"></i></button>
+
+<script src="{{ url_for('static', filename='js/lucide-icons.js') }}?v={{ cache_version('js/lucide-icons.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/marketing-v5.js') }}?v={{ cache_version('js/marketing-v5.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

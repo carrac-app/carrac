@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Analytics - Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+        .header-actions { display: flex; gap: 8px; }
+        .btn { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; border: none; cursor: pointer; }
+        .btn-secondary { background: #242b35; color: #b0b8c4; border: 1px solid #2a3140; }
+        .btn-secondary:hover { background: #2a3140; color: #e6edf3; }
+        .btn-active { background: #26a69a; color: #fff; }
+
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .card { background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 16px; }
+        .card-label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .card-value { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .card-sub { font-size: 0.7rem; color: #545e6e; margin-top: 2px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid #2a3140; }
+        td { font-size: 0.8rem; padding: 8px 12px; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        .cost-cell { color: #26a69a; font-weight: 600; }
+        .charged-cell { color: #ff9800; }
+
+        .section { margin-bottom: 32px; }
+        .section h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: #b0b8c4; }
+        .loading { color: #545e6e; font-size: 0.85rem; padding: 20px; }
+        .error { color: #ef5350; }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set admin_page = 'costs' %}
+    {% include 'admin_nav.html' %}
+    <div class="header">
+        <h1>Economics</h1>
+        <div class="header-actions">
+            <button class="btn btn-active" data-period="7d">7 Days</button>
+            <button class="btn btn-secondary" data-period="30d">30 Days</button>
+            <button class="btn btn-secondary" data-period="all">All Time</button>
+        </div>
+    </div>
+
+    <div class="summary-cards" id="summary-cards">
+        <div class="card"><div class="card-label">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>By Feature &amp; Model</h2>
+        <div id="totals-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Daily Breakdown</h2>
+        <div id="daily-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Per-Tier Economics</h2>
+        <div id="tier-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Top Cost Users</h2>
+        <div id="users-table"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
+var _currentPeriod = '7d';
+
+function loadCosts(period) {
+    _currentPeriod = period;
+    document.querySelectorAll('[data-period]').forEach(function(b) {
+        b.className = b.dataset.period === period ? 'btn btn-active' : 'btn btn-secondary';
+    });
+
+    fetch('/api/admin/costs?period=' + period)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            renderSummary(data);
+            renderTotals(data.totals);
+            renderDaily(data.daily);
+            renderTierEcon(data.tier_breakdown || []);
+            renderTopUsers(data.top_users || []);
+        })
+        .catch(function(err) {
+            document.getElementById('summary-cards').innerHTML = '<div class="card"><div class="card-label error">' + escapeHtml(err.message) + '</div></div>';
+        });
+}
+
+function fmtCost(cents) {
+    return '$' + (cents / 100).toFixed(2);
+}
+
+function fmtTokens(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n;
+}
+
+function renderSummary(data) {
+    var totalCost = 0, totalQueries = 0, totalCharged = 0;
+    var byProvider = {};
+    data.totals.forEach(function(t) {
+        totalCost += t.total_cost_cents;
+        totalCharged += t.total_charged_cents;
+        totalQueries += t.queries;
+        var provider = t.model || 'unknown';
+        if (provider.includes('opus') || provider.includes('sonnet') || provider.includes('haiku')) provider = 'Anthropic';
+        else if (provider.includes('grok')) provider = 'Grok';
+        byProvider[provider] = (byProvider[provider] || 0) + t.total_cost_cents;
+    });
+
+    var p = data.platform || {};
+    var taxPct = p.tax_multiplier ? Math.round((p.tax_multiplier - 1) * 100) : 27;
+
+    var html = '<div class="card"><div class="card-label">Gross Cost (incl. ' + taxPct + '% tax)</div><div class="card-value cost-cell">' + fmtCost(p.total_gross_cost_cents || 0) + '</div><div class="card-sub">' + totalQueries + ' queries &middot; API: ' + fmtCost(totalCost) + '</div></div>';
+    html += '<div class="card"><div class="card-label">Revenue (Top-ups)</div><div class="card-value" style="color:#58a6ff;">' + fmtCost(p.total_topup_revenue_cents || 0) + '</div><div class="card-sub">' + (p.active_users || 0) + ' active users</div></div>';
+
+    var margin = p.margin_cents || 0;
+    var marginColor = margin >= 0 ? '#3fb950' : '#f85149';
+    html += '<div class="card"><div class="card-label">Platform Margin</div><div class="card-value" style="color:' + marginColor + ';">' + fmtCost(margin) + '</div><div class="card-sub">' + ((p.total_topup_revenue_cents || 0) > 0 ? (margin / (p.total_topup_revenue_cents) * 100).toFixed(0) + '% of revenue' : 'no revenue yet') + '</div></div>';
+
+    html += '<div class="card"><div class="card-label">Shared Reports</div><div class="card-value">' + fmtCost(p.platform_gross_cost_cents || 0) + '</div><div class="card-sub">engine (user_id=0)</div></div>';
+
+    html += '<div class="card"><div class="card-label">Reports vs Copilot</div><div class="card-value" style="font-size:1rem;">' + fmtCost(p.report_cost_cents || 0) + ' / ' + fmtCost(p.copilot_cost_cents || 0) + '</div><div class="card-sub">report / copilot (API cost)</div></div>';
+
+    Object.keys(byProvider).sort().forEach(function(pr) {
+        html += '<div class="card"><div class="card-label">' + escapeHtml(pr) + '</div><div class="card-value">' + fmtCost(byProvider[pr]) + '</div></div>';
+    });
+
+    document.getElementById('summary-cards').innerHTML = html;
+}
+
+function renderTotals(totals) {
+    if (!totals.length) { document.getElementById('totals-table').innerHTML = '<div class="loading">No data yet</div>'; return; }
+    var html = '<table><thead><tr><th>Feature</th><th>Model</th><th>Queries</th><th>Cost</th><th>Charged</th></tr></thead><tbody>';
+    totals.forEach(function(t) {
+        html += '<tr><td>' + escapeHtml(t.feature || '-') + '</td><td>' + escapeHtml(t.model || '-') + '</td><td>' + t.queries + '</td><td class="cost-cell">' + fmtCost(t.total_cost_cents) + '</td><td class="charged-cell">' + fmtCost(t.total_charged_cents) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('totals-table').innerHTML = html;
+}
+
+function renderDaily(daily) {
+    if (!daily.length) { document.getElementById('daily-table').innerHTML = '<div class="loading">No data yet</div>'; return; }
+    var html = '<table><thead><tr><th>Date</th><th>Feature</th><th>Model</th><th>Queries</th><th>Input</th><th>Output</th><th>Cost</th></tr></thead><tbody>';
+    daily.forEach(function(d) {
+        html += '<tr><td>' + escapeHtml(d.day || '-') + '</td><td>' + escapeHtml(d.feature || '-') + '</td><td>' + escapeHtml(d.model || '-') + '</td><td>' + d.queries + '</td><td>' + fmtTokens(d.total_input) + '</td><td>' + fmtTokens(d.total_output) + '</td><td class="cost-cell">' + fmtCost(d.total_cost_cents) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('daily-table').innerHTML = html;
+}
+
+function renderTierEcon(tiers) {
+    var el = document.getElementById('tier-table');
+    if (!tiers.length) { el.innerHTML = '<div class="loading">No data yet</div>'; return; }
+    var html = '<table><thead><tr><th>Tier</th><th>Users</th><th>Gross Cost</th><th>Charged</th><th>Avg Gross/User</th></tr></thead><tbody>';
+    tiers.forEach(function(t) {
+        html += '<tr><td>' + escapeHtml(t.tier || 'free') + '</td><td>' + t.user_count + '</td><td class="cost-cell">' + fmtCost(t.total_gross_cost_cents) + '</td><td class="charged-cell">' + fmtCost(t.total_charged_cents) + '</td><td>' + fmtCost(t.avg_gross_cost_per_user) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderTopUsers(users) {
+    var el = document.getElementById('users-table');
+    if (!users.length) { el.innerHTML = '<div class="loading">No data yet</div>'; return; }
+    var html = '<table><thead><tr><th>User</th><th>Tier</th><th>Gross Cost</th><th>Charged</th><th>Deposited</th><th>Margin</th></tr></thead><tbody>';
+    users.forEach(function(u) {
+        var neg = u.margin_cents < 0;
+        var rowStyle = neg ? ' style="background:rgba(248,81,73,0.06);"' : '';
+        var marginColor = neg ? '#f85149' : '#3fb950';
+        html += '<tr' + rowStyle + '><td><a href="/admin/user/' + u.user_id + '" style="color:#58a6ff;text-decoration:none;">' + escapeHtml(u.email) + '</a></td><td>' + escapeHtml(u.tier) + '</td><td class="cost-cell">' + fmtCost(u.total_gross_cost_cents) + '</td><td class="charged-cell">' + fmtCost(u.total_charged_cents) + '</td><td>' + fmtCost(u.total_deposited_cents) + '</td><td style="color:' + marginColor + ';font-weight:600;">' + fmtCost(u.margin_cents) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+// CSP: delegated handler for data-period buttons (replaces inline onclick attributes)
+document.querySelector('.header-actions').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-period]');
+    if (!btn) return;
+    loadCosts(btn.dataset.period);
+});
+
+loadCosts('7d');
+</script>
+</body>
+</html>

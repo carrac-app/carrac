@@ -1,0 +1,270 @@
+name: tests
+
+on:
+  # paths-ignore is on `push` only: a filtered-out workflow never reports, so a
+  # required status check on a pull request would block forever.
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'backlog/**'
+      - 'docs/**'
+  pull_request:
+    branches: [main]
+  # An advisory can be published against pins nobody has touched, so the
+  # dependency audit runs on a clock (Mondays 06:00 UTC). Only pip-audit runs on
+  # this trigger; a scheduled full suite would go red on unrelated flakes.
+  schedule:
+    - cron: '0 6 * * 1'
+
+# The runner is chosen by the repository variable CI_RUNNER, not hardcoded.
+# Set CI_RUNNER=self-hosted to use a self-hosted runner; when the variable is
+# unset, jobs run on GitHub-hosted ubuntu-latest.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: pytest + coverage (${{ matrix.python-version }})
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 is what the image runs and what requirements.lock is resolved
+        # against, so it installs the lock. 3.14 checks forward compatibility
+        # against the looser requirements.txt (some locked pins have no 3.14 wheels).
+        python-version: ["3.11", "3.14"]
+
+    steps:
+      # Self-hosted only: a root-owned file left in the workspace makes checkout
+      # fail. The runner has sudo, so hand the tree back first. Hosted runners skip this.
+      - name: Repair workspace ownership (self-hosted)
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ "${{ matrix.python-version }}" = "3.11" ]; then
+            pip install -r requirements.lock -r requirements-dev.txt
+          else
+            pip install -r requirements.txt -r requirements-dev.txt
+          fi
+
+      # ruff comes from requirements-dev.txt, the same pin `make lint` uses.
+      - name: Ruff (fast syntax / name checks)
+        run: ruff check .
+
+      - name: Pytest with coverage
+        env:
+          DB_TYPE: sqlite
+          # No ADMIN_EMAIL: an example.com value is refused at boot in prod mode,
+          # which the config tests exercise in subprocesses that inherit this env.
+          # Never set CONVEXITY_API_KEY here: the integration marker is also deselected in pytest.ini.
+        run: |
+          # xdist (-n auto) keeps the run to minutes; serially it takes far longer.
+          # --cov-fail-under is a floor, set a little below the measured total
+          # and raised as coverage grows.
+          pytest tests/ -q --tb=short -n auto \
+            --cov --cov-report=term-missing --cov-report=xml \
+            --cov-fail-under=58 \
+            -m "not integration and not slow"
+
+      - name: Upload coverage artifact
+        if: matrix.python-version == '3.14'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+  js-tests:
+    name: node unit tests + eslint
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    if: github.event_name != 'schedule'
+    steps:
+      - name: Repair workspace ownership (self-hosted)  # see python-tests
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # No npm cache: there is no package.json at the repo root, only the two
+      # tools below, installed --no-save.
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+
+      # eslint@8 matches `make lint`; the repo config (.eslintrc.js) is the
+      # format eslint@9 no longer reads by default.
+      - name: Install ESLint + terser
+        run: |
+          npm install --no-save eslint@8 terser@5
+
+      - name: ESLint
+        run: npx eslint --ignore-pattern '*.min.js' static/js/
+
+      - name: JavaScript unit tests
+        run: make test-js
+
+  pip-audit:
+    # Known vulnerabilities fail the job. Use `--ignore-vuln <id>` below only for
+    # advisories that have been triaged as not applicable.
+    name: pip-audit
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - name: Repair workspace ownership (self-hosted)  # see python-tests
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt --strict
+      # Also audit the full locked set, transitives included. --disable-pip
+      # --no-deps reads the exact pins without resolving, because the lock targets
+      # python 3.11, not this job's interpreter.
+      - run: pip-audit -r requirements.lock --disable-pip --no-deps --strict
+
+  pg-portability:
+    # Production runs Postgres; the main suite runs SQLite, which accepts SQL that
+    # Postgres rejects (boolean=integer, dict binding, aborted transactions).
+    # This job loads the real schema (tests/schema/carrac_pg_schema.sql) into
+    # Postgres and runs the write-surface tests (tests/pg/) against it.
+    name: postgres portability
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    if: github.event_name != 'schedule'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: carrac
+          POSTGRES_PASSWORD: carrac
+          POSTGRES_DB: carrac_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U carrac"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://carrac:carrac@localhost:5432/carrac_test
+      TEST_DATABASE_URL: postgresql://carrac:carrac@localhost:5432/carrac_test
+      CARRAC_TEST_DB: postgres
+      SECRET_KEY: ci-postgres-portability-secret-key
+      TESTING: "true"
+    steps:
+      - name: Repair workspace ownership (self-hosted)  # see python-tests
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          # The image's interpreter, since this job emulates its database.
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock -r requirements-dev.txt
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: Load prod schema into the test Postgres
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/schema/carrac_pg_schema.sql
+      - name: Run write-surface portability tests on real Postgres
+        run: |
+          pytest tests/pg/ -q -p no:xdist --tb=short
+
+      # Drift guard: the repo (baseline + migrations) must rebuild the schema.
+      - name: Bootstrap a fresh schema from the repo (baseline + migrations)
+        env:
+          DATABASE_URL: postgresql://carrac:carrac@localhost:5432/carrac_bootstrap
+        run: |
+          psql "postgresql://carrac:carrac@localhost:5432/carrac_test" \
+            -c "CREATE DATABASE carrac_bootstrap;"
+          python -m quant.schema
+          alembic upgrade head
+      - name: Assert repo bootstrap matches the schema (no drift)
+        run: |
+          python scripts/check_schema_drift.py \
+            "postgresql://carrac:carrac@localhost:5432/carrac_test" \
+            "postgresql://carrac:carrac@localhost:5432/carrac_bootstrap"
+
+  sdk-tests:
+    name: SDK tests (python + typescript)
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    if: github.event_name != 'schedule'
+    steps:
+      - name: Repair workspace ownership (self-hosted)  # see python-tests
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+      - run: make test-sdk
+
+  quickstart:
+    # The README's headline command. Nothing else exercises it, so a change that
+    # breaks clone-to-login (a renamed field, a changed response shape) would
+    # otherwise ship silently. Builds the dev image and runs the full smoke.
+    name: quickstart smoke
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    if: github.event_name != 'schedule'
+    timeout-minutes: 40
+    env:
+      COMPOSE_PROJECT_NAME: ci-quickstart
+      CARRAC_DEV_IMAGE: ci-quickstart-carrac
+      CARRAC_PORT: "5093"
+    steps:
+      - name: Repair workspace ownership (self-hosted)  # see python-tests
+        if: vars.CI_RUNNER != ''
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Quickstart (build, start, register, smoke)
+        run: ./scripts/quickstart.sh
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.dev.yml logs --tail=80
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v --rmi local
+
+  notify-failure:
+    # If any job above fails, ping an ntfy topic. Needs the NTFY_BASE and
+    # NTFY_DEPLOY_TOPIC repository secrets; without them (forks) it exits 0.
+    name: notify on failure
+    needs: [python-tests, js-tests, pip-audit, pg-portability, sdk-tests, quickstart]
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - name: Ping ntfy
+        env:
+          NTFY_BASE: ${{ secrets.NTFY_BASE }}
+          NTFY_DEPLOY_TOPIC: ${{ secrets.NTFY_DEPLOY_TOPIC }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$NTFY_BASE" ] || [ -z "$NTFY_DEPLOY_TOPIC" ]; then
+            echo "NTFY_BASE / NTFY_DEPLOY_TOPIC secrets are not set: no ping sent"
+            exit 0
+          fi
+          curl -fsS -m 15 -H "Title: Carrac CI failed" -H "Tags: rotating_light" \
+            -d "tests failed on ${SHA:0:8}: $RUN_URL" "$NTFY_BASE/$NTFY_DEPLOY_TOPIC"

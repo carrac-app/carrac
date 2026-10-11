@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Morning Report Archive</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            padding: 0 0 60px;
+        }
+        .header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 600; color: #e6edf3; }
+        .header a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .container { max-width: 800px; margin: 24px auto; padding: 0 24px; }
+        .report-list { list-style: none; }
+        .report-item {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .report-item:hover { border-color: #58a6ff; }
+        .report-item a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        .report-meta {
+            color: #8b949e;
+            font-size: 0.85rem;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        .empty { color: #8b949e; text-align: center; padding: 40px; }
+    </style>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <div class="header">
+        <h1>Morning Report Archive</h1>
+        <a href="/report/morning">&larr; Current Report</a>
+    </div>
+    <div class="container">
+        {% if reports %}
+        <ul class="report-list">
+            {% for r in reports %}
+            <li class="report-item">
+                <a href="/report/morning/{{ r.id }}">{{ r.created_at | fmtdate }} Morning Report</a>
+                <span class="report-meta">{{ r.created_at | fmtdt }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No morning reports yet.</p>
+        {% endif %}
+    </div>
+    <script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+</body>
+</html>

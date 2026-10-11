@@ -1,0 +1,102 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Terms of Service — Carrac{% endblock %}
+{% block description %}Terms of Service for Carrac — the AI-enhanced trading platform for crypto, stocks, forex, and commodities.{% endblock %}
+{% block canonical %}{{ site_url }}/terms{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Terms of Service — Carrac","url":"{{ site_url }}/terms"}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+.prose-page h2 {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--fg1);
+  margin: 32px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.prose-page h2:first-of-type { border-top: none; padding-top: 0; }
+.prose-page p { font-size: var(--t-sm); color: var(--fg2); margin-bottom: 12px; line-height: var(--lh-relaxed); }
+.prose-page ul, .prose-page ol {
+  font-size: var(--t-sm);
+  color: var(--fg2);
+  margin: 8px 0 12px 20px;
+  line-height: var(--lh-relaxed);
+}
+.prose-page li { margin-bottom: 6px; }
+.prose-page strong { color: var(--fg1); font-weight: 600; }
+.legal-effective { font-size: var(--t-2xs); color: var(--fg3); margin-bottom: 32px; margin-top: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prose-page wrap">
+  <span class="eyebrow">Legal</span>
+  <p class="legal-footer-note"><strong>Operator note:</strong> this page is a template shipped with the open-source software. Whoever runs this instance is responsible for reviewing it against their own services, processors and jurisdiction before relying on it.</p>
+  <h1 style="margin-top:16px">Terms of Service</h1>
+  <p class="legal-effective">Effective date: 28 May 2026</p>
+
+  <h2>1. Acceptance of Terms</h2>
+  <p>{{ legal_disclosure }} The Platform is accessible at {{ site_host }}. By creating an account you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the Platform.</p>
+  <p>For legal correspondence: <strong>{{ legal_entity.contact_email }}</strong>{% if legal_entity.address and 'on file' not in legal_entity.address %} &middot; {{ legal_entity.address }}{% endif %}{% if legal_entity.registry_number %} &middot; Registry no. {{ legal_entity.registry_number }}{% endif %}{% if legal_entity.vat_id %} &middot; VAT {{ legal_entity.vat_id }}{% endif %}.</p>
+
+  <h2>2. Description of Service</h2>
+  <p>Carrac is a market data analytics platform that provides interactive multi-asset charting, a comprehensive technical indicator library, scheduled AI-generated market reports, a trading journal with AI review, trade plays with a conditions engine, strategy backtesting, portfolio dashboards, price alerts, and real-time derivatives data. It also offers programmatic access through an API and the Model Context Protocol (MCP), so you can connect your own AI client to the data. The Platform aggregates data from third-party sources including Binance, FRED, and others.</p>
+  <p><strong>Carrac is not a broker, financial advisor, or investment platform.</strong> The Platform does not execute trades, hold funds, or provide personalised financial advice. All content — including AI-generated reports, scores, plays, and alerts — is for informational and analytical purposes only. See our <a href="{{ url_for('legal.disclaimer') }}">Financial Disclaimer</a> for full details.</p>
+
+  <h2>3. Eligibility and Registration</h2>
+  <p>You must be at least 18 years old to use Carrac. You are responsible for keeping your login credentials secure and for all activity under your account.</p>
+
+  <h2>4. Acceptable Use</h2>
+  <p>You agree not to:</p>
+  <ul>
+    <li>Scrape, crawl, or programmatically extract data from the Platform beyond the provided APIs</li>
+    <li>Share your account credentials with others or allow multiple people to use a single account</li>
+    <li>Redistribute, resell, or republish Carrac data, reports, or screenshots for commercial purposes</li>
+    <li>Attempt to circumvent rate limits, authentication, or security measures</li>
+    <li>Use the Platform to engage in market manipulation or any illegal activity</li>
+    <li>Upload malicious content, inject code, or attempt to compromise the Platform's infrastructure</li>
+  </ul>
+  <p><strong>API and MCP access.</strong> Your account can issue personal API keys that grant programmatic access to the Platform, including over the Model Context Protocol (MCP) for AI clients you control. When you use an API key you additionally agree that:</p>
+  <ul>
+    <li>You are responsible for keeping your API keys secret. Treat a key like a password — you are responsible for all activity performed with it, and you must revoke and rotate any key that is exposed.</li>
+    <li>You will not redistribute, resell, or republish Carrac's market-data streams, reports, or API responses, nor operate the API as a backend for a competing data service.</li>
+    <li>You will stay within the published rate limits for your tier and will not run automated workloads designed to circumvent them.</li>
+    <li>When you connect a third-party AI client (for example Claude Desktop, Claude Code, or another MCP tool), the queries you send and the data you retrieve are processed by that third party under your own agreement with them, and you are responsible for that client's handling of the data.</li>
+  </ul>
+
+  <h2>5. Intellectual Property</h2>
+  <p>The Platform's source code, design, scoring algorithms (Consensio), indicators, and AI report templates are the intellectual property of Carrac. You retain full ownership of your own data — journal entries, drawings, plays, alerts, and any content you create within the Platform.</p>
+
+  <h2>6. User Data and Content</h2>
+  <p>Your drawings, plays, journal entries, and preferences are stored on our servers and belong to you. We do not sell your data to third parties. See our <a href="{{ url_for('legal.privacy') }}">Privacy Policy</a> for details on how we store and protect your information.</p>
+
+  <h2>7. AI-Generated Content</h2>
+  <p>Morning reports, afternoon updates, and weekly digests are generated by large language models. These outputs may contain errors, hallucinations, or outdated information. <strong>AI-generated content does not constitute financial advice and must not be treated as a recommendation to buy, sell, or hold any financial instrument.</strong></p>
+
+  <h2>8. Third-Party Data</h2>
+  <p>Market data is sourced from third-party APIs (Binance, Hyperliquid, and others). This data may be delayed, incomplete, or inaccurate. Carrac does not guarantee the accuracy, timeliness, or completeness of any third-party data displayed on the Platform.</p>
+
+  <h2>9. Financial Disclaimer</h2>
+  <p><strong>Carrac cannot be held responsible or liable for any financial decisions, losses, or outcomes resulting from your use of the Platform.</strong> Trading and investing involve substantial risk of loss. You are solely responsible for your own financial decisions. See our full <a href="{{ url_for('legal.disclaimer') }}">Financial Disclaimer</a>.</p>
+
+  <h2>10. Limitation of Liability</h2>
+  <p>To the maximum extent permitted by applicable law, Carrac and its operator shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or trading losses, arising from your use of or inability to use the Platform.</p>
+  <p>The Platform is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, or non-infringement.</p>
+
+  <h2>12. Account Termination</h2>
+  <p>We reserve the right to suspend or terminate your account at any time, with or without notice, for violations of these Terms or for any other reason. Upon termination, your right to access the Platform ceases immediately. You may request export of your data before or after termination by contacting us.</p>
+
+  <h2>13. Availability</h2>
+  <p>We aim to keep the Platform available but do not guarantee uninterrupted access. The Platform may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We are not liable for any losses caused by downtime.</p>
+
+  <h2>14. Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. Material changes will be communicated via email or an in-app notification. Continued use of the Platform after changes are posted constitutes acceptance of the updated Terms.</p>
+
+  <h2>15. Governing Law</h2>
+  <p>These Terms are governed by the laws of {% if legal_entity.country %}{{ legal_entity.country }}{% else %}the operator&rsquo;s country of establishment{% endif %}. Any disputes shall be subject to the exclusive jurisdiction of the competent courts of {% if legal_entity.country %}{{ legal_entity.country }}{% else %}that country{% endif %}, without prejudice to any mandatory consumer-protection rights you have where you live.</p>
+
+  <h2>16. Contact</h2>
+  <p>For questions about these Terms, contact us at <strong>{{ support_email }}</strong>.</p>
+</div>
+{% endblock %}

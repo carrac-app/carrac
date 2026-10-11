@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carrac — Daily Brief — {{ date }}</title>
+<meta name="description" content="Carrac's daily market brief for {{ date }} — archived as originally published. Not financial advice.">
+<link rel="canonical" href="{{ site_url }}/brief/{{ date }}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Carrac — Daily Brief — {{ date }}">
+<meta property="og:description" content="Carrac's daily market brief for {{ date }} — archived as originally published. Not financial advice.">
+<meta property="og:url" content="{{ site_url }}/brief/{{ date }}">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carrac — Daily Brief — {{ date }}">
+<meta name="twitter:description" content="Carrac's daily market brief for {{ date }} — archived as originally published. Not financial advice.">
+<meta name="twitter:image" content="{{ site_url }}/static/og-dashboard.png">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+<script src="{{ url_for('static', filename='js/vendor/purify.min.js') }}?v={{ cache_version('js/vendor/purify.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:"Inter",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+/* Reader body — the archived report's markdown rendered into one linear
+   column (no story-layout rail, no facts modules: those are live-band
+   surfaces this honest-permalink page deliberately never shows). */
+.brief-reader-body{max-width:var(--measure);margin:40px 0 80px;}
+.brief-reader-body h2{font-family:"Fraunces";font-weight:500;font-size:22px;color:var(--cream);margin:34px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
+.brief-reader-body h2:first-child{margin-top:0;}
+.brief-reader-body h3{font-family:"Fraunces";font-weight:500;font-size:17px;color:var(--cream);margin:24px 0 10px;}
+.brief-reader-body p{font-size:16px;line-height:1.72;color:var(--cream-2);margin:0 0 18px;}
+.brief-reader-body strong{color:var(--cream);font-weight:600;}
+.brief-reader-body ul,.brief-reader-body ol{padding-left:22px;margin:0 0 18px;}
+.brief-reader-body li{font-size:15px;line-height:1.6;color:var(--cream-2);margin:0 0 8px;}
+.brief-reader-body table{width:100%;border-collapse:collapse;margin:16px 0;}
+.brief-reader-body th,.brief-reader-body td{border:1px solid var(--rule);padding:8px 10px;text-align:left;font-size:13.5px;color:var(--cream-2);}
+.brief-reader-body th{color:var(--gold);font-family:"Fraunces";font-weight:500;}
+.brief-reader-body code{background:var(--raise-2);padding:1px 6px;border-radius:4px;font-size:.9em;color:var(--cream);}
+.brief-reader-body hr{border:none;border-top:1px solid var(--rule);margin:24px 0;}
+.brief-reader-body a{color:var(--gold);}
+.brief-ctaband{max-width:var(--measure);border:1px solid var(--rule);border-radius:12px;background:var(--ink-2);
+  padding:18px 22px;margin:8px 0 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.brief-ctaband p{margin:0;font-size:13.5px;color:var(--cream-2);max-width:52ch;}
+.brief-cta-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.brief-cta-btn{font-family:"Inter",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);
+  background:var(--gold);border-radius:8px;padding:8px 15px;text-decoration:none;white-space:nowrap;}
+.brief-cta-btn:hover{background:#d4b87e;}
+.brief-cta-link{font-size:12.5px;color:var(--cream-2);text-decoration:none;border:1px solid var(--rule);
+  border-radius:7px;padding:7px 13px;white-space:nowrap;}
+.brief-cta-link:hover{border-color:var(--gold-dim);color:var(--gold);}
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body class="ed-scope">
+
+<div class="topbar"><div class="row">
+  <div class="wm"><b>Carrac</b><span class="sep">·</span><span class="ed">Daily Brief Archive</span></div>
+  <div class="spacer"></div>
+  <div class="acts">
+    <a class="btn" href="/brief/archive">Archive</a>
+    <a class="btn" href="/brief">Today&rsquo;s Brief</a>
+  </div>
+</div></div>
+<div class="ed-disclaim" role="note">AI-generated market analysis, archived exactly as originally published — <a href="{{ url_for('legal.disclaimer') }}">not financial advice</a>.</div>
+
+<div class="wrap">
+  <div class="lede">
+    <div class="kicker"><span class="tag">Daily Brief</span></div>
+    <h1 class="hl serif">{{ date }}</h1>
+  </div>
+  <div class="brief-reader-body" id="brief-body">
+    {% if report and report.html %}{{ report.html | safe }}{% else %}<p style="color:var(--muted)">Loading&hellip;</p>{% endif %}
+  </div>
+
+  {% set _utm = 'utm_source=brief&utm_medium=reader&utm_campaign=' ~ date %}
+  <div class="brief-ctaband">
+    <p>Want this level of read on every asset you watch, every day?</p>
+    <div class="brief-cta-acts">
+      <a class="brief-cta-btn" href="/register?{{ _utm }}" target="_blank" rel="noopener">Create account →</a>
+      <a class="brief-cta-link" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <a href="/brief/archive" style="color:inherit">&larr; Back to the archive</a>
+  &nbsp;&middot;&nbsp;
+  <a href="/brief" style="color:inherit">Today&rsquo;s brief</a>
+</div>
+
+<script nonce="{{ csp_nonce | default('') }}">window.__briefData = {"report": {{ report | tojson }}};</script>
+<script src="{{ url_for('static', filename='js/report-core.js') }}?v={{ cache_version('report-core.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script nonce="{{ csp_nonce | default('') }}">
+(function () {
+    'use strict';
+    var el = document.getElementById('brief-body');
+    if (!el) return;
+    var report = window.__briefData && window.__briefData.report;
+    var content = report && report.content;
+    if (content && typeof ReportCore !== 'undefined') {
+        el.innerHTML = ReportCore.simpleMarkdownToHtml(content);
+    } else {
+        el.innerHTML = '<p style="color:var(--muted)">This brief is unavailable.</p>';
+    }
+})();
+</script>
+</body>
+</html>

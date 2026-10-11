@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% set _asset = snap.primary_asset or 'Market' %}
+{% set _title = snap.title or 'Market scenario' %}
+{% set _status = (snap.status or 'watching')|upper %}
+<title>{{ _asset }} · {{ _title }} — Carrac</title>
+
+<!-- Open Graph / Twitter. ALL URLs absolute — scrapers don't resolve relative ones. -->
+<meta property="og:title" content="{{ _asset }} {{ snap.direction or '' }} — {{ _title }}">
+<meta property="og:description" content="{{ snap.conditions_met }}/{{ snap.conditions_total }} conditions met · {{ _status }} · shared via Carrac">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ page_url }}">
+<meta property="og:site_name" content="Carrac">
+<meta property="og:image" content="{{ card_url }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ _asset }} {{ snap.direction or '' }} — {{ _title }}">
+<meta name="twitter:description" content="{{ snap.conditions_met }}/{{ snap.conditions_total }} conditions met · {{ _status }} · shared via Carrac">
+<meta name="twitter:image" content="{{ card_url }}">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/favicon.svg">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --border:#30363d;
+    --green:#3fb950; --green2:#56d364; --text:#c9d1d9; --bright:#e6edf3;
+    --muted:#8b949e; --blue:#58a6ff; --red:#ef5350;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"JetBrains Mono","Ubuntu Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 64px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--bright)}
+  .brand .mark{color:var(--green);border:1px solid var(--green);border-radius:5px;
+    padding:1px 6px;font-size:13px}
+  .btn{display:inline-block;border:1px solid var(--border);border-radius:7px;
+    padding:7px 13px;color:var(--text);background:var(--panel2);font-size:13px}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#04120a;font-weight:700}
+  .btn.primary:hover{background:var(--green2)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:18px;margin-bottom:16px}
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .h-asset{font-size:13px;color:var(--muted);letter-spacing:.04em}
+  .h-title{font-size:21px;color:var(--bright);font-weight:700;margin:2px 0 6px}
+  .h-meta{font-size:12.5px;color:var(--muted)}
+  .badge{font-size:11px;font-weight:700;letter-spacing:.06em;border-radius:999px;
+    padding:4px 11px;white-space:nowrap;border:1px solid}
+  .b-watching{color:var(--blue);border-color:var(--blue)}
+  .b-acting{color:var(--green);border-color:var(--green)}
+  .b-completed{color:var(--green2);border-color:var(--green2)}
+  .b-invalidated,.b-expired{color:var(--muted);border-color:var(--muted)}
+  .chart-ph{margin-top:14px;height:230px;border:1px dashed var(--border);border-radius:9px;
+    display:flex;align-items:center;justify-content:center;color:var(--muted);
+    font-size:12.5px;background:#131722;position:relative}
+  .wm{position:absolute;right:10px;bottom:8px;font-size:11px;color:var(--muted);opacity:.8}
+  .wm b{color:var(--green)}
+  .sec{margin-top:16px}
+  .sec h3{font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;
+    margin:0 0 6px;font-weight:700}
+  .sec p{margin:0;color:var(--text)}
+  .cond{list-style:none;margin:0;padding:0}
+  .cond li{display:flex;gap:9px;align-items:baseline;padding:3px 0;font-size:14px}
+  .cond .mk{color:var(--green)} .cond .mk.no{color:var(--muted)}
+  .cond li.no{color:var(--muted)}
+  .progress{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .outcome .oc-badge{font-size:11px;font-weight:700;letter-spacing:.06em;border:1px solid var(--green2);
+    color:var(--green2);border-radius:999px;padding:2px 9px;margin-right:7px;vertical-align:middle}
+  .outcome.oc-bad .oc-badge{border-color:var(--muted);color:var(--muted)}
+  .disc{font-size:11.5px;color:var(--muted);margin-top:14px;border-top:1px solid var(--border);
+    padding-top:10px}
+  /* showcase */
+  .show h2{font-size:13px;letter-spacing:.08em;color:var(--bright);text-transform:uppercase;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .feat{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:11px 12px}
+  .feat .t{color:var(--bright);font-size:13.5px;font-weight:700;margin-bottom:3px}
+  .feat .d{color:var(--muted);font-size:12px;line-height:1.45}
+  .feat .soon{color:var(--green);font-size:10px;border:1px solid var(--green);border-radius:5px;
+    padding:0 5px;margin-left:6px;vertical-align:middle}
+  .cta{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .foot{text-align:center;color:var(--muted);font-size:11.5px;margin-top:22px}
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body>
+<div class="wrap">
+
+  {% set _utm = 'utm_source=share&utm_medium=play_share&utm_campaign=' ~ slug %}
+  <div class="topbar">
+    <div class="brand"><span class="mark">C⁴</span> Carrac</div>
+    <a class="btn" href="/?{{ _utm }}" target="_blank" rel="noopener">Open ↗</a>
+  </div>
+
+  <!-- Play hero -->
+  <div class="card">
+    <div class="head">
+      <div>
+        <div class="h-asset">{{ _asset }}{% if snap.direction %} · {{ snap.direction|upper }}{% endif %}</div>
+        <div class="h-title">{{ _title }}</div>
+        <div class="h-meta">
+          {%- if snap.type %}{{ snap.type }}{% endif -%}
+          {%- if snap.timeframe %} · {{ snap.timeframe|replace('_',' ') }}{% endif -%}
+          {%- if snap.conditions_total %} · {{ snap.conditions_met }}/{{ snap.conditions_total }} conditions met{% endif -%}
+        </div>
+      </div>
+      <span class="badge b-{{ (snap.status or 'watching')|lower }}">{{ _status }}</span>
+    </div>
+
+    {% if snap.thesis %}
+    <div class="sec"><h3>Thesis</h3><p>{{ snap.thesis }}</p></div>
+    {% endif %}
+
+    {% if snap.outcome %}
+    <div class="sec outcome {{ 'oc-bad' if snap.outcome.status == 'invalidated' else '' }}">
+      <h3>Outcome</h3>
+      <p>
+        <span class="oc-badge">{{ (snap.outcome.status or '')|upper }}</span>
+        {%- if snap.outcome.resolution %} {{ snap.outcome.resolution }}{% endif -%}
+      </p>
+      {% if snap.outcome.resolved_at %}
+      <div class="progress">resolved {{ snap.outcome.resolved_at[:10] }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if snap.conditions %}
+    <div class="sec">
+      <h3>Conditions <span style="color:var(--muted)">({{ snap.conditions_logic or 'all' }})</span></h3>
+      <ul class="cond">
+        {% for c in snap.conditions %}
+          <li class="{{ '' if c.met else 'no' }}">
+            <span class="mk {{ '' if c.met else 'no' }}">{{ '▣' if c.met else '▢' }}</span>{{ c.label }}
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="progress">{{ snap.conditions_met }}/{{ snap.conditions_total }} met</div>
+    </div>
+    {% endif %}
+
+    {% if snap.action_plan %}
+    <div class="sec"><h3>Plan</h3><p>{{ snap.action_plan }}</p></div>
+    {% endif %}
+
+    {% if snap.levels %}
+    <div class="sec"><h3>Levels</h3>
+      <ul class="cond">
+        {% if snap.levels.entry_low is defined or snap.levels.entry_high is defined %}
+        <li><span class="mk">⌖</span>Entry
+          {%- if snap.levels.entry_low is defined %} {{ snap.levels.entry_low }}{% endif %}
+          {%- if snap.levels.entry_high is defined %} – {{ snap.levels.entry_high }}{% endif %}</li>
+        {% endif %}
+        {% if snap.levels.stop_loss is defined %}
+        <li><span class="mk" style="color:var(--red)">✕</span>Stop {{ snap.levels.stop_loss }}</li>
+        {% endif %}
+        {% if snap.levels.targets %}
+        <li><span class="mk">→</span>Targets {{ snap.levels.targets|join(' · ') }}</li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if snap.invalidation and snap.invalidation.note %}
+    <div class="sec"><h3>Invalidation</h3><p>{{ snap.invalidation.note }}</p></div>
+    {% endif %}
+
+    <div class="disc">A trader's market scenario shared via Carrac. Not financial advice.</div>
+  </div>
+
+  <!-- What is Carrac? -->
+  {% include '_share_showcase.html' %}
+
+  <div class="foot">{{ site_host }} · your market context, your AI</div>
+</div>
+</body>
+</html>

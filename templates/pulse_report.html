@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pulse — Market Cockpit</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/vendor/purify.min.js') }}?v={{ cache_version('js/vendor/purify.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pulse.css') }}?v={{ cache_version('css/pulse.css') }}">
+    <script nonce="{{ csp_nonce | default('') }}">
+        /* Inline the server-assembled cockpit payload */
+        const PULSE = {{ pulse | tojson }};
+    </script>
+</head>
+<body class="pulse-body">
+<a href="#pulse-main" class="skip-link">Skip to content</a>
+
+<!-- ── Header ── -->
+<header class="pulse-header">
+    <div class="pulse-header-left">
+        <h1 class="pulse-title">Pulse</h1>
+        <span class="pulse-beta-badge">Beta</span>
+        <span class="pulse-header-divider">&middot;</span>
+        <span class="pulse-date" id="pulse-date"></span>
+    </div>
+    <div class="pulse-header-right">
+        <a href="/report/morning" class="pulse-btn pulse-btn-ghost">&larr; Full Report</a>
+        <span class="pulse-disclaimer">AI-generated &mdash; <a href="/legal/disclaimer" style="color:inherit;text-decoration:underline;">not financial advice</a></span>
+    </div>
+</header>
+
+<main id="pulse-main" class="pulse-container">
+
+    <!-- ── 1. Weather Strip ── -->
+    <section class="pulse-section pulse-weather" id="pulse-weather-strip" aria-label="Market weather">
+        <div class="pulse-weather-grid" id="pulse-weather-grid">
+            <!-- Populated by JS from PULSE.weather -->
+            <div class="pulse-weather-loading">Loading…</div>
+        </div>
+    </section>
+
+    <!-- ── 2. What Changed (narrative — Since Yesterday) ── -->
+    <section class="pulse-section" id="pulse-since-yesterday" aria-label="What changed">
+        <h2 class="pulse-section-title">What Changed</h2>
+        <div class="pulse-narrative-body" id="pulse-since-content">
+            <div class="pulse-narrative-loading">Loading report narrative…</div>
+        </div>
+    </section>
+
+    <!-- ── 3. TL;DR (narrative — overview) ── -->
+    <section class="pulse-section" id="pulse-tldr" aria-label="Summary">
+        <h2 class="pulse-section-title">TL;DR</h2>
+        <!-- B1: snapshot transparency note — populated by JS once report created_at is known -->
+        <p id="pulse-narrative-asof" style="color:var(--text-muted,#89929e);font-size:0.75rem;margin:0 0 8px;font-family:var(--font-mono)"></p>
+        <div class="pulse-narrative-body" id="pulse-overview-content">
+            <div class="pulse-narrative-loading">Loading…</div>
+        </div>
+    </section>
+
+    <!-- ── 4. The Board ── -->
+    <section class="pulse-section pulse-board-section" id="pulse-board" aria-label="Market board">
+        <h2 class="pulse-section-title">The Board
+            <span class="pulse-section-subtitle">All tracked assets &middot; daily + weekly signals</span>
+        </h2>
+        <div id="pulse-board-content">
+            <div class="pulse-board-loading">Loading board…</div>
+        </div>
+    </section>
+
+    <!-- ── 5. The Story (narrative) ── -->
+    <section class="pulse-section" id="pulse-story-section" aria-label="Market story">
+        <h2 class="pulse-section-title">The Story</h2>
+        <div class="pulse-narrative-body" id="pulse-story-content">
+            <div class="pulse-narrative-loading">Loading…</div>
+        </div>
+    </section>
+
+    <!-- ── 6. Scenarios (narrative — from free report's ## Scenarios) ── -->
+    <section class="pulse-section" id="pulse-scenarios" aria-label="Scenarios">
+        <h2 class="pulse-section-title">Scenarios</h2>
+        <div class="pulse-narrative-body" id="pulse-scenarios-content">
+            <div class="pulse-narrative-loading">Loading…</div>
+        </div>
+    </section>
+
+    <!-- ── 7. What to Watch (calendar) ── -->
+    <section class="pulse-section pulse-calendar-section" id="pulse-calendar" aria-label="Economic calendar">
+        <h2 class="pulse-section-title">What to Watch
+            <span class="pulse-section-subtitle">Next 7 days</span>
+        </h2>
+        <div id="pulse-calendar-content">
+            <div class="pulse-calendar-loading">Loading calendar…</div>
+        </div>
+    </section>
+
+    <!-- ── 8. One Thing to Learn (narrative) ── -->
+    <section class="pulse-section" id="pulse-learn-section" aria-label="One thing to learn">
+        <h2 class="pulse-section-title">One Thing to Learn</h2>
+        <div class="pulse-narrative-body" id="pulse-learn-content">
+            <div class="pulse-narrative-loading">Loading…</div>
+        </div>
+    </section>
+
+</main><!-- /pulse-container -->
+
+<!-- report-core.js provides ReportCore.parseReportSections + simpleMarkdownToHtml -->
+<script src="{{ url_for('static', filename='js/report-core.js') }}?v={{ cache_version('report-core.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+
+<script nonce="{{ csp_nonce | default('') }}">
+(function() {
+    'use strict';
+
+    // ── §14 Shared gloss map (mirrors pulse.py formatters) ──────────────
+    var GLOSS = {
+        trend: {
+            3: 'strong up — all 3 MAs aligned bullishly',
+            2: 'up — short & medium MA above long',
+            1: 'mild up — short MA above long, medium below',
+            0: 'flat — MAs mixed / no clear direction',
+            '-1': 'mild down — medium MA below long, short above',
+            '-2': 'down — short & medium MA below long',
+            '-3': 'strong down — all 3 MAs aligned bearishly',
+        },
+        rsi: function(v) {
+            if (v == null) return '';
+            v = parseFloat(v);
+            if (v >= 70) return 'overbought / stretched to the upside';
+            if (v >= 60) return 'elevated momentum';
+            if (v <= 30) return 'oversold / beaten down';
+            if (v <= 40) return 'weak momentum';
+            return 'neutral';
+        },
+        quadrant: {
+            leading:   'leading — strong RS gaining momentum',
+            weakening: 'weakening — strong RS losing steam',
+            lagging:   'lagging — weak RS still falling',
+            improving: 'improving — weak RS starting to turn',
+        },
+        move: function(label, pct) {
+            if (!label) return '';
+            label = label.toLowerCase();
+            if (label.includes('stress'))    return 'bond-market fear is high';
+            if (label.includes('elevated'))  return 'bond volatility is above normal';
+            if (label.includes('calm'))      return 'bond markets are stable';
+            if (pct != null) {
+                pct = parseFloat(pct);
+                if (pct >= 90) return 'bond-market fear is high';
+                if (pct >= 70) return 'bond volatility is elevated';
+                if (pct < 30)  return 'bond markets are calm';
+            }
+            return '';
+        },
+        fg: function(v) {
+            if (v == null) return '';
+            v = parseFloat(v);
+            if (v <= 25) return 'Extreme Fear — markets are very pessimistic';
+            if (v <= 45) return 'Fear — risk appetite is subdued';
+            if (v <= 55) return 'Neutral';
+            if (v <= 75) return 'Greed — risk appetite is elevated';
+            return 'Extreme Greed — markets may be overextended';
+        },
+        breadth: function(label, oversoldPct) {
+            if (!label) return '';
+            var l = label.toLowerCase();
+            if (l.includes('washed') || l.includes('oversold')) return 'most things are beaten down';
+            if (l.includes('overbought')) return 'breadth is stretched to the upside';
+            if (oversoldPct != null && parseFloat(oversoldPct) > 40) return 'majority of assets near short-term lows';
+            return '';
+        },
+        cprSide: function(side, distPct) {
+            if (!side) return '';
+            var d = distPct != null ? Math.abs(parseFloat(distPct)).toFixed(1) + '% ' : '';
+            return side === 'support'
+                ? d + 'above nearest support'
+                : d + 'below nearest resistance';
+        },
+    };
+
+    // ── Utility: format a price number ──────────────────────────────────
+    function fmtPrice(v) {
+        if (v == null) return '—';
+        var n = parseFloat(v);
+        if (isNaN(n)) return '—';
+        if (n >= 10000) return n.toLocaleString('en-US', {maximumFractionDigits: 0});
+        if (n >= 1000)  return n.toLocaleString('en-US', {maximumFractionDigits: 2});
+        if (n >= 100)   return n.toFixed(2);
+        if (n >= 1)     return n.toFixed(4);
+        return n.toPrecision(4);
+    }
+
+    function fmtPct(v) {
+        if (v == null) return '—';
+        var n = parseFloat(v);
+        if (isNaN(n)) return '—';
+        return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+    }
+
+    // ── Trend chip renderer ──────────────────────────────────────────────
+    function trendChip(sig, label) {
+        if (sig == null) return '<span class="pulse-trend-unknown">—</span>';
+        var s = parseInt(sig, 10);
+        var cls = s > 0 ? 'bull' : s < 0 ? 'bear' : 'flat';
+        var arrows = '';
+        var abs = Math.abs(s);
+        for (var i = 0; i < abs; i++) arrows += (s > 0 ? '▲' : '▼');
+        if (!arrows) arrows = '—';
+        var tip = escapeHtml(GLOSS.trend[String(s)] || label || '');
+        return '<span class="pulse-trend-chip pulse-trend-' + cls + '" title="' + tip + '">' + arrows + '</span>';
+    }
+
+    // ── Weather strip renderer ───────────────────────────────────────────
+    function renderWeather() {
+        var w = PULSE.weather;
+        var el = document.getElementById('pulse-weather-grid');
+        if (!w || !el) return;
+
+        var cells = [];
+
+        // Regime
+        var reg = w.regime || {};
+        var regLabel = reg.label || '—';
+        var regGloss = reg.gloss || '';
+        var regColor = reg.color || '';
+        var regStyle = regColor ? 'style="color:' + escapeHtml(regColor) + '"' : '';
+        cells.push(
+            '<div class="pulse-weather-cell" title="' + escapeHtml(regGloss) + '">' +
+            '<div class="pulse-weather-label">Market Mood</div>' +
+            '<div class="pulse-weather-value" ' + regStyle + '>' + escapeHtml(regLabel) + '</div>' +
+            (regGloss ? '<div class="pulse-weather-gloss">' + escapeHtml(regGloss) + '</div>' : '') +
+            '</div>'
+        );
+
+        // Breadth
+        var br = w.breadth || {};
+        var brLabel = br.label || '—';
+        var brGloss = br.gloss || GLOSS.breadth(br.label, br.oversold_pct);
+        var brDetail = br.above_sma50_pct != null ? parseFloat(br.above_sma50_pct).toFixed(0) + '% above 50-SMA' : '';
+        cells.push(
+            '<div class="pulse-weather-cell" title="' + escapeHtml(brGloss) + '">' +
+            '<div class="pulse-weather-label">Breadth</div>' +
+            '<div class="pulse-weather-value">' + escapeHtml(brLabel) + '</div>' +
+            '<div class="pulse-weather-gloss">' + escapeHtml(brGloss || brDetail) + '</div>' +
+            '</div>'
+        );
+
+        // MOVE / Bond vol
+        var bv = w.bond_vol || {};
+        var bvLabel = bv.label || '—';
+        var bvPct = bv.percentile != null ? parseFloat(bv.percentile).toFixed(0) + 'th pct' : '';
+        var bvGloss = bv.gloss || GLOSS.move(bv.label, bv.percentile);
+        cells.push(
+            '<div class="pulse-weather-cell" title="' + escapeHtml(bvGloss) + '">' +
+            '<div class="pulse-weather-label">MOVE</div>' +
+            '<div class="pulse-weather-value">' + escapeHtml(bvLabel || bvPct || '—') + '</div>' +
+            (bvGloss ? '<div class="pulse-weather-gloss">' + escapeHtml(bvGloss) + '</div>' : '') +
+            '</div>'
+        );
+
+        // Fear & Greed
+        var fg = w.fear_greed || {};
+        var fgVal = fg.value != null ? parseFloat(fg.value).toFixed(0) : null;
+        var fgClass = fg.classification || '';
+        var fgGloss = GLOSS.fg(fg.value);
+        cells.push(
+            '<div class="pulse-weather-cell" title="' + escapeHtml(fgGloss) + '">' +
+            '<div class="pulse-weather-label">Fear &amp; Greed</div>' +
+            '<div class="pulse-weather-value">' + (fgVal != null ? escapeHtml(fgVal) + ' ' : '') + escapeHtml(fgClass || '—') + '</div>' +
+            (fgGloss ? '<div class="pulse-weather-gloss">' + escapeHtml(fgGloss) + '</div>' : '') +
+            '</div>'
+        );
+
+        // Biggest mover
+        var bm = w.biggest_mover;
+        if (bm) {
+            var bmRet = bm.ret_7d != null ? fmtPct(bm.ret_7d) : '—';
+            var bmCls = bm.ret_7d != null && parseFloat(bm.ret_7d) < 0 ? 'pulse-neg' : 'pulse-pos';
+            cells.push(
+                '<div class="pulse-weather-cell">' +
+                '<div class="pulse-weather-label">Biggest Mover (7d)</div>' +
+                '<div class="pulse-weather-value">' + escapeHtml(bm.symbol || '—') + ' <span class="' + bmCls + '">' + escapeHtml(bmRet) + '</span></div>' +
+                '<div class="pulse-weather-gloss">largest 7-day move in the tracked universe</div>' +
+                '</div>'
+            );
+        }
+
+        el.innerHTML = cells.join('');
+    }
+
+    // ── Board renderer ───────────────────────────────────────────────────
+    function renderBoard() {
+        var board = PULSE.board;
+        var el = document.getElementById('pulse-board-content');
+        if (!el) return;
+        if (!board || !board.length) {
+            el.innerHTML = '<div class="pulse-empty">Board data unavailable.</div>';
+            return;
+        }
+
+        var html = '';
+        board.forEach(function(group) {
+            html += '<div class="pulse-board-group">';
+            html += '<div class="pulse-board-group-header">' + escapeHtml(group.category) + '</div>';
+            html += '<div class="pulse-table-wrap"><table class="pulse-board-table" role="table">';
+            html += '<thead><tr>' +
+                '<th scope="col">Asset</th>' +
+                '<th scope="col" title="Latest price">Price</th>' +
+                '<th scope="col" title="Daily consensio signal (−3…+3)">Daily</th>' +
+                '<th scope="col" title="Weekly consensio signal (−3…+3)">Weekly</th>' +
+                '<th scope="col" title="Daily RSI (14-period)">RSI·d</th>' +
+                '<th scope="col" title="Weekly RSI">RSI·w</th>' +
+                '<th scope="col" title="Nearest monthly CPR level + distance">CPR level</th>' +
+                '<th scope="col" title="Relative strength rank (0-100)">RS</th>' +
+                '<th scope="col" title="7-day return">7d%</th>' +
+                '</tr></thead>';
+            html += '<tbody>';
+            group.rows.forEach(function(row) {
+                var rsiDailyTip = row.rsi_daily != null ? parseFloat(row.rsi_daily).toFixed(1) + ' — ' + escapeHtml(row.rsi_daily_gloss || '') : '';
+                var rsiWeeklyTip = row.rsi_weekly != null ? parseFloat(row.rsi_weekly).toFixed(1) + ' — ' + escapeHtml(row.rsi_weekly_gloss || '') : '';
+
+                // CPR level cell
+                var cprCell = '—';
+                var cprTip = '';
+                if (row.nearest_level) {
+                    var nl = row.nearest_level;
+                    var dist = nl.distance_pct != null ? Math.abs(parseFloat(nl.distance_pct)).toFixed(1) + '% ' : '';
+                    cprCell = escapeHtml((nl.level_name || '').toUpperCase()) + ' (' + (nl.price != null ? fmtPrice(nl.price) : '—') + ')';
+                    cprTip = dist + (nl.side === 'support' ? 'above nearest support' : 'below nearest resistance');
+                }
+
+                // RS quadrant chip
+                var qCell = '—';
+                var qTip = '';
+                if (row.rs_quadrant) {
+                    var qMap = {leading: '▲▲', weakening: '▲▼', lagging: '▼▼', improving: '▼▲'};
+                    qCell = escapeHtml(qMap[row.rs_quadrant] || row.rs_quadrant);
+                    qTip = escapeHtml(GLOSS.quadrant[row.rs_quadrant] || '');
+                }
+
+                var ret7dCls = row.ret_7d != null && parseFloat(row.ret_7d) < 0 ? 'pulse-neg' : 'pulse-pos';
+
+                html += '<tr>' +
+                    '<td class="pulse-symbol-cell">' + escapeHtml(row.symbol) + '</td>' +
+                    '<td class="pulse-price-cell">' + fmtPrice(row.price) + '</td>' +
+                    '<td class="pulse-trend-cell">' + trendChip(row.sig_1d, row.trend_daily) + '</td>' +
+                    '<td class="pulse-trend-cell">' + trendChip(row.sig_1w, row.trend_weekly) + '</td>' +
+                    '<td title="' + rsiDailyTip + '">' + (row.rsi_daily != null ? parseFloat(row.rsi_daily).toFixed(1) : '—') + '</td>' +
+                    '<td title="' + rsiWeeklyTip + '">' + (row.rsi_weekly != null ? parseFloat(row.rsi_weekly).toFixed(1) : '—') + '</td>' +
+                    '<td title="' + escapeHtml(cprTip) + '" class="pulse-cpr-cell">' + cprCell + '</td>' +
+                    '<td title="' + qTip + '" class="pulse-rs-cell">' + (row.rs_score != null ? parseFloat(row.rs_score).toFixed(0) : qCell) + '</td>' +
+                    '<td class="' + ret7dCls + '">' + fmtPct(row.ret_7d) + '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table></div>';
+            html += '</div>';
+        });
+
+        el.innerHTML = html;
+    }
+
+    // ── Calendar renderer ────────────────────────────────────────────────
+    function renderCalendar() {
+        var cal = PULSE.calendar;
+        var el = document.getElementById('pulse-calendar-content');
+        if (!el) return;
+        if (!cal || !cal.length) {
+            el.innerHTML = '<div class="pulse-empty">No events in the next 7 days.</div>';
+            return;
+        }
+
+        var impactColor = {high: '#f85149', medium: '#d6a72b', low: '#58a6ff'};
+
+        var html = '<div class="pulse-table-wrap"><table class="pulse-calendar-table" role="table">';
+        html += '<thead><tr>' +
+            '<th scope="col">Date</th>' +
+            '<th scope="col">Event</th>' +
+            '<th scope="col">Impact</th>' +
+            '<th scope="col" title="Consensus forecast">Expected</th>' +
+            '<th scope="col">Actual</th>' +
+            '</tr></thead><tbody>';
+
+        cal.forEach(function(ev) {
+            var impact = (ev.impact || '').toLowerCase();
+            var impColor = impactColor[impact] || '#89929e';
+            var dateFmt = ev.ts ? ev.ts.slice(0, 10) : '—';
+            var actual = ev.actual || '—';
+            var expected = ev.expected || '—';
+            html += '<tr>' +
+                '<td class="pulse-cal-date">' + escapeHtml(dateFmt) + '</td>' +
+                '<td class="pulse-cal-title">' + escapeHtml(ev.title || ev.event_type || '—') + '</td>' +
+                '<td><span class="pulse-impact-badge" style="color:' + impColor + ';border-color:' + impColor + '">' + escapeHtml(ev.impact || '—') + '</span></td>' +
+                '<td class="pulse-cal-expected">' + escapeHtml(expected) + '</td>' +
+                '<td class="pulse-cal-actual' + (ev.actual ? ' pulse-cal-printed' : '') + '">' + escapeHtml(actual) + '</td>' +
+                '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+    }
+
+    // ── Narrative reuse (fetch /api/report/morning/latest) ───────────────
+    function loadNarrative() {
+        fetch('/api/report/morning/latest', {credentials: 'same-origin'})
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                if (!data || !data.content) {
+                    showNarrativeFallback('Report narrative unavailable.');
+                    return;
+                }
+
+                var sections = ReportCore.parseReportSections(data.content);
+                var md = ReportCore.simpleMarkdownToHtml;
+
+                _inject('pulse-since-content',   sections.sinceYesterday,  'No changes summary available.');
+                _inject('pulse-overview-content', sections.overview,        'No summary available.');
+                _inject('pulse-story-content',    sections.story,           'No story section available.');
+                _inject('pulse-scenarios-content', sections.scenarios,      'Scenarios will appear once the report includes a ## Scenarios section.');
+                _inject('pulse-learn-content',    sections.oneThingToLearn || sections.catalysts, 'No learning note available.', true);
+
+                // Update date from report
+                if (data.created_at) {
+                    // Robust parse: created_at may be "YYYY-MM-DD HH:MM:SS+00:00",
+                    // ISO with Z, or naive. Only append Z when there's no tz offset
+                    // already (appending to "+00:00" yields an Invalid Date).
+                    var _raw = String(data.created_at);
+                    var _iso = _raw.replace(' ', 'T');
+                    if (!/[zZ]$|[+\-]\d{2}:?\d{2}$/.test(_iso)) _iso += 'Z';
+                    var d = new Date(_iso);
+                    if (isNaN(d.getTime())) d = new Date(_raw);
+                    var _ok = !isNaN(d.getTime());
+                    var el = document.getElementById('pulse-date');
+                    if (el && _ok) el.textContent = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+                    // B1: "as of" transparency — narrative is snapshotted at generation time; Board updates live
+                    var asOfEl = document.getElementById('pulse-narrative-asof');
+                    if (asOfEl && _ok) asOfEl.textContent = 'Narrative reflects the report’s generation time (' + d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}) + ' at ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) + '); the Board and live prices update continuously.';
+                }
+            })
+            .catch(function() {
+                showNarrativeFallback('Failed to load report narrative.');
+            });
+    }
+
+    function _inject(id, html, fallback, hideOnEmpty) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (html && html.trim()) {
+            el.innerHTML = DOMPurify.sanitize(html);
+            if (hideOnEmpty && el.parentElement) el.parentElement.style.display = '';
+        } else if (hideOnEmpty) {
+            // Clear the "Loading…" placeholder before hiding the section: left in
+            // the DOM it is a stale loading state nobody can see, which the render
+            // gate counts as "the page never finished".
+            el.innerHTML = '';
+            if (el.parentElement) el.parentElement.style.display = 'none';
+        } else {
+            el.innerHTML = '<div class="pulse-empty">' + escapeHtml(fallback) + '</div>';
+        }
+    }
+
+    function showNarrativeFallback(msg) {
+        ['pulse-since-content', 'pulse-overview-content', 'pulse-story-content',
+         'pulse-scenarios-content', 'pulse-learn-content'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="pulse-empty">' + escapeHtml(msg) + ' <a href="/report/morning">View full report &rarr;</a></div>';
+        });
+    }
+
+    // ── Set date header ─────────────────────────────────────────────────
+    function initDate() {
+        var el = document.getElementById('pulse-date');
+        if (el && !el.textContent) {
+            el.textContent = new Date().toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+        }
+    }
+
+    // ── Bootstrap ───────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        initDate();
+        renderWeather();
+        renderBoard();
+        renderCalendar();
+        loadNarrative();
+    });
+})();
+</script>
+</body>
+</html>

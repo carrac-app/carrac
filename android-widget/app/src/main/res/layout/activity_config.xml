@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0d1117"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Carrac Widget Setup"
+            android:textSize="20sp"
+            android:textColor="#e6edf3"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Widget Token:"
+            android:textSize="14sp"
+            android:textColor="#8b949e"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/token_input"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#161b22"
+            android:textColor="#e6edf3"
+            android:textColorHint="#484f58"
+            android:hint="cvx_w_..."
+            android:inputType="text"
+            android:singleLine="true"
+            android:fontFamily="monospace"
+            android:textSize="14sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/paste_button"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Paste from Clipboard"
+            android:textSize="12sp"
+            android:backgroundTint="#21262d"
+            android:textColor="#c9d1d9"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Get your token at:"
+            android:textSize="12sp"
+            android:textColor="#8b949e" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="/widget/setup on your Carrac instance"
+            android:textSize="12sp"
+            android:textColor="#58a6ff"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Symbols (optional, comma-separated):"
+            android:textSize="14sp"
+            android:textColor="#8b949e"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/symbols_input"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#161b22"
+            android:textColor="#e6edf3"
+            android:textColorHint="#484f58"
+            android:hint="BTC,ETH,SPX,GOLD"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textSize="14sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Leave blank to use your watchlist"
+            android:textSize="11sp"
+            android:textColor="#484f58"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Save &amp; Create Widget"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:backgroundTint="#238636"
+            android:textColor="#ffffff" />
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#8b949e"
+            android:layout_marginTop="12dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+</ScrollView>

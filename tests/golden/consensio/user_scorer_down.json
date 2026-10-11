@@ -1,0 +1,19 @@
+{
+  "classification": "trade",
+  "components": {
+    "cpr": 15,
+    "divergence": 10,
+    "freshness": 0,
+    "volume": 20
+  },
+  "direction": "bearish",
+  "patterns": [
+    "mixed",
+    "unknown",
+    "volume_confirmed",
+    "cpr_aligned",
+    "adx_sweet_spot"
+  ],
+  "regime": "trend_forming",
+  "score": 55
+}

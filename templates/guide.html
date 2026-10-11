@@ -1,0 +1,2185 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}User Guide — Carrac{% endblock %}
+{% block description %}Complete user guide for Carrac — charting, 70+ indicators, AI analysis, trade journal, morning reports, scanner, and alerts. Learn every feature.{% endblock %}
+{% block canonical %}{{ site_url }}/guide{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"TechArticle","headline":"Carrac User Guide","description":"How Carrac's market-data, indicators, quant engine, plays and MCP server work.","url":"{{ site_url }}/guide","author":{"@type":"Organization","name":"Carrac"},"publisher":{"@type":"Organization","name":"Carrac","url":"{{ site_url }}"}}</script>{% endblock %}
+{% block og %}
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ site_url }}/guide">
+<meta property="og:title" content="User Guide — Carrac">
+<meta property="og:description" content="Learn every feature of Carrac: charts, indicators, scanner, AI assistant, trade journal, morning reports, plays, alerts, drawing tools, and more.">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+.skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#0d1117;color:#D8B56A;z-index:9999}
+.skip-link:focus{left:8px;top:8px;outline:2px solid #D8B56A;outline-offset:2px}
+/* ── /guide — long-form documentation page ──
+   Follows the Carrac design system (tokens + shape) but keeps a sans-serif
+   body font for readability. Code, kbd, and pre stay monospace.
+   See /design-system for the source of truth on tokens, borders, shadows. */
+/* scope reset to guide content only — bare * would zero v5 nav/footer padding */
+.guide-layout *{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.7}
+a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
+::selection{background:#1f6feb;color:#fff}
+
+/* ── Layout ── */
+/* padding-top clears the v5 fixed nav pill (~72px) with a comfortable gap */
+.guide-layout{display:grid;grid-template-columns:230px 1fr;gap:48px;max-width:var(--maxw);margin:0 auto;padding:96px var(--gutter) 100px;min-height:auto}
+/* sticky top accounts for fixed nav height so sidebar doesn't slide under it */
+.guide-sidebar{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 108px);width:auto;overflow-y:auto;padding:0;border-right:none;background:transparent;z-index:1;scrollbar-width:thin;scrollbar-color:#21262d transparent}
+.guide-sidebar::-webkit-scrollbar{width:3px}
+.guide-sidebar::-webkit-scrollbar-thumb{background:#21262d;border-radius:1px}
+.guide-main{margin-left:0;min-width:0;max-width:none;padding:0}
+
+/* ── Sidebar ── */
+.sb-logo{font-size:1.1em;font-weight:700;color:#e6edf3;margin-bottom:4px;display:block;text-decoration:none}
+.sb-logo:hover{text-decoration:none;color:#58a6ff}
+.sb-sub{font-size:0.72em;color:#484f58;margin-bottom:20px}
+.sb-search{width:100%;padding:6px 10px;font-size:0.78em;background:#161b22;border:1px solid #2a2e39;border-radius:1px;color:#c9d1d9;margin-bottom:16px;outline:none;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace}
+.sb-search:focus{border-color:#484f58}
+.sb-section{font-size:0.65em;font-weight:600;color:#484f58;text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 6px;padding-left:2px}
+.sb-link{display:block;padding:3px 8px;font-size:0.78em;color:#8b949e;border-radius:1px;text-decoration:none;transition:background 0.15s,color 0.15s}
+.sb-link:hover{background:#161b22;color:#c9d1d9;text-decoration:none}
+.sb-link.active{background:#1f6feb15;color:#58a6ff}
+.sb-back{display:inline-flex;align-items:center;gap:6px;font-size:0.75em;color:#58a6ff;margin-bottom:16px;padding:4px 10px;border:1px solid #2a2e39;border-radius:1px;text-decoration:none;transition:all 0.15s ease}
+.sb-back:hover{border-color:#484f58;text-decoration:none;transform:translate(-1px,-1px);box-shadow:2px 2px 0 #000}
+
+/* ── Content ── */
+h1{font-size:1.5em;color:#e6edf3;margin-bottom:4px}
+.page-sub{color:#8b949e;font-size:0.88em;margin-bottom:36px}
+h2{font-size:1.2em;color:#e6edf3;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #21262d;scroll-margin-top:24px}
+h2:first-of-type{margin-top:0}
+h3{font-size:0.95em;color:#f0b429;margin:24px 0 8px;scroll-margin-top:24px;text-transform:uppercase;letter-spacing:0.04em}
+h4{font-size:0.88em;color:#e6edf3;margin:16px 0 6px}
+p{font-size:0.88em;color:#8b949e;margin-bottom:10px}
+p strong{color:#c9d1d9}
+ul,ol{font-size:0.88em;color:#8b949e;padding-left:22px;margin-bottom:12px}
+li{margin-bottom:4px}
+li strong{color:#c9d1d9}
+code{background:#0d1117;border:1px solid #21262d;padding:1px 6px;border-radius:1px;font-size:0.85em;color:#D8B56A;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace}
+
+/* ── Cards ── */
+.card{margin-bottom:12px;padding:14px 18px;background:#161b22;border:1px solid #21262d;border-radius:1px;box-shadow:3px 3px 0 #000;transition:transform 0.15s ease,box-shadow 0.15s ease}
+.card:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.card-title{font-weight:600;color:#e6edf3;font-size:0.92em;margin-bottom:4px}
+.card-desc{color:#8b949e;font-size:0.84em}
+.card-signals{color:#f0b429;font-size:0.84em;margin-top:4px;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace}
+
+/* ── Tips ── */
+.tip{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;margin:12px 0;background:#161b22;border:1px solid #2a2e39;border-left:3px solid #58a6ff;border-radius:1px;font-size:0.84em;color:#8b949e}
+.tip-icon{color:#58a6ff;font-size:0.95em;flex-shrink:0}
+.tip-warn{border-left-color:#f0b429}
+.tip-warn .tip-icon{color:#f0b429}
+.tip-premium{border-left-color:#f0b429}
+.tip-premium .tip-icon{color:#f0b429}
+
+/* ── Tables ── */
+.ref-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.84em}
+.ref-table th{text-align:left;padding:8px 12px;color:#787b86;border-bottom:1px solid #2a2e39;font-size:0.8em;text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
+.ref-table td{padding:6px 12px;border-bottom:1px solid #21262d;color:#8b949e}
+.ref-table td:first-child{color:#c9d1d9;font-weight:500}
+.ref-table tr:hover td{background:#161b22}
+
+/* ── Kbd ── */
+kbd{display:inline-block;padding:1px 6px;background:#1e222d;border:1px solid #2a2e39;border-radius:1px;box-shadow:1px 1px 0 #000;font-size:0.82em;color:#c9d1d9;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace}
+
+/* ── Badge swatches ── */
+.swatch{display:inline-block;width:10px;height:10px;border-radius:1px;margin-right:4px;vertical-align:middle}
+.badge{display:inline-block;padding:1px 6px;border-radius:1px;font-size:0.78em;font-weight:600;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:0.03em}
+.badge-green{background:transparent;color:#D8B56A;border:1px solid #D8B56A}
+.badge-red{background:transparent;color:#f85149;border:1px solid #f85149}
+.badge-yellow{background:transparent;color:#f0b429;border:1px solid #f0b429}
+.badge-purple{background:transparent;color:#d2a8ff;border:1px solid #8957e5}
+.badge-blue{background:transparent;color:#58a6ff;border:1px solid #58a6ff}
+.badge-gray{background:transparent;color:#8b949e;border:1px solid #484f58}
+.badge-gold{background:transparent;color:#e3b341;border:1px solid #e3b341}
+
+/* ── Mobile ── */
+@media(max-width:900px){
+    .guide-layout{display:block;padding:20px var(--gutter) 80px}
+    .guide-sidebar{display:none}
+    .guide-main{margin-left:0;padding:0}
+    .mobile-menu-btn{display:flex !important}
+}
+.mobile-menu-btn{display:none;position:fixed;bottom:20px;right:20px;z-index:100;width:44px;height:44px;background:#161b22;border:1px solid #2a2e39;border-radius:1px;color:#D8B56A;font-size:1.2em;cursor:pointer;align-items:center;justify-content:center;box-shadow:5px 5px 0 #000;transition:transform 0.15s ease,box-shadow 0.15s ease;font-family:'JetBrains Mono','Ubuntu Mono',ui-monospace,monospace}
+.mobile-menu-btn:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 #000;color:#7ee787}
+.mobile-sidebar{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99}
+.mobile-sidebar.active{display:block}
+.mobile-sidebar-inner{width:280px;height:100%;background:#0d1117;overflow-y:auto;padding:20px 16px;border-right:1px solid #21262d}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="guide-layout">
+<!-- ═══════════════════════════════════════════ -->
+<!-- SIDEBAR                                     -->
+<!-- ═══════════════════════════════════════════ -->
+<nav class="guide-sidebar" id="guide-sidebar">
+    <a href="/" class="sb-back">&larr; Dashboard</a>
+    <a href="/guide" class="sb-logo">Carrac</a>
+    <div class="sb-sub">User Guide</div>
+    <input type="text" class="sb-search" id="sb-search" placeholder="Search sections..." autocomplete="off">
+
+    <div class="sb-section">Basics</div>
+    <a href="#getting-started" class="sb-link">Getting Started</a>
+    <a href="#layout" class="sb-link">Dashboard Layout</a>
+    <a href="#sentiment-bar" class="sb-link">Sentiment Bar</a>
+    <a href="#screener" class="sb-link">Screener &amp; Signals</a>
+
+    <div class="sb-section">Charting</div>
+    <a href="#chart" class="sb-link">Chart</a>
+    <a href="#indicators" class="sb-link">Indicators (70+)</a>
+    <a href="#drawing-tools" class="sb-link">Drawing Tools</a>
+    <a href="#multi-chart" class="sb-link">Multi-Chart</a>
+    <a href="#custom-formulas" class="sb-link">Custom Formulas</a>
+    <a href="#news-panel" class="sb-link">News Panel</a>
+
+    <div class="sb-section">Trading</div>
+    <a href="#backtester" class="sb-link">Backtester</a>
+    <a href="#consensio" class="sb-link">Consensio Method</a>
+    <a href="#plays" class="sb-link">Plays</a>
+    <a href="#bb-strategies" class="sb-link">Bollinger Band Strategies</a>
+    <a href="#alerts" class="sb-link">Alerts</a>
+    <a href="#scanner" class="sb-link">Scanner</a>
+    <a href="#radar" class="sb-link">Radar</a>
+    <a href="#positions" class="sb-link">Positions Tracker</a>
+
+    <div class="sb-section">Intelligence</div>
+    <a href="#ai" class="sb-link">AI Assistant</a>
+    <a href="#morning-report" class="sb-link">Morning Report</a>
+    <a href="#quant-engine" class="sb-link">Quant Engine</a>
+    <a href="#journal" class="sb-link">Trade Journal</a>
+
+    <div class="sb-section">Platform</div>
+    <a href="#settings" class="sb-link">Settings &amp; Notifications</a>
+    <a href="#widgets" class="sb-link">Mobile Widgets</a>
+    <a href="#mobile" class="sb-link">Mobile &amp; PWA</a>
+    <a href="#shortcuts" class="sb-link">Keyboard Shortcuts</a>
+    <a href="#api" class="sb-link">API &amp; AI CLI</a>
+    <a href="#mcp" class="sb-link">MCP &amp; AI CLI</a>
+    <a href="#tui" class="sb-link">Charts in the Terminal</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT                                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="guide-main" id="guide-main">
+
+<h1>User Guide</h1>
+<p class="page-sub">Everything you can do in Carrac &mdash; from first login to advanced workflows.</p>
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="getting-started">Getting Started</h2>
+<!-- ══════════════════════════════════════ -->
+
+<h3>What is Carrac?</h3>
+<p>Carrac is a multi-timeframe technical analysis platform for swing and position traders. It covers <strong>337 curated assets</strong> (221 crypto, 116 traditional) across crypto, stocks, ETFs, indices, forex, and commodities &mdash; plus dynamic symbol search across multiple exchanges. Real-time crypto data from Binance, Hyperliquid, Bybit, MEXC, and Gate.io via WebSocket. US stocks and ETFs tick live during market hours via Finnhub. Daily data from Yahoo Finance for traditional markets.</p>
+
+<p>The brand is written <strong>Carrac</strong> in long form, and the compact mark is <strong>[C&#8308;]</strong> &mdash; the four Cs of the Carrac name, to the fourth in brackets. You'll see [C&#8308;] as the browser tab favicon, the home-screen app icon, on sign-in and registration pages, and in the mobile header where the full wordmark won't fit.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>First time here? The chart area shows a short 3-step welcome guide (pick an asset, read the chart, connect your own AI) until you open your first asset.</span>
+</div>
+
+<h3>Morning Routine (5&ndash;10 min)</h3>
+<ol>
+    <li>Glance at the <strong>sentiment bar</strong> (top of dashboard) for macro mood &mdash; Fear &amp; Greed, MVRV-Z, Funding Rate</li>
+    <li>Open the <strong>Morning Report</strong> (hamburger menu or Report view) &mdash; a single scrolling AI-generated brief</li>
+    <li>Switch to <strong>Watchlist</strong> &mdash; scan signal badges (SQZ, V-CPR, TF-DIV, CC) for overnight changes</li>
+    <li>Click any flagged asset &rarr; chart opens &rarr; quick timeframe scan (1D &rarr; 1W)</li>
+    <li>Ask your own AI for a second opinion &mdash; with Carrac connected over MCP it reads the same chart you are looking at (see <a href="/integrations">Integrations</a>)</li>
+</ol>
+
+<h3>Finding Setups</h3>
+<ol>
+    <li>Sort by <strong>Consensio</strong> &mdash; find 7&ndash;9/9 (strong bull) or 0&ndash;2/9 (strong bear) extremes</li>
+    <li>Check the <strong>EMA Ribbon</strong> column for SQZ/TGT badges (imminent flips)</li>
+    <li>Open the chart &rarr; toggle indicators: CPR + EMA Ribbon + RSI Divergence</li>
+    <li>Cycle through assets with <kbd>,</kbd> / <kbd>.</kbd> to confirm multi-timeframe alignment</li>
+    <li>Create a <strong>play</strong> &rarr; use AI Validate for a structured scorecard</li>
+</ol>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Press <kbd>Space</kbd> anywhere to open the quick asset search. Type a symbol, pick from favourites, or build a ratio (e.g. <code>GOLD/QQQ</code>).</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="layout">Dashboard Layout</h2>
+<!-- ══════════════════════════════════════ -->
+
+<h3>Split Layout</h3>
+<p>The dashboard is divided into a <strong>chart on the left</strong> and a <strong>panel on the right</strong>, separated by a draggable divider. The chart displays the selected asset with indicators and drawing tools. The panel shows your asset list, signals, and contextual views.</p>
+
+<h3>View Modes</h3>
+<p>The right panel has a vertical strip of view mode buttons. Press <kbd>E</kbd> to cycle forward, <kbd>Shift+E</kbd> backward &mdash; cycling past either end collapses or expands the panel:</p>
+<ul>
+    <li><strong>Lite</strong> &mdash; Minimal screener: symbol, price, change, consensio score</li>
+    <li><strong>Consensio</strong> &mdash; Default view with Consensio, EMA Ribbon, signal badges, and score</li>
+    <li><strong>Detail</strong> &mdash; Full screener with all columns: RSI, BB, CPR, ADX, Structure</li>
+    <li><strong>News</strong> &mdash; Crypto, macro, and equities headlines (see <a href="#news-panel">News Panel</a>)</li>
+    <li><strong>Report</strong> &mdash; Morning report inline with afternoon delta</li>
+    <li><strong>Plays</strong> &mdash; Active plays with condition progress tracking</li>
+    <li><strong>Journal</strong> &mdash; Quick trade journal &mdash; log trades, see open positions and stats</li>
+</ul>
+<p>The AI assistant isn't a view mode anymore &mdash; it floats above whichever view you're on. Open it anytime with <kbd>/</kbd> or the AI button.</p>
+
+<h3>Panel Tabs</h3>
+<p>Within each view mode, filter assets by tab:</p>
+<ul>
+    <li><strong>Watchlist</strong> &mdash; Your personal symbols, organised into custom groups (star to add/remove, drag to reorder)</li>
+    <li><strong>Crypto</strong> &mdash; All curated cryptocurrency assets</li>
+    <li><strong>TradFi</strong> &mdash; Stocks, ETFs, indices, forex, commodities</li>
+    <li><strong>All</strong> &mdash; Complete catalog across all categories</li>
+</ul>
+
+<h3>Watchlist Groups</h3>
+<p>Split your watchlist into named groups instead of one flat list. Click the <strong>&#9998;</strong> (pencil) button in the controls row under the tabs to open the group editor &mdash; create, rename, or delete groups, and tick checkboxes to move symbols between them. Each group has its own &ldquo;Add symbol&hellip;&rdquo; box with suggestions; type any asset, even one outside the curated list, and press Enter to add it. Groups render as separate collapsible sections on the Watchlist tab. The star (&#9733;) still adds a symbol to your first group, and drag reorders within a group. Up to 50 groups of up to 100 symbols each &mdash; everything saves automatically and syncs to your account.</p>
+<p>The same controls row also holds a <strong>filter box</strong> that narrows any tab to matching symbols or names as you type (press <kbd>Esc</kbd> to clear), a collapse-all toggle, and the &#9881; settings menu. The panel remembers your sort order and collapsed sections across reloads.</p>
+
+<h3>Bottom Drawer</h3>
+<p>Below the chart, a resizable drawer contains tabbed panels. Press <kbd>Q</kbd> to cycle tabs:</p>
+<ul>
+    <li><strong>Positions</strong> &mdash; Log and track open futures/spot positions with live P&amp;L</li>
+    <li><strong>Alerts</strong> &mdash; Create and manage price/indicator/formula alerts</li>
+    <li><strong>Scanner</strong> &mdash; Asset scores, labels, and sentiment data</li>
+    <li><strong>Radar</strong> &mdash; Live zones, signals, transitions, positions, liquidations, and macro events for your watchlist</li>
+    <li><strong>Backtest</strong> &mdash; Strategy backtester with entry/exit formulas</li>
+</ul>
+<p>The drawer can be collapsed (click the chevron), expanded, or made fullscreen. Each tab has resizable left/right panes.</p>
+
+<h3>Chart Preview</h3>
+<p>Hover over any asset row in the panel to see a live preview chart tooltip. The preview is debounced and can be pinned by clicking.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="news-panel">News Panel</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Browse crypto, macro, and equities headlines from inside Carrac. Press <kbd>N</kbd> or click the News button in the view-mode strip.</p>
+
+<h3>Feeds &amp; Sources</h3>
+<ul>
+    <li><strong>10 built-in RSS feeds</strong> curated across crypto, macro, equities, and derivatives coverage &mdash; enabled by default</li>
+    <li>Add your own <strong>custom RSS sources</strong> from the gear menu &mdash; any valid feed URL works</li>
+    <li>Feed selection is independent from the header ticker bar, so you can have different sets of sources in each place</li>
+    <li>Settings sync across devices &mdash; the feeds you pick on desktop show up on mobile too</li>
+</ul>
+
+<h3>Browsing Articles</h3>
+<ul>
+    <li>Compact 1-row cards &mdash; source badge, title, and timestamp on a single line for fast scanning</li>
+    <li>Click a card to <strong>expand inline</strong> &mdash; the summary and Read Full Article link slide down in place. Only one card stays open at a time</li>
+    <li>Toggle between <strong>Latest</strong> (chronological, mixed sources) and <strong>Source</strong> (grouped by publisher) from the header</li>
+    <li>Read articles are dimmed so new items stand out at a glance</li>
+    <li>Font size adjustable with A-/A+ for comfortable reading</li>
+</ul>
+
+<h3>Refresh</h3>
+<ul>
+    <li>Default <strong>2-minute</strong> refresh &mdash; configurable in the gear menu</li>
+    <li>Header shows a live countdown (m:ss) to the next fetch</li>
+    <li>The panel also refreshes automatically when you return to the browser tab</li>
+</ul>
+
+<!-- ══════════════════════════════════════ -->
+<span id="filter-tab" style="scroll-margin-top:24px"></span>
+<h2 id="radar">Radar</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Radar lives in the bottom drawer (the tab formerly called Filter, and before that Stream). Where the Scanner discovers setups across the whole universe, Radar monitors what you already watch &mdash; a triaged feed of live events on <strong>your watchlist</strong> only. Click any row to jump straight to that asset's chart on the row's own timeframe.</p>
+
+<h3>Six Row Types</h3>
+<table class="ref-table">
+<thead><tr><th>Row Type</th><th>What It Shows</th></tr></thead>
+<tbody>
+<tr><td><strong>Zones</strong></td><td>Confluence levels near price &mdash; including your own drawn lines and rectangle zones &mdash; with a band showing whether price is above, inside, or below</td></tr>
+<tr><td><strong>Signals</strong></td><td>Candle-based detections (engulfing and more) firing on both higher and lower timeframes</td></tr>
+<tr><td><strong>Transitions</strong> <span class="badge badge-purple">Member+</span></td><td>Indicator state changes &mdash; RSI zone shifts, Consensio flips, CPR position moves, divergences, and more</td></tr>
+<tr><td><strong>Positions</strong></td><td>Your open journal trades, with distance-to-stop and R</td></tr>
+<tr><td><strong>Liquidations</strong></td><td>Unusual forced-liquidation bursts on Binance futures</td></tr>
+<tr><td><strong>Macro</strong></td><td>A countdown row, pinned first, when a high-impact calendar event (FOMC, CPI, NFP, PCE) is within 72 hours</td></tr>
+</tbody>
+</table>
+
+<p>Hover actions: open the chart, log the setup to your journal (pre-filled), or set an alert on the level.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Every account sees the full Radar feed, including indicator transitions.</span>
+</div>
+
+<p>Bias arrows and lean labels are observations of current indicator state, not recommendations &mdash; read them as inputs to your own call, not a signal to act.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="sentiment-bar">Sentiment Bar</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>The header bar shows key macro indicators for a quick market read. Hover any label for a detailed tooltip.</p>
+
+<table class="ref-table">
+<thead><tr><th>Indicator</th><th>What It Measures</th><th>How to Read It</th></tr></thead>
+<tbody>
+<tr><td><strong>Regime</strong></td><td>Market regime classification</td><td><span class="badge badge-green">Risk-On</span> <span class="badge badge-gray">Neutral</span> <span class="badge badge-red">Risk-Off</span></td></tr>
+<tr><td><strong>F&amp;G</strong></td><td>Fear &amp; Greed Index (0&ndash;100)</td><td>0&ndash;24 Extreme Fear, 25&ndash;44 Fear, 45&ndash;54 Neutral, 55&ndash;74 Greed, 75&ndash;100 Extreme Greed</td></tr>
+<tr><td><strong>MVRV-Z</strong></td><td>On-chain valuation metric</td><td>&lt;0 undervalued, 0&ndash;3 fair value, 3&ndash;7 expensive, &gt;7 overvalued</td></tr>
+<tr><td><strong>ASI</strong></td><td>Alt Season Index</td><td>&lt;25 BTC season, 25&ndash;75 neutral, &gt;75 alt season</td></tr>
+<tr><td><strong>L/S R</strong></td><td>Long/Short Ratio (Binance futures)</td><td>&gt;1 more longs, &lt;1 more shorts</td></tr>
+<tr><td><strong>FR</strong></td><td>Funding Rate (perpetual futures)</td><td>Positive = bullish crowd paying bears. Negative = bearish crowd paying bulls</td></tr>
+<tr><td><strong>OI</strong></td><td>Open Interest change (24h)</td><td>Rising OI = new positions opening. Falling OI = positions closing</td></tr>
+</tbody>
+</table>
+
+<p>The <strong>ticker strip</strong> below the sentiment bar scrolls through symbols with live prices and 24h change.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="screener">Screener &amp; Signals</h2>
+<!-- ══════════════════════════════════════ -->
+
+<h3>Screener Columns</h3>
+<p>The screener table (visible in Consensio and Detail view modes) shows a row per asset. Columns are sortable by clicking the header.</p>
+
+<table class="ref-table">
+<thead><tr><th>Column</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>Consensio (X/9)</strong></td><td>Multi-timeframe moving average alignment. 9/9 = fully bullish (all MAs stacked up), 0/9 = fully bearish. Measures how many of 9 key MA relationships are bullish</td></tr>
+<tr><td><strong>1D / 3D / 1W</strong></td><td>Per-timeframe signal strength (&minus;3 to +3). <span class="badge badge-green">Green flash</span> = improved since yesterday, <span class="badge badge-red">red</span> = dropped</td></tr>
+<tr><td><strong>W-RSI</strong></td><td>Weekly RSI (14-period). Below 30 = oversold, above 70 = overbought. Useful for identifying macro extremes</td></tr>
+<tr><td><strong>CPR</strong></td><td>Monthly Central Pivot Range zone. <span style="color:#f85149;">S3&ndash;S1</span> = below pivots (bearish), <span style="color:#a78bfa;">BC&ndash;TC</span> = inside range, <span style="color:#3fb950;">R1&ndash;R3</span> = above pivots (bullish)</td></tr>
+<tr><td><strong>BB</strong></td><td>Bollinger Band width percentile. <span style="color:#f85149;">&lt;30%</span> extreme squeeze, <span style="color:#d29922;">30&ndash;50%</span> squeeze, <span style="color:#8b949e;">50&ndash;150%</span> normal</td></tr>
+<tr><td><strong>EMA Ribbon</strong></td><td>EMA 30/60 crossover state. <span style="color:#3fb950;">Green</span> = price above both, <span style="color:#f85149;">Red</span> = below both, <span style="color:#d29922;">Yellow</span> = inside (squeeze)</td></tr>
+<tr><td><strong>Structure</strong></td><td>Swing structure. <span style="color:#3fb950;">HH/HL</span> = uptrend (higher highs, higher lows), <span style="color:#f85149;">LH/LL</span> = downtrend</td></tr>
+<tr><td><strong>ADX</strong></td><td>Trend strength. &lt;20 ranging, 20&ndash;30 forming, &gt;30 strong trending</td></tr>
+</tbody>
+</table>
+
+<h3>Signal Badges</h3>
+<p>Compact coloured badges appear in the Signals column. Hover any badge for a detailed tooltip.</p>
+
+<table class="ref-table">
+<thead><tr><th>Badge</th><th>Meaning</th><th>What to Look For</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-yellow">SQZ</span></td><td>EMA Squeeze</td><td>30/60 EMAs within 0.5% &mdash; a flip is imminent. Watch for directional breakout</td></tr>
+<tr><td><span class="badge badge-yellow">TGT</span></td><td>Tightening</td><td>EMAs are converging. Early warning before SQZ. Prepare for volatility</td></tr>
+<tr><td><span class="badge badge-purple">V-CPR</span></td><td>CPR Vacuum</td><td>Price hasn't touched the monthly CPR zone yet &mdash; may gravitate toward it</td></tr>
+<tr><td><span class="badge badge-red">S3</span> / <span class="badge badge-green">R3</span></td><td>Extreme Pivot</td><td>Price within 2% of monthly S3 support or R3 resistance</td></tr>
+<tr><td><span class="badge badge-purple">TF-DIV</span></td><td>Timeframe Divergence</td><td>Daily and weekly signals disagree &mdash; potential conflict or reversal setup</td></tr>
+<tr><td><span class="badge badge-green">RSI&uarr;</span> / <span class="badge badge-red">RSI&darr;</span></td><td>RSI Divergence</td><td>Price vs RSI divergence detected. Bullish (&uarr;) or bearish (&darr;) regular divergence</td></tr>
+<tr><td><span class="badge badge-gray">H-RSI&uarr;</span> / <span class="badge badge-gray">H-RSI&darr;</span></td><td>Hidden Divergence</td><td>Trend continuation signal &mdash; price pullback but RSI holds direction</td></tr>
+<tr><td><span class="badge badge-green">STR&uarr;</span> / <span class="badge badge-red">STR&darr;</span></td><td>Structure Conflict</td><td>Swing structure disagrees with EMA Ribbon trend &mdash; early reversal warning</td></tr>
+<tr><td><span class="badge badge-blue">CC</span></td><td>Consensio Changed</td><td>Consensio score changed since yesterday. Check if trend is strengthening or weakening</td></tr>
+</tbody>
+</table>
+
+<h3>Sorting &amp; Filtering</h3>
+<ul>
+    <li><strong>Sort:</strong> Click any column header. Click again to reverse. Default sorts by Consensio</li>
+    <li><strong>Filter (Toggle button):</strong> Show/hide specific columns and indicator data</li>
+    <li><strong>Filter (Filter button):</strong> Filter assets by signal type, alignment label, direction</li>
+    <li><strong>Search:</strong> Press <kbd>Space</kbd> to search across all assets, not just the current tab</li>
+</ul>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="chart">Chart</h2>
+<!-- ══════════════════════════════════════ -->
+
+<h3>Opening a Chart</h3>
+<p>Click any asset name in the panel to load it into the chart. The chart occupies the left side of the split layout. You can also:</p>
+<ul>
+    <li>Press <kbd>Space</kbd>, or click the search (magnifier) button in the toolbar next to the asset name, to search and jump to any symbol</li>
+    <li>Press <kbd>,</kbd> / <kbd>.</kbd> to cycle through your watchlist</li>
+    <li>Navigate to <code>/chart/BTCUSDT/1D</code> for a bookmarkable standalone URL</li>
+</ul>
+
+<h3>Chart Types</h3>
+<p>The toolbar shows the current chart style by name &mdash; click it (or right-click the chart background) to switch between:</p>
+<ul>
+    <li><strong>Candles</strong> &mdash; Traditional OHLC candlestick chart (default)</li>
+    <li><strong>Heikin Ashi</strong> &mdash; Smoothed candles that filter noise and show trend direction more clearly</li>
+    <li><strong>Hollow Candles</strong> &mdash; Bullish candles are hollow (outline only), bearish are filled</li>
+    <li><strong>OHLC Bars</strong> &mdash; Traditional bar chart with open/close ticks</li>
+    <li><strong>Line / Area</strong> &mdash; Close price as a line with shaded area below</li>
+</ul>
+<p>A labeled <strong>Panes</strong> button sits next to it for pane layouts &mdash; single, side-by-side, stacked, and rotation (see <a href="#multi-chart">Multi-Chart</a>).</p>
+
+<h3>Timeframes</h3>
+<p>Timeframe buttons appear in the toolbar. Two modes (toggle with the LTF/HTF switch):</p>
+<ul>
+    <li><strong>HTF (Higher Timeframes)</strong>: 4H, 1D, 3D, 1W, 1M &mdash; available to all users</li>
+    <li><strong>LTF (Lower Timeframes)</strong>: 1m, 3m, 5m, 15m, 30m, 1H &mdash; <span class="badge badge-purple">Member+</span></li>
+</ul>
+<p>Keyboard shortcuts: <kbd>1</kbd>=1D, <kbd>3</kbd>=3D, <kbd>4</kbd>=4H, <kbd>5</kbd>=15m, <kbd>H</kbd>=1H, <kbd>W</kbd>=1W, <kbd>M</kbd>=1M</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>TradFi assets (stocks, ETFs, etc.) support 1H, 4H, 1D, 3D, 1W, 1M. Sub-hourly timeframes are crypto-only due to data source limitations.</span>
+</div>
+
+<h3>Navigation</h3>
+<ul>
+    <li><strong>Pan:</strong> Click and drag the chart area, or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd> arrow keys</li>
+    <li><strong>Zoom:</strong> Scroll wheel or <kbd>+</kbd> / <kbd>&minus;</kbd> keys</li>
+    <li><strong>Y-axis zoom:</strong> Drag the price axis to scale vertically</li>
+    <li><strong>Reset view:</strong> Press <kbd>G</kbd> to snap back to the latest data</li>
+    <li><strong>Center price:</strong> Press <kbd>J</kbd> to center the chart on the current price</li>
+    <li><strong>Log scale:</strong> Press <kbd>O</kbd> or click the A/L buttons on the Y-axis</li>
+</ul>
+
+<h3>Live Data</h3>
+<p>Crypto assets receive <strong>real-time price updates</strong> via WebSocket from multiple exchanges. Binance is primary, with automatic fallback to Hyperliquid, Bybit, MEXC, and Gate.io for coins not listed on Binance. US stocks and ETFs (~70 symbols including AAPL, NVDA, QQQ, SPY) tick live during market hours via Finnhub. TradFi daily data comes from Yahoo Finance.</p>
+
+<h3>Display Options</h3>
+<ul>
+    <li><strong>Green/Red Candles:</strong> Toggle between traditional green-up/red-down and alternative colour schemes</li>
+    <li><strong>White Background:</strong> Switch between dark (default) and light chart background</li>
+    <li><strong>Screenshot:</strong> Click the camera icon to export the chart as a PNG image</li>
+</ul>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="indicators">Indicators (70+)</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Carrac has <strong>70+ built-in indicators</strong> across 5 categories. Toggle the indicator dropdown (press <kbd>I</kbd>) to see all available indicators grouped by type. Click an indicator to toggle it on/off.</p>
+
+<h3>Oscillators</h3>
+<ul>
+    <li><strong>RSI (14)</strong> &mdash; Relative Strength Index with MA line. Overbought &gt;70, oversold &lt;30</li>
+    <li><strong>RSI Divergence</strong> &mdash; Auto-detects bullish/bearish divergences between price and RSI. Green = bullish, red = bearish, solid = regular, dashed = hidden</li>
+    <li><strong>MACD (12,26,9)</strong> &mdash; Trend &amp; momentum. Watch for signal crossovers and histogram direction</li>
+    <li><strong>TTM Squeeze</strong> &mdash; Yellow segments when Bollinger Bands contract inside Keltner Channels &mdash; volatility compression before breakout</li>
+    <li><strong>BB Width %</strong> &mdash; Bollinger Band width as a percentile. Cyan heatmap highlights extreme compression zones</li>
+    <li><strong>ATR %</strong> &mdash; ATR percentile. Magenta heatmap when volatility is historically low</li>
+    <li><strong>NR7</strong> &mdash; Narrowest Range of 7 bars &mdash; marks bars with the smallest high-to-low range in the last 7 periods</li>
+    <li><strong>Stochastic</strong> &mdash; %K/%D with overbought/oversold zones</li>
+</ul>
+
+<h3>Trend &amp; Moving Averages</h3>
+<ul>
+    <li><strong>EMA Ribbon (30/60)</strong> &mdash; Dual EMA trend indicator. Green when bullish, red when bearish, yellow during squeeze</li>
+    <li><strong>Daily EMAs</strong> &mdash; 21/50/200 EMA overlays for support/resistance levels</li>
+    <li><strong>Weekly MAs</strong> &mdash; 50W, 100W, 200W moving averages for macro perspective</li>
+    <li><strong>Bull Market Band</strong> &mdash; 21W EMA + 20W SMA. Price holding above = bull market intact</li>
+    <li><strong>Consensio</strong> &mdash; Multi-MA alignment score. Visual representation of the X/9 score</li>
+    <li><strong>Alligator</strong> &mdash; Bill Williams' Alligator (Jaw, Teeth, Lips)</li>
+    <li><strong>CM Ultimate</strong> &mdash; Multi-period moving average with colour-coded trend</li>
+    <li><strong>Ichimoku Cloud</strong> &mdash; Full Ichimoku Kinko Hyo with cloud, conversion, base, and lagging span</li>
+    <li><strong>SuperTrend</strong> &mdash; ATR-based trend indicator with flip detection</li>
+    <li><strong>Gaussian Channel</strong> &mdash; Probabilistic channel based on Gaussian filter</li>
+    <li><strong>Keltner Tight</strong> &mdash; Keltner Channels for tightness detection</li>
+    <li><strong>Pi Cycle Top</strong> &mdash; 111-day MA &times; 2 vs 350-day MA. Historical Bitcoin cycle top indicator</li>
+    <li><strong>SMA 20/200</strong> &mdash; daily SMA 20 and SMA 200 trend lines</li>
+    <li><strong>ALMA</strong> &mdash; Arnaud Legoux Moving Average &mdash; low-lag, smooth</li>
+    <li><strong>Hull MA</strong> &mdash; Hull Moving Average for reduced lag</li>
+    <li><strong>KAMA</strong> &mdash; Kaufman Adaptive Moving Average &mdash; adapts speed to volatility</li>
+</ul>
+
+<h3>Levels &amp; Zones</h3>
+<ul>
+    <li><strong>CPR</strong> &mdash; Classic floor pivots from the previous month&rsquo;s high, low and close: the Pivot Point, the Top and Bottom Central lines (TC/BC), and support/resistance levels S1&ndash;S3 and R1&ndash;R3. Shows where price sits relative to the central range (above, inside or below) and how wide that range is</li>
+    <li><strong>CPR History</strong> &mdash; Historical pivot levels plotted on the chart</li>
+    <li><strong>Key Levels</strong> &mdash; Auto-detected support/resistance zones based on price action clustering</li>
+    <li><strong>S/R Channels</strong> &mdash; Automated support and resistance channel detection</li>
+    <li><strong>Auto Fib</strong> &mdash; Automated Fibonacci retracement on the most recent significant swing</li>
+    <li><strong>Fair Value Gap</strong> &mdash; Imbalance zones where price moved rapidly, leaving inefficiency. Often retested</li>
+</ul>
+
+<h3>Volume &amp; Flow</h3>
+<ul>
+    <li><strong>Volume</strong> &mdash; Standard volume bars with colour coding (green = bullish close, red = bearish)</li>
+    <li><strong>Volume Profile</strong> &mdash; Price-by-volume histogram showing the distribution of trading activity across price levels</li>
+    <li><strong>Naked POC</strong> &mdash; Dashed lines at past sessions&rsquo; points of control that price has never revisited. Untouched levels often act as magnets; touched ones disappear automatically</li>
+    <li><strong>CVD Spot</strong> &mdash; Cumulative Volume Delta for spot markets. Shows aggressive buyer vs seller pressure</li>
+    <li><strong>CVD Futures (USDT)</strong> &mdash; CVD for USDT-margined perpetual futures <span class="badge badge-purple">Member+</span></li>
+    <li><strong>CVD Futures (COIN)</strong> &mdash; CVD for coin-margined perpetual futures <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Open Interest</strong> &mdash; Total open contracts in perpetual futures <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Derivatives (Combined)</strong> &mdash; Composite view of OI + CVD + funding in a single pane <span class="badge badge-purple">Member+</span></li>
+</ul>
+
+<h3>Derivatives &amp; Quant</h3>
+<ul>
+    <li><strong>Risk Appetite</strong> &mdash; PCA composite of VIX, HY spread, TLT, DXY. Macro risk-on/off gauge <span class="badge badge-gold">Premium</span></li>
+    <li><strong>Liquidity Factor</strong> &mdash; PCA composite of M2, net liquidity, Fed balance sheet <span class="badge badge-gold">Premium</span></li>
+    <li><strong>Credit Stress</strong> &mdash; PCA composite of HY spreads, yield curve. Systemic risk gauge <span class="badge badge-gold">Premium</span></li>
+</ul>
+
+<h3>Smart Money Concepts (SMC)</h3>
+<ul>
+    <li><strong>Structure</strong> &mdash; Automated break-of-structure (BOS) and change-of-character (CHoCH) detection</li>
+    <li><strong>Order Blocks</strong> &mdash; Supply/demand zones where institutional orders likely reside</li>
+    <li><strong>Equal H/L</strong> &mdash; Marks areas where price repeatedly tests the same level (liquidity pools)</li>
+    <li><strong>Value Zones</strong> &mdash; Institutional accumulation/distribution zones</li>
+</ul>
+
+<h3>Indicator Groups</h3>
+<p>Create named presets of indicators. Click the <strong>"+"</strong> button in the favourite indicator pills bar to create a group. Click a group pill to toggle all its indicators on/off. Right-click for rename/edit/delete.</p>
+<p><strong>Example:</strong> Create a "Trend" group with EMA Ribbon + MACD + SuperTrend, and a "Volume" group with Volume + CVD + OI. One click switches your entire indicator set.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>For detailed descriptions of every indicator including formulas, signal interpretations, and colour coding, see the <a href="/indicators">full Indicator Guide</a>.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="drawing-tools">Drawing Tools</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Press <kbd>D</kbd> to toggle the drawing toolbar. All drawings <strong>sync across devices</strong> via the server &mdash; draw on desktop, see it on mobile.</p>
+
+<p>The toolbar is organised into <strong>seven compact groups</strong> &mdash; each group button remembers the tool you last picked, so your go-to tool stays one click away. Star any tool as a <strong>favourite</strong> from its menu and it appears as a quick chip on the toolbar; drag favourites off the toolbar to float them over the chart or dock them to either side (a live preview shows where they will land), and drop them back on the toolbar to snap them into place. Keyboard shortcuts appear as key badges in the tool menus.</p>
+
+<h3>Drawing Types</h3>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>Shortcut</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>Trendline</strong></td><td><kbd>L</kbd></td><td>Two-point line. Click start and end points. Extend to see projected support/resistance</td></tr>
+<tr><td><strong>Horizontal Line</strong></td><td><kbd>H</kbd></td><td>Horizontal level across the entire chart. Great for marking key support/resistance</td></tr>
+<tr><td><strong>Ray</strong></td><td>&mdash;</td><td>One-directional line extending from origin</td></tr>
+<tr><td><strong>Extended Line</strong></td><td>&mdash;</td><td>Line extending infinitely in both directions</td></tr>
+<tr><td><strong>Arrow</strong></td><td>&mdash;</td><td>Directional arrow annotation</td></tr>
+<tr><td><strong>Parallel Channel</strong></td><td><kbd>P</kbd></td><td>Two parallel lines for channel trading. Drag an endpoint to rotate the channel around the opposite end (width stays constant); drag the handle in the middle of the parallel line to adjust width only</td></tr>
+<tr><td><strong>Pitchfork</strong></td><td>&mdash;</td><td>Andrews' Pitchfork with median line and parallel channels</td></tr>
+<tr><td><strong>Rectangle</strong></td><td><kbd>R</kbd></td><td>Supply/demand zone. Drag corners or edges to resize. Semi-transparent fill</td></tr>
+<tr><td><strong>Fibonacci Retracement</strong></td><td><kbd>F</kbd></td><td>Standard Fibonacci levels (23.6%, 38.2%, 50%, 61.8%, 78.6%). Click swing low &rarr; swing high</td></tr>
+<tr><td><strong>Fibonacci Extension</strong></td><td>&mdash;</td><td>Projection levels beyond the measured range for target estimation</td></tr>
+<tr><td><strong>Fibonacci Circle/Spiral</strong></td><td>&mdash;</td><td>Circular Fibonacci levels for time-based analysis</td></tr>
+<tr><td><strong>Gann Box</strong></td><td>&mdash;</td><td>Gann grid with diagonal angle lines</td></tr>
+<tr><td><strong>Text Annotation</strong></td><td><kbd>T</kbd></td><td>Place text labels anywhere on the chart</td></tr>
+<tr><td><strong>Alert Line</strong></td><td><kbd>Shift+A</kbd></td><td>Horizontal line that creates a price alert when crossed</td></tr>
+<tr><td><strong>Long Position</strong></td><td><kbd>Alt+B</kbd></td><td>One-click long: places entry at the click price, SL 1.5&times;ATR below, TP at 2:1. Drag edges to resize</td></tr>
+<tr><td><strong>Short Position</strong></td><td><kbd>Alt+B</kbd> &times;2</td><td>One-click short: same logic, reversed. Press <kbd>Alt+B</kbd> again to cycle Long &rarr; Short &rarr; off</td></tr>
+<tr><td><strong>Spot Buy</strong></td><td>&mdash;</td><td>Mark spot purchase entries. Shows average cost basis and live P&amp;L</td></tr>
+<tr><td><strong>Path</strong></td><td>&mdash;</td><td>Multi-point polyline for mapping expected price paths</td></tr>
+<tr><td><strong>Elliott Wave</strong></td><td>&mdash;</td><td>Impulse (1-2-3-4-5) and corrective (A-B-C) wave counting tools</td></tr>
+<tr><td><strong>Volume Profile Range</strong></td><td><kbd>Shift+V</kbd></td><td>Two clicks place a volume profile over any bar range &mdash; a live preview appears while you place it. Drag either edge to resize (the profile recalculates as you drag) or drag the bars to move it &mdash; works by touch on mobile too. Right-click to switch volume mode (Total / Up-Down / Delta from real buyer-vs-seller trade data), value area %, row count, and <strong>Extend Right</strong> (the profile keeps absorbing new candles as they close; grab the live edge to go back to a fixed range). POC and value area prices are labeled on the price axis, and a badge shows how much data the profile was built from. Syncs across your devices</td></tr>
+<tr><td><strong>Anchored VWAP</strong></td><td>&mdash;</td><td>Volume-weighted average price anchored to a specific bar</td></tr>
+<tr><td><strong>Measure Tool</strong></td><td><kbd>X</kbd></td><td>Measure price change, percentage, and bar count between two points</td></tr>
+<tr><td><strong>Freehand</strong></td><td><kbd>V</kbd></td><td>Freehand drawing with smooth paths</td></tr>
+</tbody>
+</table>
+
+<h3>Drawing Controls</h3>
+<p>Click a drawing to select it (it highlights on hover before you click). Overlapping drawings resolve predictably &mdash; handles beat lines beat edges beat bodies, and the top layer wins. Right-click a drawing to <strong>Bring to Front</strong> or <strong>Send to Back</strong>; clicking a stack repeatedly cycles through the overlapping drawings.</p>
+<ul>
+    <li><kbd>C</kbd> &mdash; Cycle through drawing colours</li>
+    <li><kbd>+</kbd> / <kbd>&minus;</kbd> &mdash; Increase/decrease line thickness</li>
+    <li><kbd>[</kbd> / <kbd>]</kbd> &mdash; Decrease/increase opacity</li>
+    <li><kbd>Del</kbd> or <kbd>Backspace</kbd> &mdash; Delete selected drawing. <kbd>Shift+Del</kbd> for permanent delete</li>
+    <li><kbd>Ctrl+Z</kbd> &mdash; Undo last drawing action</li>
+    <li><kbd>Ctrl+Y</kbd> or <kbd>Shift+Z</kbd> &mdash; Redo</li>
+</ul>
+
+<h3>Positions in one click</h3>
+<p>The <strong>Long</strong> and <strong>Short</strong> position tools replace the old 3-click flow. One click on the chart places a full position box with a volatility-sized stop loss (1.5&times;ATR) and a 2:1 take-profit automatically. Drag the edges to resize the box; the right edge sets its width and that width is remembered for next time.</p>
+<ul>
+    <li><kbd>Alt+B</kbd> &mdash; Cycle Long &rarr; Short &rarr; off</li>
+    <li>Long and Short tools are also in the drawing toolbar (press <kbd>D</kbd> to show it)</li>
+</ul>
+
+<h3>Nudge &amp; multi-select</h3>
+<p>With a drawing selected, use the arrow keys to move it precisely. Hold <kbd>Shift</kbd> for a 10&times; jump.</p>
+<ul>
+    <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> &mdash; Move one candle left or right</li>
+    <li><kbd>&uarr;</kbd> / <kbd>&darr;</kbd> &mdash; Move one pixel up or down</li>
+    <li><kbd>Shift</kbd>+arrow &mdash; Same, but &times;10</li>
+</ul>
+<p>To work on several drawings at once, <kbd>Ctrl</kbd>+click rectangles, channels, or position boxes to build a selection set. Drag any member to move all of them; arrow keys nudge the whole set; <kbd>Del</kbd> deletes all. Press <kbd>Esc</kbd> or click empty space to clear the selection. (Trendlines and Fibonacci tools are not yet multi-selectable.)</p>
+
+<h3>Clone with Ctrl+drag</h3>
+<p>Hold <kbd>Ctrl</kbd> and drag a rectangle or channel body &mdash; the original stays in place and a copy follows your cursor. Release to drop the clone. It lands on the undo stack like any other action.</p>
+
+<h3>Magnet</h3>
+<p>The toolbar magnet button cycles through three modes: <strong>off &rarr; weak &rarr; strong</strong>. In weak mode, a dragged or newly placed point snaps to the nearest candle O/H/L/C only when within about 8 pixels. In strong mode it always snaps. Hold <kbd>Ctrl</kbd> mid-drag to temporarily invert the current magnet setting.</p>
+
+<h3>Drawings panel &amp; groups</h3>
+<p>Click the <strong>Drawings</strong> tab in the right drawer to see every drawing on the current chart in a list. Each row shows a readable label (positions display side, entry, TP/SL; shapes show colour and text). Click a row to jump the chart to that drawing and flash it.</p>
+<p>Per-row controls: hide/show (eye icon), lock, delete. Drag rows to reorder the layer stack.</p>
+<p>Use <strong>+ Group</strong> to create a named group, then drag drawing rows onto a group header. Groups get their own hide/show toggle and you can rename them inline. Group membership and visibility sync across devices.</p>
+
+<h3>Copy, Paste &amp; Duplicate</h3>
+<p>Reuse drawings without redrawing them:</p>
+<ul>
+    <li><kbd>Ctrl+C</kbd> &mdash; Copy the selected drawing</li>
+    <li><kbd>Ctrl+V</kbd> &mdash; Paste the copied drawing near the current crosshair</li>
+    <li>Right-click a drawing for <strong>Copy</strong> or <strong>Duplicate</strong> (duplicate places an offset copy immediately)</li>
+    <li>Right-click an empty chart area for <strong>Paste</strong></li>
+</ul>
+<p>Paste is <strong>same-asset only</strong> &mdash; you can't paste a BTC trendline onto ETH. Position and spot-buy markers are excluded from copy/paste on purpose (they track real trades). Every paste and duplicate is on the undo stack, so <kbd>Ctrl+Z</kbd> removes them cleanly.</p>
+
+<h3>Drawing Sync</h3>
+<p>Drawings are stored per-symbol on the server. When you draw on one device, it appears on all your other sessions within seconds (poll-based sync). Per-drawing hidden state (eye toggle) persists and syncs across devices too. Each drawing supports per-drawing CRUD &mdash; edit or delete individual drawings without affecting others.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Drawings work in sub-panes too! You can draw trendlines on RSI, MACD, or any oscillator pane &mdash; not just the main price chart.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="multi-chart">Multi-Chart</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>View up to 4 charts simultaneously, each with independent asset and timeframe.</p>
+
+<h3>Layouts</h3>
+<ul>
+    <li><kbd>Ctrl+1</kbd> &mdash; Single chart (default)</li>
+    <li><kbd>Ctrl+2</kbd> &mdash; Side by side</li>
+    <li><kbd>Ctrl+3</kbd> &mdash; Top / bottom</li>
+    <li><kbd>Ctrl+4</kbd> &mdash; Triple &mdash; 1 large + 2 stacked</li>
+    <li><kbd>Ctrl+5</kbd> &mdash; Quad &mdash; 2&times;2 grid</li>
+    <li><kbd>Ctrl+8</kbd> &mdash; TF spread &mdash; the same asset across all 4 panes, each at a different timeframe</li>
+</ul>
+<p>The active pane has a blue border and receives all keyboard shortcuts. Press <kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> to cycle between panes. Companion panes auto-open at the next timeframe up from the primary chart.</p>
+
+<h3>Rotation Mode</h3>
+<p>Automatically cycle through assets at a set interval:</p>
+<ul>
+    <li><kbd>Ctrl+6</kbd> &mdash; Rotate through all plays</li>
+    <li><kbd>Ctrl+7</kbd> &mdash; Rotate through favourites</li>
+    <li>Adjustable speed (5 seconds to 5 minutes)</li>
+    <li>Pause/resume, manual navigation. Screen stays awake</li>
+    <li>Full-screen rotation hides all panels. Press <kbd>Esc</kbd> to exit</li>
+</ul>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="custom-formulas">Custom Formulas</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Build your own indicators with <strong>80+ built-in TA functions</strong> &mdash; no coding required. Access via the indicator dropdown &rarr; "Custom" or the formula editor modal.</p>
+
+<h3>How It Works</h3>
+<ol>
+    <li>Open the formula editor (indicator menu &rarr; "+" or edit an existing custom indicator)</li>
+    <li>Name your indicator and add one or more rows</li>
+    <li>Each row is a formula expression like <code>EMA(close, 21) - EMA(close, 55)</code></li>
+    <li>Choose a display style (line, histogram, area, dots, etc.)</li>
+    <li>Live preview updates as you type. Press <kbd>Ctrl+Enter</kbd> to save</li>
+</ol>
+
+<h3>Available Functions</h3>
+<p>SMA, EMA, WMA, Hull MA, RSI, MACD, Stoch RSI, OBV, ATR, Bollinger Bands, Keltner, Donchian, SuperTrend, Ichimoku components, Alligator, Z-Score, Percentile, Correlation, Beta, Consensio, and many more.</p>
+
+<h3>Structure &amp; Stateful Functions</h3>
+<p>Functions for detecting market structure and tracking state across bars:</p>
+<ul>
+    <li><code>CUM(source)</code> &mdash; Cumulative sum. Example: <code>CUM(volume)</code></li>
+    <li><code>STREAK(condition)</code> &mdash; Consecutive true count, resets to 0 on false. Example: <code>STREAK(close &gt; close[1])</code></li>
+    <li><code>HIGHEST_BARS(source, period)</code> &mdash; Bars since highest in window (0 = this bar is the high). Example: <code>HIGHEST_BARS(high, 50) == 0</code></li>
+    <li><code>LOWEST_BARS(source, period)</code> &mdash; Bars since lowest in window</li>
+    <li><code>PIVOTHIGH(left, right)</code> &mdash; Swing high detection, confirmed after <code>right</code> bars. Combine with <code>VALUEWHEN(PIVOTHIGH(5,5) &gt; 0, high)</code> for last swing high level</li>
+    <li><code>PIVOTLOW(left, right)</code> &mdash; Swing low detection</li>
+</ul>
+
+<h3>Variables</h3>
+<p><code>open</code>, <code>high</code>, <code>low</code>, <code>close</code>, <code>volume</code>, <code>hl2</code>, <code>hlc3</code>, <code>ohlc4</code> &mdash; plus any prior formula row by reference.</p>
+
+<h3>Operators</h3>
+<p>Arithmetic: <code>+ - * /</code>. Comparison: <code>&gt; &lt; &gt;= &lt;= == !=</code>. Logic: <code>AND OR NOT</code>. Bar offset: <code>[1]</code> for previous bar, <code>[n]</code> for n bars ago.</p>
+
+<h3>Anchored CPR Functions</h3>
+<p>The formula engine has two families of CPR (Central Pivot Range) functions &mdash; they measure different things:</p>
+<ul>
+    <li><strong>Rolling daily CPR</strong> (<code>CPR_PIVOT()</code>, <code>CPR_R1()</code>&hellip;<code>CPR_S3()</code>) &mdash; each bar's pivot is calculated from the <em>previous bar's</em> H/L/C. Useful for intraday momentum conditions.</li>
+    <li><strong>Monthly anchored CPR</strong> (<code>MONTHLY_CPR_P()</code>, <code>MONTHLY_CPR_TC()</code>, <code>MONTHLY_CPR_BC()</code>, <code>MONTHLY_CPR_R1()</code>&hellip;<code>MONTHLY_CPR_S3()</code>) &mdash; anchored to the <em>previous calendar month's</em> high, low, and close. These return the <strong>same values as the chart's CPR indicator</strong> and step once per month. Use these when you want formula conditions that match what you see on the chart.</li>
+</ul>
+<p>Example conditions:</p>
+<ul>
+    <li><code>MONTHLY_CPR_P() > CLOSE</code> &mdash; price below monthly anchored pivot</li>
+    <li><code>CLOSE > MONTHLY_CPR_TC() AND VOLUME > SMA(VOLUME, 20) * 1.3</code> &mdash; price above monthly TC with volume confirmation</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>For the full function reference, example recipes, and display style guide, see the <a href="/formulas">Formula Engine Docs</a>.</span>
+</div>
+
+<p>Custom formulas are available to every account.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="backtester">Backtester</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>The backtester runs a formula against an asset&rsquo;s own history and reports what would have happened. It lives in the chart&rsquo;s bottom drawer under the <strong>Backtest</strong> tab, and it reads the same formula engine as Custom Formulas &mdash; anything you can write as an indicator condition, you can test here. <span class="badge badge-purple">Member+</span></p>
+
+<h3>Running one</h3>
+<ol>
+    <li>Open a chart, pick the timeframe you want to test on, and open the <strong>Backtest</strong> drawer tab.</li>
+    <li>Write an <strong>Entry</strong> formula (when to open) and an <strong>Exit</strong> formula (when to close). Both are boolean expressions &mdash; e.g. <code>CROSSOVER(EMA(9), EMA(21))</code> and <code>CROSSUNDER(EMA(9), EMA(21))</code>. Each field validates as you type.</li>
+    <li>Set direction (Long, Short, or Both &mdash; reverse on each signal), starting capital, position size, commission, and an optional date range.</li>
+    <li>Click <strong>Run Backtest</strong>. Trades are marked on the chart itself, so you can see where each one opened and closed.</li>
+</ol>
+
+<h3>What the results tell you</h3>
+<p>Results report win rate, profit factor and total return per trade set, plus portfolio-level max drawdown, Sharpe, Sortino and Calmar. The Sharpe figure is scaled to the timeframe you tested on, so a 4-hour test and a daily test are not silently on different scales. Every trade is listed individually, and <strong>CSV</strong> exports the full trade list for your own analysis.</p>
+
+<h3>Regime filter</h3>
+<p>The <strong>Regime</strong> selector splits results by the market regime that was in force at the time &mdash; All, Favorable, or Unfavorable. This answers a question a plain backtest cannot: whether an edge is real or just an artefact of one long trending stretch. When you filter to a subset, the portfolio-level metrics (Sharpe, drawdown) are greyed out, because they are only meaningful across the whole run.</p>
+
+<h3>Realism &amp; risk controls</h3>
+<p>Collapsed by default under <strong>Realism &amp; Risk Controls</strong>, because the defaults are deliberately plain and you should turn these on knowingly:</p>
+<ul>
+    <li><strong>Slippage</strong> &mdash; price penalty applied on both entry and exit, in basis points.</li>
+    <li><strong>Stop Loss % / Take Profit %</strong> &mdash; percentage from entry. <strong>0 disables them.</strong></li>
+    <li><strong>Stop Type</strong> &mdash; <em>Close only</em> checks exits on the bar close; <em>Intrabar</em> checks the bar&rsquo;s high and low. A stop or target set while Stop Type is on <em>Close only</em> has no effect &mdash; if you set one, switch to Intrabar.</li>
+    <li><strong>Entry Fill</strong> &mdash; <em>Next-bar open</em> (the default) fills on the bar after the signal, because in live trading you cannot act on a close before it has happened. <em>Signal-bar close</em> fills on the signal bar itself &mdash; that is look-ahead bias and will flatter the result. Use it for studying a signal, not for judging a strategy.</li>
+    <li><strong>Instrument</strong> &mdash; Spot or Perpetual. Perpetual applies funding costs over the holding period.</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>When a stop and a target would both be hit on the same bar, the stop is applied first &mdash; the engine does not try to guess which came first inside the bar. Results are therefore the pessimistic reading of an ambiguous bar, by design.</span>
+</div>
+
+<h3>What the backtester assumes</h3>
+<p>Three of these settings are <strong>assumptions rather than measurements</strong> &mdash; the bar data genuinely cannot settle them, so the engine has to choose. Every one of them moves the result, and the defaults are the conservative reading in each case:</p>
+<table>
+<tr><th>Assumption</th><th>Default</th><th>The other reading</th></tr>
+<tr><td>When a bar hits both the stop and the target, which one counts</td><td>The stop</td><td>Taking the target instead flatters the result</td></tr>
+<tr><td>Where a signal fills</td><td>The next bar&rsquo;s open</td><td>Filling on the signal bar is look-ahead &mdash; it trades on a price you could not have known</td></tr>
+<tr><td>What happens when the market gaps straight past a stop</td><td>You get the gap price</td><td>Assuming the stop price itself pretends you were filled where nobody traded</td></tr>
+</table>
+<p>These barely matter on assets that trade around the clock, because one bar&rsquo;s open is essentially the last one&rsquo;s close. On anything with a weekend or an overnight session they matter a great deal.</p>
+<p>Over MCP all three are settable, and every result comes back with an <code>assumptions</code> block naming which were used and which way each bends the numbers &mdash; so an assistant reporting a backtest can tell you whether it was measured honestly or flattered.</p>
+
+<h3>Saving strategies</h3>
+<p>Name a configuration and hit <strong>Save</strong> to keep it; <strong>Load</strong> brings it back. Saved strategies are per-account.</p>
+
+<p>Save keeps the <strong>whole setup</strong> &mdash; both formulas, direction, capital, size and commission, plus the timeframe, date range, regime filter, instrument and everything under Realism &amp; Risk Controls. Load restores all of it, and opens the Realism panel if the strategy uses anything in there, so a loaded strategy never runs with settings you cannot see.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Strategies saved before August 2026 only kept the formulas and costs &mdash; that was all the old format could hold. Loading one tells you so, and its risk controls come back at defaults rather than at whatever you originally used. Re-save it once to capture the full setup.</span>
+</div>
+
+<h3>Three different backtests, three different questions</h3>
+<p>Carrac has three distinct backtest models. They answer different questions and their numbers are <strong>not</strong> comparable &mdash; a hit rate from one is not a win rate from another:</p>
+<table>
+<tr><th>Model</th><th>Where</th><th>What it answers</th></tr>
+<tr><td><strong>Full Simulation</strong></td><td>This backtester (and <code>backtest_simulate</code> over MCP)</td><td>&ldquo;If I actually traded this entry and exit, with costs, what would the equity curve look like?&rdquo;</td></tr>
+<tr><td><strong>Hold-N Signal Test</strong></td><td><code>backtest_run</code> over MCP; the Scanner&rsquo;s <em>Test formula</em> button; Plays</td><td>&ldquo;Each time this one condition turned true, what happened over the next N bars?&rdquo; Cheap and directional &mdash; for comparing ideas, not for evaluating a strategy.</td></tr>
+<tr><td><strong>Historical Analog</strong></td><td><code>backtest_get_historical_analog</code> over MCP; Quant Engine</td><td>&ldquo;When these macro conditions held in the past, how did this asset move afterwards?&rdquo; A distribution of forward returns, not a trade simulation.</td></tr>
+</table>
+
+<h3>From your own AI</h3>
+<p>The backtester is reachable over MCP, so an assistant connected to your account can run and save tests without you opening the app: <code>backtest_simulate</code> (full simulation), <code>backtest_run</code> (Hold-N, against a formula, a play, or the whole scanner universe), <code>backtest_get_historical_analog</code>, plus <code>backtest_save_run</code> and <code>backtest_get_runs</code>. See <a href="#api">API &amp; AI CLI Integration</a> for setup.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>A backtest describes what a rule did on data that has already happened. It is information to evaluate, not a prediction and not advice &mdash; and a result good enough to be exciting is usually worth re-running on a different asset and a different date range before you believe it.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="consensio">The Consensio Method</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>The <strong>Consensio Method</strong> is a multi-timeframe position management system developed by the late <strong>D. Tyler Jenks</strong> (1950&ndash;2019), founder of Lucid Investment Strategies LLC. Originally designed for stock portfolio management on the weekly timeframe, it is also widely applied to crypto, especially to Bitcoin&rsquo;s higher timeframes. Carrac implements the method; it did not invent it. This section describes what the method holds &mdash; none of it is a recommendation from Carrac.</p>
+
+<h3>The Core Idea</h3>
+
+<p>Jenks built the method around a portfolio question: <em>how much exposure does the current trend support?</em></p>
+
+<p>The method answers it by reading the <strong>alignment of three moving averages across three timeframes</strong>. In Jenks&rsquo;s framing, full bullish alignment corresponds to a full position, a breakdown in alignment to scaling back, and full bearish alignment to no position at all. The idea is that a trend-following rule keeps a holder in strong trends while exposure falls as momentum fades.</p>
+
+<h3>The Three Moving Averages</h3>
+
+<p>On each timeframe, Consensio plots three Simple Moving Averages:</p>
+
+<ul>
+    <li><strong>Short MA (3-period)</strong> &mdash; fast, reactive to recent price action</li>
+    <li><strong>Medium MA (7-period)</strong> &mdash; intermediate momentum filter</li>
+    <li><strong>Long MA (30-period)</strong> &mdash; underlying trend anchor</li>
+</ul>
+
+<p>The <strong>ordering</strong> of these three lines determines the signal strength on that timeframe:</p>
+
+<table class="ref-table">
+<thead><tr><th>MA Order</th><th>Signal</th><th>Positions</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Short &gt; Medium &gt; Long</td><td>+3</td><td>3 / 3</td><td>Strongest bullish &mdash; all MAs stacked upward</td></tr>
+<tr><td>Medium &gt; Short &gt; Long</td><td>+2</td><td>2 / 3</td><td>Bullish but short MA pulling back</td></tr>
+<tr><td>Short &gt; Long &gt; Medium</td><td>+1</td><td>1 / 3</td><td>Early bullish or weakening trend</td></tr>
+<tr><td>Medium &gt; Long &gt; Short</td><td>&minus;1</td><td>0 / 3</td><td>Early bearish &mdash; short crossed below long</td></tr>
+<tr><td>Long &gt; Short &gt; Medium</td><td>&minus;2</td><td>0 / 3</td><td>Bearish &mdash; long MA dominant</td></tr>
+<tr><td>Long &gt; Medium &gt; Short</td><td>&minus;3</td><td>0 / 3</td><td>Strongest bearish &mdash; all MAs stacked downward</td></tr>
+</tbody>
+</table>
+
+<h3>Three Timeframes, Nine Packages</h3>
+
+<p>Carrac calculates Consensio on <strong>three timeframes simultaneously</strong>:</p>
+
+<ul>
+    <li><strong>1-Day (1D)</strong> &mdash; short-term trend direction</li>
+    <li><strong>3-Day (3D)</strong> &mdash; intermediate confirmation</li>
+    <li><strong>1-Week (1W)</strong> &mdash; the dominant trend anchor</li>
+</ul>
+
+<p>Each timeframe contributes 0 to 3 positions, for a combined score of <strong>0 to 9</strong>. The method frames the score as nine equal &ldquo;packages&rdquo; of a position, each one added or removed as the moving averages align or break apart across the three timeframes.</p>
+
+<h3>Reading the Score</h3>
+
+<ul>
+    <li><strong>9/9</strong> &mdash; Full consensus: every timeframe stacked bullish.</li>
+    <li><strong>6&ndash;8/9</strong> &mdash; Strong alignment with a pullback on one timeframe.</li>
+    <li><strong>3&ndash;5/9</strong> &mdash; Mixed: some timeframes bullish, others not.</li>
+    <li><strong>1&ndash;2/9</strong> &mdash; Weak or emerging bullish alignment.</li>
+    <li><strong>0/9</strong> &mdash; No bullish alignment on any timeframe.</li>
+</ul>
+
+<p>In Jenks&rsquo;s method the score maps directly to position size &mdash; all nine packages at 9/9, none at 0/9. Carrac shows the score; it does not size anything for you.</p>
+
+<p>In the screener, the score is colour-coded: <strong style="color:#238636;">green</strong> for 6&ndash;9, <strong style="color:#9e6a03;">orange</strong> for 3&ndash;5, <strong style="color:#6e7681;">grey</strong> for 1&ndash;2, and <strong style="color:#da3633;">red</strong> for 0. On the chart, enabling the Consensio indicator (<kbd>I</kbd> &rarr; Consensio) draws the three SMA lines and shows a summary table in the top-right corner with per-timeframe positions and the total.</p>
+
+<h3>What the Method Holds</h3>
+
+<p><strong>Stay with strong trends.</strong> The method holds that most of a trend-follower&rsquo;s results come from staying in strong trends, and that scaling exposure with alignment is a disciplined way to do it: adding as momentum confirms across timeframes, reducing as alignment fades.</p>
+
+<p><strong>Multi-timeframe confirmation reduces noise.</strong> A single timeframe produces many short-lived crosses. Requiring agreement across the daily, 3-day and weekly charts filters most of them out, so the score moves on broader trend shifts rather than on every wiggle.</p>
+
+<p><strong>A smoother ride is the stated trade-off.</strong> Proponents of the method argue that scaling in gradually gives up part of a parabolic top, while scaling out as alignment fades avoids part of the deep drawdowns. Carrac publishes no backtest of that claim; the Backtest tab lets you test a Consensio rule against an asset&rsquo;s own history.</p>
+
+<p><strong>It is a bird&rsquo;s-eye view, not a crystal ball.</strong> Consensio gives a high-level overview of where an asset stands. There is no underlying magic &mdash; the score depends entirely on price action and moving-average alignment. It reads what the market is doing right now across multiple timeframes, nothing more. That transparency is a feature: you always know exactly what drives the score and can verify it yourself on the chart.</p>
+
+<h3>Reading It Carefully</h3>
+
+<div class="tip">
+    <span class="tip-icon">&#x2139;</span>
+    <span>Jenks presented Consensio as a framework, not a rigid set of commands: in the method the score is a ceiling on exposure, not an instruction to fill every package. In Carrac it is a reading of moving-average alignment, nothing more.</span>
+</div>
+
+<ul>
+    <li><strong>0/9 does not mean &ldquo;bottom.&rdquo;</strong> It says the trend is bearish on all timeframes. Consensio is a trend-following method, not a bottom-picking one, so a 0/9 reading says nothing about where a low will form.</li>
+    <li><strong>1/9 is the faintest reading.</strong> One timeframe with a weak bullish order while two are bearish is the least alignment the score can register.</li>
+    <li><strong>9/9 marks full consensus, which is rarely permanent.</strong> From 9/9 the score can only hold or fall, which is why the method&rsquo;s scaling-down rules (below) start to matter there.</li>
+    <li><strong>Timeframe divergence.</strong> When the daily turns bullish while the weekly stays bearish (or the reverse), the timeframes disagree. The method treats such divergences as a possible early sign of a trend change.</li>
+</ul>
+
+<h3>Choppy Markets &mdash; The Limitation</h3>
+
+<p>Consensio is a <strong>trend-following</strong> method, and trend-following struggles in sideways, range-bound markets. When price chops back and forth without a clear direction, the moving averages keep crossing each other, and a rule that follows them adds and removes packages over and over &mdash; the classic whipsaw cost of trend-following.</p>
+
+<p>If the score flickers between, say, 3/9 and 5/9 without ever committing to a strong trend, the market is likely in a range. The score is then less informative moment to moment, and <strong>the range high and range low</strong> (markable with the drawing tools or the key levels indicator in Carrac) describe the market better, until a decisive breakout (a sustained move to 7+/9 or a drop to 1&ndash;/9) ends the range and the trend reading becomes meaningful again.</p>
+
+<h3>Scaling Down in the Method</h3>
+
+<p>When the score has been at 9/9 and starts declining &mdash; to 8, then 7, then lower &mdash; <strong>that decline is what the method&rsquo;s scaling design is built around</strong>: exposure is meant to come back down as alignment fades, the same way it went up as alignment built. In Jenks&rsquo;s framing that is the system working as designed, not a failure: for packages added on the way up at lower prices, scaling down is how <strong>unrealized gains become realized ones</strong>.</p>
+
+<p>The method&rsquo;s argument is behavioural: reducing a position as gains shrink feels like giving up, so a rule set in advance replaces a decision made under pressure.</p>
+
+<h3>Reduction Without Selling</h3>
+
+<p>Practitioners of the method, especially long-term Bitcoin holders, often describe a reduction in the score as <strong>a reduction in net exposure, not necessarily a sale of the spot position</strong>. The instruments usually named for that:</p>
+
+<ul>
+    <li><strong>Put options</strong> &mdash; A contract that gains value as price drops, offsetting losses on a spot position. Functions as insurance for a holding.</li>
+    <li><strong>Futures shorts</strong> &mdash; A short futures position that offsets long spot exposure, partially or fully.</li>
+    <li><strong>Perpetual swaps</strong> &mdash; Similar to futures but without expiration, commonly used on crypto exchanges.</li>
+    <li><strong>Options collars</strong> &mdash; A combined short-call, long-put position that creates a cost-neutral hedge band.</li>
+</ul>
+
+<p>In that reading, a fall from, say, 7/9 to 4/9 can be met by hedging the difference while the coins stay put, and the hedge is closed when alignment recovers. Whether to do any of this, and how, is the holder&rsquo;s own decision.</p>
+
+<h3>Consensio Across Carrac</h3>
+
+<p>Consensio is not just a chart overlay &mdash; it is integrated across the platform:</p>
+
+<ul>
+    <li><strong>Screener</strong> &mdash; Consensio score is a primary column. The dedicated &ldquo;Consensio&rdquo; view mode shows per-timeframe signal breakdown.</li>
+    <li><strong>Scanner</strong> &mdash; Trend alignment from Consensio is one of six scoring criteria. Assets with high alignment score higher for trend strength.</li>
+    <li><strong>Morning Report</strong> &mdash; The AI references Consensio alignment when discussing asset positioning and trend status.</li>
+    <li><strong>Plays</strong> &mdash; You can create plays with Consensio-based conditions (e.g. &ldquo;enter when Consensio reaches 7/9&rdquo;).</li>
+    <li><strong>Alerts</strong> &mdash; Set alerts on Consensio state changes to get notified when an asset&rsquo;s trend alignment shifts.</li>
+    <li><strong>Ask your own AI</strong> &mdash; via the MCP server it can read any asset&rsquo;s multi-timeframe alignment with full context.</li>
+</ul>
+
+<h3>Origin</h3>
+
+<p>The Consensio system was created by <strong>D. Tyler Jenks</strong>, a veteran investment manager with over 40 years of experience at Lucid Investment Strategies LLC. Jenks developed several proprietary technical systems including Hyperwave&trade; and Consensio, and was known in the Bitcoin community for applying institutional-grade frameworks to cryptocurrency markets. His work was popularised through collaborations with analysts like Tone Vays and has since been adopted widely in the crypto trading community. Carrac&rsquo;s implementation uses his core principles (3/7/30 SMA across multiple timeframes) with platform-specific enhancements: real-time calculation, multi-asset scanning, and integration with the scoring engine.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="plays">Plays</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Plays are <strong>thesis-first trade hypotheses</strong> with structured conditions, milestones, and invalidation tracking. They help you plan trades before taking them and track whether your thesis plays out.</p>
+
+<h3>Creating a Play</h3>
+<p>Press <kbd>P</kbd> or open the Plays view mode. Click "New Play" and fill in:</p>
+<ul>
+    <li><strong>Title</strong> &mdash; A short name for the setup (e.g. "BTC daily breakout above 72k")</li>
+    <li><strong>Thesis</strong> &mdash; Your reasoning for the trade. Why you think this will work</li>
+    <li><strong>Direction</strong> &mdash; Long, Short, Neutral, or Conditional</li>
+    <li><strong>Type</strong> &mdash; Directional, Macro, Event, Hedge, or Spread</li>
+    <li><strong>Approach</strong> &mdash; Single entry, Scaled entry, or Defensive</li>
+    <li><strong>Conditions</strong> &mdash; The checklist that must be met before you act (see below)</li>
+    <li><strong>Invalidation</strong> &mdash; What would make you abandon this play entirely</li>
+</ul>
+
+<h3>Condition Builder</h3>
+<p>Each play has a set of conditions with ALL/ANY logic. <strong>24 condition types</strong> across 7 categories:</p>
+
+<h4>Price Conditions</h4>
+<ul>
+    <li><strong>Price Level</strong> &mdash; Price above/below a specific level</li>
+    <li><strong>Price Zone</strong> &mdash; Price inside/outside a range</li>
+    <li><strong>Price Change %</strong> &mdash; Price moves X% over a period</li>
+    <li><strong>Distance From</strong> &mdash; Price within X% of a reference level</li>
+    <li><strong>Candle Close</strong> &mdash; A candle closes above/below a level (not just wicks)</li>
+</ul>
+
+<h4>Indicator Conditions</h4>
+<ul>
+    <li><strong>Indicator Value</strong> &mdash; An indicator crosses a threshold (e.g. RSI &gt; 70)</li>
+    <li><strong>Indicator Cross</strong> &mdash; An indicator crosses above/below a value</li>
+    <li><strong>Indicator State</strong> &mdash; Indicator enters a state (e.g. EMA Ribbon turns bullish)</li>
+    <li><strong>Divergence</strong> &mdash; RSI bullish or bearish divergence detected</li>
+</ul>
+
+<h4>Composite Conditions</h4>
+<ul>
+    <li><strong>Consensio Threshold</strong> &mdash; Consensio score above a minimum</li>
+    <li><strong>Scanner Verdict</strong> &mdash; Scanner alignment score above a threshold for a direction</li>
+</ul>
+
+<h4>Cross-Asset &amp; Formula</h4>
+<ul>
+    <li><strong>Cross-Asset</strong> &mdash; A condition on another symbol (e.g. DXY below 103)</li>
+    <li><strong>Scanner Comparison</strong> &mdash; Compare two assets' scanner totals (e.g. BTC long score above ETH long score)</li>
+    <li><strong>Formula Expression</strong> &mdash; Custom formula that evaluates to true</li>
+</ul>
+
+<h4>Candle Conditions</h4>
+<ul>
+    <li><strong>Engulfing Detected</strong> &mdash; A bullish or bearish engulfing candle just printed (volume-confirmed) on 1H / 4H / Daily / 3-Day / Weekly</li>
+    <li><strong>BB Fade (Engulfing)</strong> &mdash; Price reached the upper or lower Bollinger Band AND a matching reversal engulfing prints on the same bar (one-rule mean-reversion setup)</li>
+    <li><strong>BB Breakout-Retest (Engulfing)</strong> &mdash; Price broke past the band within lookback window, pulled back to within X% of the middle band, and a confirming engulfing prints on the current bar (one-rule pullback-continuation setup)</li>
+    <li><strong>BB Squeeze Breakout</strong> &mdash; Volatility compressed (squeezed) for several consecutive bars within lookback, the squeeze has now released, and the current bar closed past the upper (bullish) or lower (bearish) band with optional volume confirmation (one-rule expansion-from-compression setup)</li>
+    <li><strong>BB Breakdown Continuation</strong> &mdash; Price broke a band within lookback, then either an engulfing confirms or price retests the broken band &mdash; the only rule with a custom BB offset (see <a href="#bb-strategies">Setup F</a>)</li>
+</ul>
+
+<h4>Derivatives Conditions</h4>
+<ul>
+    <li><strong>Derivatives Metric</strong> &mdash; A derivatives metric (basis, options skew, DVOL, IV&ndash;RV premium, put/call ratio, gamma exposure, funding, and more) crosses a threshold</li>
+    <li><strong>Derivatives Regime</strong> &mdash; Enters a named derivatives-market regime (e.g. &ldquo;short squeeze setup&rdquo;, &ldquo;full capitulation&rdquo;)</li>
+</ul>
+
+<h4>Meta Conditions</h4>
+<ul>
+    <li><strong>Time Deadline</strong> &mdash; Play expires after a date</li>
+    <li><strong>Manual Check</strong> &mdash; A checkbox you tick manually when ready</li>
+    <li><strong>Cross-Play Reference</strong> &mdash; Trigger off the status of another one of your plays (e.g. when your SOL play completes)</li>
+</ul>
+
+<h3>Play Lifecycle</h3>
+<table class="ref-table">
+<thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-blue">Watching</span></td><td>Conditions are pending. Auto-evaluated against live data</td></tr>
+<tr><td><span class="badge badge-green">Acting</span></td><td>Conditions met. Trade is active or ready to execute</td></tr>
+<tr><td><span class="badge badge-gray">Completed</span></td><td>Trade closed or thesis confirmed</td></tr>
+<tr><td><span class="badge badge-red">Invalidated</span></td><td>Invalidation criteria hit. Play abandoned</td></tr>
+<tr><td><span class="badge badge-yellow">Expired</span></td><td>Time deadline passed without acting</td></tr>
+</tbody>
+</table>
+
+<h3>Play Features</h3>
+<ul>
+    <li><strong>Auto-evaluation</strong> &mdash; Conditions are checked against live market data. Progress bar shows X/Y met</li>
+    <li><strong>Link drawings</strong> &mdash; Connect chart drawings to plays for visual reference</li>
+    <li><strong>Morning report integration</strong> &mdash; Active plays appear in your personal morning report with condition evidence</li>
+    <li><strong>Create alert from condition</strong> &mdash; Convert any condition to a price/indicator alert</li>
+    <li><strong>Log to journal</strong> &mdash; When a play completes, log the trade directly to your journal</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Plays are available to every account.</span>
+</div>
+
+
+
+<!-- ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ -->
+<h2 id="bb-strategies">Bollinger Band Strategies</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Carrac ships six ready-to-use Bollinger Band signal setups. All run server-side on bar close, and fire through whichever notification channels you've configured (web push, ntfy, Telegram, Discord, email, in-app).</p>
+
+<h3>The six setups at a glance</h3>
+<table class="ref-table">
+<thead><tr><th>Setup</th><th>Best for</th><th>Where it lives</th></tr></thead>
+<tbody>
+<tr><td><strong>A &mdash; Band-edge Alert</strong></td><td>"Wake me up when price exits the band, I'll decide what to do."</td><td>Alerts panel</td></tr>
+<tr><td><strong>B &mdash; BB Fade (Engulfing) Play</strong></td><td>"Notify me when price reaches the band AND a reversal candle prints on the same bar." Mean-reversion entry.</td><td>Plays &rarr; Candle category</td></tr>
+<tr><td><strong>C &mdash; BB Breakout-Retest Play</strong></td><td>"Notify me when price broke the band earlier, pulled back to mid, and a confirmation candle prints." Trend-continuation entry.</td><td>Plays &rarr; Candle category</td></tr>
+<tr><td><strong>D &mdash; Composable Play</strong></td><td>Same as B but with <em>custom</em> Bollinger period / std / offset.</td><td>Plays &rarr; two rules combined</td></tr>
+<tr><td><strong>E &mdash; BB Squeeze Breakout Play</strong></td><td>"Notify me when BB was squeezed for several bars, has now released, and price closed past the band." Volatility-expansion / TTM-Squeeze style entry.</td><td>Plays &rarr; Candle category</td></tr>
+<tr><td><strong>F &mdash; BB Breakdown Continuation Play</strong></td><td>"Notify me when price broke the band a few bars ago, then <em>either</em> an engulfing prints OR price retests the broken band &mdash; with my custom BB offset." Breakdown/breakout continuation entry; the only dedicated rule with custom BB params.</td><td>Plays &rarr; Candle category</td></tr>
+</tbody>
+</table>
+
+<h3>Setup A &mdash; Band-edge Alert (standalone, simplest)</h3>
+<ol>
+    <li>Open any chart, add the Bollinger Bands indicator if not already on.</li>
+    <li>Right-click BOLL or open the Alert panel &rarr; "Add alert."</li>
+    <li><strong>Indicator:</strong> Bollinger Bands. <strong>Condition:</strong> <code>above upper band</code> / <code>below lower band</code> / <code>inside band</code>.</li>
+    <li>Pick timeframe and delivery channel. Save.</li>
+</ol>
+<p>The alert <strong>snapshots your current BOLL parameters</strong> (period, multiplier, offset) at creation time. Later chart tweaks don't change your alert's behaviour. Fires once per state transition on bar close.</p>
+
+<h3>Setup B &mdash; BB Fade (Engulfing) Play</h3>
+<p>Use case: "Alert me when BTC reached the upper band AND a bearish engulfing prints on the same bar &mdash; that's my short signal." Symmetric for long-fade (below lower + bullish engulfing).</p>
+<ol>
+    <li>Plays &rarr; New Play. Primary asset, direction (long / short), timeframe.</li>
+    <li>+ Add condition &rarr; Candle &rarr; <strong>BB Fade (Engulfing)</strong>.</li>
+    <li>Params:
+        <ul>
+            <li><code>direction</code>: <strong>bearish</strong> (fade short &mdash; price extended up, reverse down) or <strong>bullish</strong> (fade long &mdash; price extended down, reverse up)</li>
+            <li><code>timeframe</code>: matches the Play (1H / 4H / Daily / 3-Day / Weekly)</li>
+        </ul>
+    </li>
+    <li>Logic: <code>All-of</code>. Save.</li>
+</ol>
+<p>Fires when both <code>bb_position</code> reaches the matching edge AND the matching-direction engulfing prints on the same bar close.</p>
+
+<h3>Setup C &mdash; BB Breakout-Retest (Engulfing) Play</h3>
+<p>Use case: "Alert me when BTC broke above the upper band a few bars ago, has now pulled back to within 0.5% of the middle band, and a bullish engulfing prints. That's my long entry on the trend continuation." Classic throwback / first-pullback trade.</p>
+<ol>
+    <li>Plays &rarr; New Play. Primary asset, direction, timeframe.</li>
+    <li>+ Add condition &rarr; Candle &rarr; <strong>BB Breakout-Retest (Engulfing)</strong>.</li>
+    <li>Params:
+        <ul>
+            <li><code>direction</code>: <strong>bullish</strong> (upper-band breakout &rarr; pullback down to middle &rarr; bullish engulfing) or <strong>bearish</strong> (lower-band breakout &rarr; bounce up to middle &rarr; bearish engulfing)</li>
+            <li><code>timeframe</code>: matches the Play (1H / 4H / Daily / 3-Day / Weekly)</li>
+            <li><code>lookback_bars</code>: how many bars back to look for the prior breakout (default <strong>15</strong>; range 5&ndash;50)</li>
+            <li><code>proximity_pct</code>: how close to the middle band counts as "at retest" (default <strong>0.5%</strong>; range 0.1&ndash;2.0)</li>
+            <li><code>require_volume</code>: ticked (uses volume-confirmed engulfings only)</li>
+        </ul>
+    </li>
+    <li>Logic: <code>All-of</code>. Save.</li>
+</ol>
+<p>Fires when all three conditions align on a bar close: (1) a close past the band within the lookback window, (2) current close within the proximity of the middle band, (3) matching-direction engulfing on the current bar.</p>
+
+<h3>Setup D &mdash; Composable Play (custom BB parameters)</h3>
+<p>The dedicated rules (Setups B and C) use default Bollinger parameters &mdash; period 20, std-dev 2.0, offset 0 &mdash; for keep-it-simple UX. If you want a BB strategy with non-default parameters, compose it manually:</p>
+<ol>
+    <li>Plays &rarr; New Play &rarr; + Add condition &rarr; <strong>Indicator State</strong> &rarr; <strong>BB Position</strong>. Pick state (<code>inside</code> / <code>above upper band</code> / <code>below lower band</code>). This reads the BB state from precompute (uses default BB params).</li>
+    <li>+ Add condition &rarr; <strong>Engulfing detected</strong>. Pick direction and timeframe.</li>
+    <li>Logic: <code>All-of</code>. Save.</li>
+</ol>
+<p>Functionally identical to Setup B (fade) when paired correctly. For a continuation pattern with a "within last N bars" lookback <em>and</em> a custom BB offset, use the dedicated <strong>Setup F &mdash; BB Breakdown Continuation</strong> rule (below) instead of composing by hand.</p>
+
+<h3>Setup E &mdash; BB Squeeze Breakout (Engulfing) Play</h3>
+<p>Use case: "Alert me when BTC's Bollinger Bands compressed (squeezed) for several consecutive bars in the last 10, the squeeze has now released, and the current bar broke above the upper band on above-average volume &mdash; that's my long entry on the volatility expansion." Classic TTM Squeeze pattern; the symmetric short fires on a close below the lower band.</p>
+<ol>
+    <li>Plays &rarr; New Play. Primary asset, direction, timeframe.</li>
+    <li>+ Add condition &rarr; Candle &rarr; <strong>BB Squeeze Breakout</strong>.</li>
+    <li>Params:
+        <ul>
+            <li><code>direction</code>: <strong>bullish</strong> (close above upper band after squeeze) or <strong>bearish</strong> (close below lower band after squeeze)</li>
+            <li><code>timeframe</code>: matches the Play (1H / 4H / Daily / 3-Day / Weekly)</li>
+            <li><code>lookback_bars</code>: how recently the squeeze must have fired (default <strong>10</strong>; range 5&ndash;30)</li>
+            <li><code>min_squeeze_bars</code>: minimum consecutive bars of squeeze to qualify (default <strong>3</strong>; range 1&ndash;20). Higher values filter out weak / transient compressions.</li>
+            <li><code>require_volume</code>: ticked &mdash; the breakout close must have volume above its 20-bar SMA</li>
+        </ul>
+    </li>
+    <li>Logic: <code>All-of</code>. Save.</li>
+</ol>
+<p>Fires on bar close when all four conditions align: (1) a squeeze run of at least <code>min_squeeze_bars</code> happened within the lookback window, (2) the current bar is no longer in squeeze, (3) the current close breaks past the matching band, (4) volume confirmation if enabled.</p>
+
+<h3>Setup F &mdash; BB Breakdown Continuation Play</h3>
+<p>Use case: "Short BTC when price closed below the lower band within the last several bars, then <em>either</em> a bearish engulfing prints <em>or</em> price retests back up to the lower band &mdash; using my +10 BB offset." The continuation cousin of Setup C, with three differences: the retest can target the <strong>broken band</strong> (not just the middle), the two confirmations are combined with <strong>OR</strong>, and &mdash; uniquely among the dedicated Play rules &mdash; it accepts <strong>custom BB parameters including offset</strong>. The symmetric long fires on an upper-band breakout.</p>
+<ol>
+    <li>Plays &rarr; New Play. Primary asset, direction, timeframe.</li>
+    <li>+ Add condition &rarr; Candle &rarr; <strong>BB Breakdown Continuation</strong>.</li>
+    <li>Params:
+        <ul>
+            <li><code>direction</code>: <strong>bearish</strong> (breakdown below lower band &rarr; short) or <strong>bullish</strong> (breakout above upper band &rarr; long)</li>
+            <li><code>timeframe</code>: matches the Play (1H / 4H / Daily / 3-Day / Weekly)</li>
+            <li><code>lookback_bars</code>: how many bars back the breakout may have happened (default <strong>15</strong>; range 5&ndash;50)</li>
+            <li><code>confirm_mode</code>: <strong>either</strong> (engulfing OR retest), <strong>engulfing</strong> only, or <strong>band_retest</strong> only</li>
+            <li><code>retest_band</code>: <strong>broken</strong> (the band that was broken &mdash; lower for short, upper for long) or <strong>middle</strong> (Setup-C-style mid-band pullback)</li>
+            <li><code>proximity_pct</code>: how close to the retest band counts (default <strong>0.5%</strong>; range 0.1&ndash;2.0; ignored when <code>confirm_mode</code> is engulfing-only)</li>
+            <li><code>BB offset</code>: shift the bands &plusmn;N bars (default <strong>0</strong>; range &minus;20 to 20). Positive lags the bands TradingView-style &mdash; e.g. <code>+10</code> compares price to where the band was 10 bars ago.</li>
+        </ul>
+    </li>
+    <li>Logic: <code>All-of</code>. Save.</li>
+</ol>
+<p>Fires on bar close when (1) a close past the band happened within the lookback window, and (2) the chosen confirmation is met &mdash; a matching-direction engulfing on the current bar, a retest of the chosen band, or either. Unlike Setups B / C / E, the <code>BB offset</code> (and period / std-dev via the MCP API) carry into the signal, so your charted bands and your Play agree.</p>
+
+<h3>Direction matrix &mdash; which pairing means what</h3>
+<table class="ref-table">
+<thead><tr><th>Setup</th><th>Direction</th><th>BB position</th><th>Engulfing</th><th>Trade</th></tr></thead>
+<tbody>
+<tr><td>Fade (Setup B / D)</td><td><strong>bearish</strong></td><td>above upper band</td><td>bearish</td><td>Short the extension</td></tr>
+<tr><td>Fade (Setup B / D)</td><td><strong>bullish</strong></td><td>below lower band</td><td>bullish</td><td>Long the oversold reversal</td></tr>
+<tr><td>Continuation (Setup C)</td><td><strong>bullish</strong></td><td>broke above upper, retest at middle</td><td>bullish</td><td>Long the trend continuation</td></tr>
+<tr><td>Continuation (Setup C)</td><td><strong>bearish</strong></td><td>broke below lower, retest at middle</td><td>bearish</td><td>Short the trend continuation</td></tr>
+<tr><td>Squeeze breakout (Setup E)</td><td><strong>bullish</strong></td><td>squeezed then released, close above upper</td><td>&mdash;</td><td>Long the volatility expansion</td></tr>
+<tr><td>Squeeze breakout (Setup E)</td><td><strong>bearish</strong></td><td>squeezed then released, close below lower</td><td>&mdash;</td><td>Short the volatility expansion</td></tr>
+</tbody>
+</table>
+
+<h3>Timeframe coverage</h3>
+<table class="ref-table">
+<thead><tr><th>Timeframe</th><th>Setup B / C / D / E Plays</th><th>Setup A Alert</th></tr></thead>
+<tbody>
+<tr><td>1H</td><td>&#10003;</td><td>&#10003;</td></tr>
+<tr><td>4H</td><td>&#10003;</td><td>&#10003;</td></tr>
+<tr><td>Daily</td><td>&#10003;</td><td>&#10003;</td></tr>
+<tr><td>3-Day</td><td>&#10003;</td><td>&#10003;</td></tr>
+<tr><td>Weekly</td><td>&#10003;</td><td>&#10003;</td></tr>
+<tr><td>M15 or smaller</td><td>&mdash;</td><td>&#10003;</td></tr>
+<tr><td>True Monthly</td><td>&mdash;</td><td>&#10003;</td></tr>
+</tbody>
+</table>
+<p>Engulfing detection doesn't currently run on M15 or true Monthly bars, so the Play-based setups (B / C / D) are unavailable there. The standalone band-edge Alert (A) works on every timeframe BOLL itself supports.</p>
+
+<h3>Workflow tip &mdash; combine an Alert with a Play</h3>
+<p>The two stages are complementary. Use a standalone Alert (Setup A) on the band-edge transition to ping you when "something is forming"; let the dedicated Play (Setup B or C) ping you separately when the actual full entry signal materialises. Two notifications, both useful for different reasons.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9888;</span>
+    <span>Before trading any of these live, backtest them in Carrac's backtester on your chosen asset and timeframe. WTI on 4H tends to be noisy; BTC and major indices on Daily / Weekly tend to give cleaner signals.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="alerts">Alerts</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Get notified when price or indicators hit your target levels. Press <kbd>A</kbd> to open the alerts panel, or create alerts from the chart by drawing an alert line (<kbd>Shift+A</kbd>).</p>
+
+<h3>Alert Types</h3>
+
+<div class="card">
+<div class="card-title">Price Alert</div>
+<div class="card-desc">Triggers when price crosses above or below a set level. Click the chart to set the level &mdash; direction (above/below) is auto-detected from current price. Add an optional note for context.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Indicator Alert</div>
+<div class="card-desc">Triggers when an indicator enters a specific state. Examples: EMA Ribbon flips bullish, RSI crosses below 30, MACD histogram turns positive. Select the indicator, target state, and timeframe.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Formula Alert</div>
+<div class="card-desc">Triggers when a custom formula expression transitions from false to true (value crosses above 0). Uses the same formula engine as custom indicators. Example: <code>RSI(close, 14) &lt; 30 AND EMA(close, 21) &gt; EMA(close, 55)</code></div>
+</div>
+
+<div class="card">
+<div class="card-title">Trendline Break Alert</div>
+<div class="card-desc">Triggers when price breaks through a drawn trendline. Automatically tracks the trendline's projected level as it extends in time.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Z-Score Alert <span class="badge badge-purple">Premium</span></div>
+<div class="card-desc">Triggers when a quant metric's z-score exceeds a threshold. For macro-level signals (e.g. "notify me when the HY spread z-score exceeds 2.0"). Checked nightly.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Regime Alert <span class="badge badge-purple">Premium</span></div>
+<div class="card-desc">Triggers on market regime transitions (e.g. Risk-On &rarr; Risk-Off). Checked nightly after the quant engine pipeline runs.</div>
+</div>
+
+<h3>Alert Features</h3>
+<ul>
+    <li><strong>Frequency:</strong> "Once" (auto-disables after triggering) or "Once per bar" (re-arms each new candle)</li>
+    <li><strong>Reactivation:</strong> Editing a triggered alert reactivates it</li>
+    <li><strong>Visual overlay:</strong> Active alert levels appear as dashed lines on the chart</li>
+    <li><strong>Auto-close journal trades:</strong> Link an alert to a journal entry for automatic TP/SL close</li>
+    <li><strong>Create from play condition:</strong> Convert any play condition to an alert with one click</li>
+</ul>
+
+<h3>Notification Channels</h3>
+<p>Configure in <a href="/settings">Settings</a>. Available channels:</p>
+<ul>
+    <li><strong>Web Push</strong> &mdash; Browser notifications via service worker (all tiers)</li>
+    <li><strong>ntfy</strong> &mdash; Self-hosted push notifications to any device (all tiers). Provide your ntfy topic URL</li>
+    <li><strong>Telegram</strong> &mdash; Messages via bot <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Discord</strong> &mdash; Webhook messages to your channel <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Email</strong> &mdash; Digest-style HTML notifications</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Alerts are available to every account. Each alert has a "Test" button to verify your notification setup.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="scanner">Scanner</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>The scanner checks 6 conditions for every watchlist asset, 2 points each, and reports how many are currently aligned on a 0&ndash;12 scale. Press <kbd>S</kbd> to open the scanner tab in the bottom drawer.</p>
+
+<h3>Scoring Criteria (6 Dimensions)</h3>
+<table class="ref-table">
+<thead><tr><th>Criterion</th><th>Weight</th><th>What It Measures</th></tr></thead>
+<tbody>
+<tr><td><strong>Consensio</strong></td><td>0&ndash;2</td><td>Multi-timeframe MA alignment trend strength</td></tr>
+<tr><td><strong>EMA Ribbon + MACD</strong></td><td>0&ndash;2</td><td>Momentum: EMA crossover state and MACD confirmation</td></tr>
+<tr><td><strong>RSI Positioning</strong></td><td>0&ndash;2</td><td>RSI zone (oversold/overbought/neutral) and divergences</td></tr>
+<tr><td><strong>Swing Structure</strong></td><td>0&ndash;2</td><td>Higher highs/higher lows vs lower highs/lower lows</td></tr>
+<tr><td><strong>S/R Proximity</strong></td><td>0&ndash;2</td><td>Distance to key support/resistance and CPR levels</td></tr>
+<tr><td><strong>Macro Regime</strong></td><td>0&ndash;2</td><td>Cross-asset regime context (risk-on/off, DXY, yields)</td></tr>
+</tbody>
+</table>
+
+<h3>Labels</h3>
+<table class="ref-table">
+<thead><tr><th>Score</th><th>Label</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>11&ndash;12</td><td><span class="badge badge-green">High</span></td><td>Nearly every condition points the same way</td></tr>
+<tr><td>8&ndash;10</td><td><span class="badge badge-green">Moderate</span></td><td>Most conditions point the same way</td></tr>
+<tr><td>6&ndash;7</td><td><span class="badge badge-gray">Mixed</span></td><td>Conditions are split &mdash; no clear lean</td></tr>
+<tr><td>3&ndash;5</td><td><span class="badge badge-yellow">Low</span></td><td>Most conditions point the other way</td></tr>
+<tr><td>0&ndash;2</td><td><span class="badge badge-red">Conflicting</span></td><td>Nearly every condition points the other way</td></tr>
+</tbody>
+</table>
+
+<h3>Scanner Features</h3>
+<ul>
+    <li><strong>Direction filter:</strong> Filter by long, short, or both directions</li>
+    <li><strong>Auto-refresh:</strong> Scores update every 60 seconds</li>
+    <li><strong>Click to expand:</strong> See detailed per-criterion breakdown</li>
+    <li><strong>Double-click:</strong> Navigate directly to the asset's chart</li>
+    <li><strong>Score snapshots:</strong> Scanner state is captured at trade open and close, so the journal shows the setup you entered and exited on</li>
+    <li><strong>Confluence zones:</strong> Support/resistance clusters from multiple sources with strength scoring</li>
+</ul>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="positions">Positions Tracker</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Card-based position tracker in the bottom drawer's Positions tab. Track both <strong>futures</strong> and <strong>spot</strong> positions with live P&amp;L.</p>
+
+<h3>Futures Positions</h3>
+<ul>
+    <li>Log entry price, stop loss, take-profit levels, leverage, and direction</li>
+    <li>Each card shows R:R ratios, per-target returns, and a dashed indicator of where price sits</li>
+    <li>Cards glow <span style="color:#3fb950;">green</span> in profit, <span style="color:#f85149;">red</span> in loss</li>
+    <li>Drag SL/entry/TP levels directly on the chart to reposition</li>
+    <li>Hover actions: Validate (AI scorecard), Close &amp; Log (to journal), Clear, Delete</li>
+</ul>
+
+<h3>Spot Buys</h3>
+<ul>
+    <li>Click the Spot button, then place entries on the chart. Each shows as a triangle marker</li>
+    <li>A dashed average entry line shows your aggregate cost basis with live P&amp;L</li>
+    <li>Hierarchical tree view groups entries by asset with total quantity and average price</li>
+    <li>Useful for tracking DCA accumulation strategies</li>
+</ul>
+
+<h3>Selling Spot Positions</h3>
+<ul>
+    <li>Click the <strong>Sell</strong> button in the drawing toolbar (next to Spot Buy) or the SELL button on individual entries in the positions drawer</li>
+    <li>A sell dialog opens with live P&amp;L preview, quantity input, and sell price</li>
+    <li><strong>Partial sells</strong> are supported &mdash; sell a portion and a remainder position is created automatically</li>
+    <li>Each sell automatically creates and closes a journal entry with full P&amp;L tracking</li>
+    <li>When you have multiple open entries for the same asset, a picker lets you choose which to sell</li>
+</ul>
+
+<p>Toggle "All assets" to see positions across your entire portfolio, not just the current chart.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="ai">AI Assistant</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Carrac exposes its full toolset to an AI you already use &mdash; Claude Desktop, Claude Code, Cursor or Gemini &mdash; through its MCP server. Your assistant reads your charts, indicators, scanner scores, plays and trading profile directly, and the reasoning runs on your own subscription. See <a href="/integrations">Integrations</a> to connect it in a couple of minutes.</p>
+
+<h3>Trading Profile</h3>
+<p>A 40+ field identity across 11 sections that shapes every AI response. Configure in Settings &rarr; Trading Profile. Covers:</p>
+<ul>
+    <li>Trading style (scalper/swing/position), risk tolerance, capital allocation</li>
+    <li>Preferred timeframes, asset focus, technical preferences</li>
+    <li>Psychology notes, market biases, rules to enforce</li>
+    <li>Goals, strengths, weaknesses</li>
+</ul>
+
+<h3>Tool Calling (Live Data)</h3>
+<p>The AI can fetch real-time data mid-conversation to give you accurate, grounded answers. When you ask about a specific asset, play, position, or score, the AI may call internal tools to retrieve current data.</p>
+
+<h4>How It Works</h4>
+<ol>
+    <li>You ask a question that needs current data (e.g. &ldquo;What are my active plays?&rdquo;)</li>
+    <li>The AI recognises it needs data and calls the appropriate tool</li>
+    <li>A brief loading indicator appears: <strong>&ldquo;&#8635; Fetching plays data&hellip;&rdquo;</strong></li>
+    <li>The tool result is fed back to the AI, which incorporates it into its response</li>
+</ol>
+
+<p>The AI can call up to <strong>3 tools per message</strong> to gather the data it needs. Tool availability is scoped to your current focus area &mdash; on the Scanner page, the AI has access to scanner and chart tools; on the Journal page, it has trade analytics tools.</p>
+
+<h4>Write Actions (Confirm Before Executing)</h4>
+<p>When you ask the AI to <strong>create an alert</strong>, <strong>log a trade</strong>, <strong>create a play</strong>, or <strong>manage plays</strong>, it proposes the action as a card in the chat:</p>
+<ul>
+    <li>Review the proposed action details</li>
+    <li>Click <strong>&ldquo;&#10003; Confirm&rdquo;</strong> to execute, or <strong>&ldquo;&#10007; Cancel&rdquo;</strong> to skip</li>
+    <li>The result appears inline after confirmation</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Write actions are never executed automatically. The AI always proposes first, you decide.</span>
+</div>
+
+<h4>Built-In Guide</h4>
+<p>Ask the AI &ldquo;How do I create an alert?&rdquo; or &ldquo;How does the scanner work?&rdquo; and it will look up the relevant section of this user guide to give you an accurate answer.</p>
+
+<h3>Custom Recipes</h3>
+<p>Create reusable prompt templates for common analysis patterns. <span class="badge badge-purple">Premium</span></p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>AI queries &mdash; including MCP / bring-your-own-AI (reasoning runs in your own Claude &mdash; zero cost to you) &mdash; are available to every account.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="morning-report">Morning Report</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>AI-generated daily market analysis, delivered before market open as one continuous scrolling brief rather than separate tabs. Access via hamburger menu &rarr; Morning Report, or the Report view mode.</p>
+
+<h3>What's in the Brief</h3>
+<p>Read top to bottom: a headline take on the day, what's stretched (market-wide z-score extremes), today's economic docket, liquidity &amp; credit conditions, <strong>the Tape</strong> (what changed since yesterday), a cross-asset heat map, spotlight cards for the assets that matter most right now, the full cross-asset board, and sector rotation. A collapsible &ldquo;Full analysis&rdquo; panel at the bottom holds the long-form write-up plus the economic calendar and quant-engine detail. Asset tickers throughout are <strong>clickable</strong> &mdash; they jump straight to the chart.</p>
+
+<h3>Personal Sections <span class="badge badge-purple">Member+</span></h3>
+<p>With a subscription, the same brief is regenerated around your own book &mdash; the headline take, the priority items, and the scenarios reference your specific positions and plays by name instead of generic market commentary.</p>
+
+<h3>Voice Briefing <span class="badge badge-purple">Premium</span></h3>
+<p>2&ndash;3 minute spoken audio summary delivered via ntfy and Telegram. Listen on your commute.</p>
+
+<h3>Report Schedule</h3>
+<ul>
+    <li><strong>Morning:</strong> Daily (weekdays), generated around 5:45 AM</li>
+    <li><strong>Afternoon:</strong> Delta update with fast-moving signals</li>
+    <li><strong>Weekly:</strong> Friday afternoon digest with 5-day trend synthesis</li>
+</ul>
+
+<h3>Public Daily Brief</h3>
+{% if reports_paused %}<p>Automated reports are currently paused &mdash; no new edition is being produced. Every past edition stays readable at <code>/brief/archive</code>, each with its permalink at <code>/brief/&lt;date&gt;</code>.</p>{% else %}<p>Don't have an account? <code>/brief</code> is a free, public version of the report &mdash; no login required, nothing personalized. Each day's edition also gets a shareable permalink at <code>/brief/&lt;date&gt;</code>, and the full history is browsable at <code>/brief/archive</code>.</p>{% endif %}
+
+<h3>Archive</h3>
+<p>Members can browse past reports with search and filtering at <code>/report/morning/archive</code>.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>The older tabbed layout is still reachable as a legacy option by adding <code>?classic=1</code> to the report URL.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="quant-engine">Quant Engine</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>The Quant Engine is Carrac's <strong>macro-quantitative intelligence system</strong>. It collects data from 13 sources overnight, computes z-scores across 82 canonical metrics, detects regime shifts, finds cross-asset correlations, and identifies macro anomalies &mdash; all to answer one question: <em>what is the broader environment telling us?</em></p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>The Quant Engine is available to every account. Access it from the hamburger menu &rarr; Quant Engine.</span>
+</div>
+
+<h3>What It Does (In Plain English)</h3>
+<p>Most technical analysis looks at a single asset in isolation. The Quant Engine looks at the <strong>macro environment around it</strong>: monetary policy, credit markets, dollar strength, volatility, sentiment, derivatives positioning, and on-chain flows. It tells you whether the wind is at your back or in your face.</p>
+<ul>
+    <li><strong>Regime Detection</strong> &mdash; Are we in a "favourable" or "unfavourable" market environment? How confident is the model? How long has this regime lasted?</li>
+    <li><strong>Anomaly Alerts</strong> &mdash; When 3+ metrics across different domains hit extreme z-scores simultaneously, something structural may be shifting</li>
+    <li><strong>Correlation Mapping</strong> &mdash; Which macro variables are driving crypto right now? Is BTC following risk assets or gold? Is the dollar correlation strengthening?</li>
+    <li><strong>Lead-Lag Signals</strong> &mdash; Some metrics move before others. Liquidity changes lead crypto by weeks. The yield curve leads equities by months. The engine tracks these transmission chains</li>
+    <li><strong>Conditional Backtesting</strong> &mdash; "What happened to BTC when the Fear &amp; Greed was below 20 and the yield curve was inverted?" Query historical return distributions under specific macro conditions</li>
+</ul>
+
+<h3>Data Sources (13 Collectors)</h3>
+<p>The nightly pipeline runs from 00:15 to 07:05 UTC, collecting from:</p>
+
+<table class="ref-table">
+<thead><tr><th>Source</th><th>What It Provides</th><th>History</th></tr></thead>
+<tbody>
+<tr><td><strong>Binance</strong></td><td>Daily OHLCV for 10 crypto assets + funding rates, OI, long/short ratios</td><td>2022+</td></tr>
+<tr><td><strong>Yahoo Finance</strong></td><td>27 cross-asset tickers: DXY, VIX, SPX, NASDAQ, GOLD, OIL, COPPER, TLT, HYG, EURUSD, EEM, and more</td><td>2000+</td></tr>
+<tr><td><strong>FRED</strong></td><td>45 macro series: FED_FUNDS, yields (2Y/10Y/10Y-2Y/10Y-3M), M2, CPI, unemployment, HY spread, Fed balance sheet, breakevens, PMI</td><td>2000+</td></tr>
+<tr><td><strong>CCXT Exchanges</strong></td><td>Aggregated funding rates from OKX and Bybit (combined with Binance)</td><td>30 days</td></tr>
+<tr><td><strong>Fear &amp; Greed</strong></td><td>Crypto sentiment index (0&ndash;100)</td><td>~2 years</td></tr>
+<tr><td><strong>Google Trends</strong></td><td>9 search terms: "buy bitcoin", "crypto", "bitcoin crash", "bitcoin ETF", "defi", etc.</td><td>2020+</td></tr>
+<tr><td><strong>CFTC (COT)</strong></td><td>Commitments of Traders: speculative positioning for BTC, ETH, SPX, GOLD, OIL, DXY</td><td>2017+ (BTC)</td></tr>
+<tr><td><strong>ETF Flows</strong></td><td>Bitcoin spot ETF net flows (daily)</td><td>Since launch</td></tr>
+<tr><td><strong>Event Calendar</strong></td><td>FOMC meetings, CPI, NFP, GDP releases, halving dates, options expiries. 2027 FOMC and ECB dates loaded (CPI/NFP/BoJ pending publication)</td><td>Manual</td></tr>
+</tbody>
+</table>
+
+<h3>82 Canonical Metrics</h3>
+<p>Every metric is normalised into a common format with one of three transformations:</p>
+<ul>
+    <li><strong>Log return</strong> &mdash; For price series (BTC, ETH, GOLD, SPX, etc.). Captures percentage changes</li>
+    <li><strong>First difference</strong> &mdash; For stock/level variables (M2, stablecoin supply). Captures absolute changes</li>
+    <li><strong>Raw</strong> &mdash; For rates and indices (VIX, yields, Fear &amp; Greed, funding). Used as-is</li>
+</ul>
+
+<h4>Metric Domains</h4>
+<table class="ref-table">
+<thead><tr><th>Domain</th><th>Metrics</th></tr></thead>
+<tbody>
+<tr><td><strong>Price</strong></td><td>BTC, ETH, SOL, SPX, NASDAQ, GOLD, OIL, COPPER, DXY, TLT, HYG, EEM</td></tr>
+<tr><td><strong>Macro</strong></td><td>FED_FUNDS, YIELD_2Y, YIELD_10Y, YIELD_10Y2Y, YIELD_10Y3M, M2, NET_LIQUIDITY, HY_SPREAD, HY_SPREAD_EU, BREAKEVEN_10Y, FED_BALANCE</td></tr>
+<tr><td><strong>Derivatives</strong></td><td>FUNDING_BTC, FUNDING_ETH, OPTIONS_PC_BTC (put/call), DVOL_BTC, RVOL_BTC, RVOL_ETH</td></tr>
+<tr><td><strong>Sentiment</strong></td><td>FEAR_GREED, STABLECOIN_SUPPLY, STABLECOIN_DOM, ALTCOIN_SEASON, 9 Google Trends, COT_BTC_SPEC, CROSS_DISPERSION</td></tr>
+<tr><td><strong>On-Chain</strong></td><td>ETF_BTC_FLOW</td></tr>
+<tr><td><strong>Composite</strong></td><td>RISK_APPETITE, LIQUIDITY, CREDIT_STRESS (PCA-derived factors)</td></tr>
+</tbody>
+</table>
+
+<h3>Z-Scores &amp; Anomaly Detection</h3>
+<p>Every metric gets a <strong>30-day and 90-day rolling z-score</strong> computed nightly. A z-score tells you how many standard deviations the current value is from its recent average.</p>
+<ul>
+    <li><strong>|z| &lt; 1</strong> &mdash; Normal range</li>
+    <li><strong>|z| 1&ndash;2</strong> &mdash; Noteworthy. Worth monitoring</li>
+    <li><strong>|z| &ge; 2</strong> &mdash; <span class="badge badge-red">Extreme</span>. Flagged as anomaly. Historically rare (&lt;5% of days)</li>
+</ul>
+<p>When <strong>3 or more extreme metrics</strong> from <strong>2+ different domains</strong> occur simultaneously, the engine flags an <strong>anomaly cluster</strong> &mdash; a potential structural shift in the macro environment.</p>
+
+<h3>Regime Detection</h3>
+<p>A <strong>2-state Hidden Markov Model (HMM)</strong> classifies each day as either <span class="badge badge-green">Favourable</span> or <span class="badge badge-red">Unfavourable</span> based on three inputs: BTC returns, VIX level, and high-yield credit spread.</p>
+<ul>
+    <li><strong>State probability</strong> &mdash; How confident the model is (e.g. 94% favourable)</li>
+    <li><strong>Duration</strong> &mdash; How many days the current regime has lasted</li>
+    <li><strong>Transition matrix</strong> &mdash; Historical probability of switching between states</li>
+    <li><strong>Changepoints</strong> &mdash; Structural breaks detected via PELT algorithm, marking when the regime actually shifted</li>
+</ul>
+<p>Regime state is integrated into the morning report, scanner context, and conditional backtest queries.</p>
+
+<h3>Correlations</h3>
+<p>Spearman rank correlations computed across all 82 metrics in <strong>60-day and 120-day rolling windows</strong>. Spearman (rather than Pearson) because financial returns have fat tails and outliers.</p>
+<p>Use this to answer questions like:</p>
+<ul>
+    <li>"Is BTC currently correlated with SPX or decoupling?"</li>
+    <li>"Is the DXY-crypto inverse relationship holding?"</li>
+    <li>"Which macro metric has the strongest relationship with ETH right now?"</li>
+</ul>
+<p>The UI provides a <strong>heatmap</strong> (filterable by domain: Price, Macro, Derivatives, Sentiment, Factors), a <strong>network graph</strong>, and a <strong>detail table</strong> with exact r-values and p-values.</p>
+
+<h4>Regime toggle</h4>
+<p>Next to the 60d/120d window selector there is an <strong>All / Favorable / Unfavorable</strong> toggle. Switching to Favorable or Unfavorable splits the sample by the HMM regime state for each day, so you can see how correlations change in different market environments &mdash; for example whether BTC&rsquo;s relationship with SPX is tighter in risk-off periods than in calm ones.</p>
+
+<h4>Non-significant pairs are muted</h4>
+<p>Cells where the correlation does not pass a false-discovery-rate test (FDR q &ge; 0.05) are rendered in a <strong>muted / washed-out style</strong> rather than a saturated colour. This prevents the heatmap from looking busy with noise. Hover a cell to see the exact r-value, p-value, and q-value in the tooltip. A legend beneath the heatmap explains the muting. The detail table has a <strong>q-value column</strong> so you can sort or filter by statistical reliability.</p>
+
+<h3>Lead-Lag Analysis</h3>
+<p>Some metrics consistently move <em>before</em> others. The engine computes cross-correlograms for <strong>52 defined pairs</strong> to find the optimal lead time.</p>
+
+<div class="tip tip-warn">
+    <span class="tip-icon">&#9888;</span>
+    <span><strong>How to read lead-lag signals:</strong> The engine scans many candidate lags and picks the strongest one for each pair. Treat any finding as an <strong>exploratory hypothesis</strong>, not a reliable forecast. Prefer signals marked <span class="badge badge-green">stable</span> &mdash; those held up across multiple rolling sub-windows. Signals marked <span class="badge badge-yellow">&#9888;</span> are less consistent and should be weighted accordingly. The <strong>assoc. band</strong> shown next to a projected move is the 95&nbsp;% confidence interval of the correlation coefficient scaled by the leader&rsquo;s current z-score &mdash; it quantifies uncertainty in the <em>association</em>, not a predictive interval for future prices.</span>
+</div>
+
+<h4>Signal persistence badges</h4>
+<p>Each lead-lag signal now shows one of two badges:</p>
+<ul>
+    <li><span class="badge badge-green">stable</span> &mdash; The lead-lag relationship held across multiple rolling sub-windows. Higher confidence that the pattern is structural rather than an artefact of the sample period.</li>
+    <li><span class="badge badge-yellow">&#9888;</span> &mdash; The relationship is less consistent across sub-windows. Treat it as a weak or tentative signal &mdash; worth noting, but not as a strong prior.</li>
+</ul>
+
+<h4>Transmission Chains</h4>
+<p>Three named macro transmission pathways &mdash; each link shows correlation strength, and weak links are flagged:</p>
+
+<div class="card">
+<div class="card-title">Monetary Policy Chain</div>
+<div class="card-desc">FED_FUNDS &rarr; YIELD_2Y &rarr; YIELD_10Y &rarr; HY_SPREAD &rarr; SPX &rarr; BTC<br>
+<em>How Fed policy propagates through bonds, credit, equities, and into crypto. Typical lag: 30&ndash;90 days per link.</em></div>
+</div>
+
+<div class="card">
+<div class="card-title">Dollar / Liquidity Chain</div>
+<div class="card-desc">M2 &rarr; NET_LIQUIDITY &rarr; DXY &rarr; GOLD &rarr; BTC<br>
+<em>Money supply expansion flows through the dollar, lifts hard assets, then reaches crypto. Lag: 60&ndash;90 days.</em></div>
+</div>
+
+<div class="card">
+<div class="card-title">Risk Appetite Chain</div>
+<div class="card-desc">VIX &rarr; HY_SPREAD &rarr; SPX &rarr; BTC<br>
+<em>Volatility spikes hit credit first, then equities, then crypto. Fastest chain &mdash; lags of days to weeks.</em></div>
+</div>
+
+<h3>Composite Factors (PCA)</h3>
+<p>Three higher-level factors derived via Principal Component Analysis that distil multiple related metrics into a single signal:</p>
+<ul>
+    <li><strong>RISK_APPETITE</strong> = PCA(VIX, HY_SPREAD, TLT, DXY) &mdash; Broad risk conditions. Higher = more risk-averse</li>
+    <li><strong>LIQUIDITY</strong> = PCA(M2, NET_LIQUIDITY, FED_BALANCE) &mdash; Monetary/fiscal liquidity. Higher = more accommodative</li>
+    <li><strong>CREDIT_STRESS</strong> = PCA(HY_SPREAD, HY_SPREAD_EU, YIELD_10Y2Y) &mdash; Credit market stress. Higher = more stress</li>
+</ul>
+<p>These factors are tracked as canonical metrics &mdash; they flow through correlations, lead-lag, and z-scores like any other metric.</p>
+
+<h3>Conditional Backtest</h3>
+<p>The most powerful query tool. Define z-score conditions (e.g. <code>VIX:gt:2</code> + <code>FEAR_GREED:lt:-1.5</code>) and see what happened historically when all conditions held simultaneously.</p>
+
+<h4>How to Use It</h4>
+<ol>
+    <li>Go to Quant Engine &rarr; Conditions tab</li>
+    <li>Add conditions using the builder (or pick a preset like "Risk-Off Extreme" or "Capitulation Setup")</li>
+    <li>Set the target asset (default: BTC) and forward horizons (7, 30, 90 days)</li>
+    <li>View the results: number of historical instances, forward return distribution (mean, median, hit rate), and whether today matches</li>
+</ol>
+
+<p><strong>Example:</strong> "What happened to BTC over the next 30 days when Fear &amp; Greed z-score was below &minus;1.5 AND the yield curve (10Y-2Y) was inverted?"<br>
+Result: 18 instances, median return +12.4%, hit rate 72% &mdash; historically associated with positive forward returns.</p>
+
+<h3>Historical Analogues</h3>
+<p>Given today's macro z-score vector, find the most similar historical dates using cosine similarity across 9 core metrics (VIX, HY_SPREAD, YIELD_10Y, YIELD_10Y2Y, M2, NET_LIQUIDITY, FED_FUNDS, FEAR_GREED, COT positioning, FUNDING). Then look at what happened next.</p>
+<p>Useful for: "The current macro setup looks like early 2023 &mdash; what did BTC do from there?"</p>
+
+<h3>Data Lab</h3>
+<p>Pivot-table queries for custom exploration. Group metrics by regime state or calendar month, aggregate by mean or median. Useful for spotting seasonal patterns or regime-dependent behaviour.</p>
+
+<h3>Interface Tabs</h3>
+<table class="ref-table">
+<thead><tr><th>Tab</th><th>What It Shows</th></tr></thead>
+<tbody>
+<tr><td><strong>Overview</strong></td><td>Snapshot banner, active anomalies, top correlations, lead-lag signals (with stable/&#9888; badges); BTC ETF net flow with historical percentile</td></tr>
+<tr><td><strong>Regime</strong></td><td>HMM state, probability, duration, transition matrix, changepoint timeline</td></tr>
+<tr><td><strong>Anomalies</strong></td><td>All extreme z-scores (&ge;2), multi-domain cluster alerts</td></tr>
+<tr><td><strong>Correlations</strong></td><td>Interactive heatmap with All/Favorable/Unfavorable regime toggle; non-significant pairs muted (FDR q &ge; 0.05); domain filter pills; network graph; detail table with q-value column</td></tr>
+<tr><td><strong>Lead-Lag</strong></td><td>Transmission chain visualisations; stable/&#9888; persistence badges per signal; assoc. band (95&nbsp;% CI of the correlation coefficient); chain strength, weakest link flagging</td></tr>
+<tr><td><strong>Conditions</strong></td><td>Conditional query builder, preset scenarios, forward return histograms</td></tr>
+<tr><td><strong>Analogues</strong></td><td>Historical similarity search, ranked dates, forward distributions</td></tr>
+<tr><td><strong>Data Lab</strong></td><td>Pivot queries, regime/month grouping, custom aggregations</td></tr>
+<tr><td><strong>About</strong></td><td>Methodology, data sources, schedule, glossary</td></tr>
+</tbody>
+</table>
+
+<h3>Nightly Pipeline Schedule</h3>
+<p>All collection and computation runs automatically overnight (UTC):</p>
+<table class="ref-table">
+<thead><tr><th>Time (UTC)</th><th>Stage</th></tr></thead>
+<tbody>
+<tr><td>00:15</td><td>Binance daily (10 crypto assets)</td></tr>
+<tr><td>00:45</td><td>CCXT funding</td></tr>
+<tr><td>05:00</td><td>Google Trends (9 search terms)</td></tr>
+<tr><td>05:30</td><td>Yahoo Finance (27 tickers) + Fear &amp; Greed + COT + ETF flows</td></tr>
+<tr><td>06:30</td><td>FRED macro (45 series)</td></tr>
+<tr><td>06:35</td><td>PCA composite factors + Carrac signals</td></tr>
+<tr><td>06:45</td><td>Correlations (60d/120d Spearman)</td></tr>
+<tr><td>06:50</td><td>Lead-lag analysis (52 pairs, daily + weekly)</td></tr>
+<tr><td>06:55</td><td>Regime detection (HMM + changepoints)</td></tr>
+<tr><td>07:00</td><td>Anomaly cluster detection</td></tr>
+<tr><td>07:05</td><td>Z-score normalisation (30d/90d)</td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>The Quant Engine feeds into the morning report, the scanner's macro context, the AI assistant's analysis, and the MCP server's <code>quant_get_data</code>, <code>quant_get_correlations</code>, and <code>backtest_get_historical_analog</code> tools. <code>quant_get_leadlag_ranking</code> returns richer fields: <code>data_as_of</code>, <code>ci_low</code>/<code>ci_high</code> (CI of the correlation), and <code>n_obs</code> per signal. <code>quant_get_data(series)</code> accepts any canonical metric name and returns up to 365 recent data points.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="journal">Trade Journal</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Full trading journal available at <code>/journal</code> (dedicated page) or as a sidebar panel on the dashboard. Also accessible from the hamburger menu.</p>
+
+<h3>Logging Trades</h3>
+<ul>
+    <li><strong>Fields:</strong> Asset, direction (long/short), entry/SL/TP prices, size, fees, setup type, timeframe, confidence &amp; mood sliders, tags, notes</li>
+    <li><strong>Live R:R preview</strong> as you type entry/stop/target</li>
+    <li><strong>Pre-trade checklist</strong> auto-renders based on your setup type</li>
+    <li><strong>From chart:</strong> Draw a position overlay (<kbd>B</kbd>), then import drawings to auto-create journal entries</li>
+    <li><strong>From sidebar:</strong> Current chart asset is pre-filled. Minimal form for quick logging while charting</li>
+</ul>
+
+<h3>Closing Trades</h3>
+<ul>
+    <li>Enter exit price, select exit reason (Manual, TP Hit, SL Hit, Trailing, Time-based, Breakeven)</li>
+    <li>Add mistake tags: FOMO, Revenge Trading, Moved SL, Ignored Setup, etc.</li>
+    <li><strong>MFE/MAE auto-calculated</strong> &mdash; Max Favourable Excursion (best unrealised P&amp;L during the trade) and Max Adverse Excursion (worst drawdown)</li>
+    <li>R-multiple and exit efficiency computed from your entry, stop, and exit</li>
+</ul>
+
+<h3>Trade List &amp; Filtering</h3>
+<ul>
+    <li>Sortable table: by date, asset, direction, P&amp;L, R-multiple, duration, setup type</li>
+    <li>Filter by: date range, asset, direction, setup, mistake tags</li>
+    <li>KPI bar: total trades, win rate, avg R, best/worst R, expectancy</li>
+    <li>Bulk operations: select multiple trades, add tags, archive</li>
+</ul>
+
+<h3>Analytics</h3>
+<ul>
+    <li><strong>Equity curve</strong> &mdash; Cumulative R over time with drawdown shading. 30d/90d/180d/1y lookback</li>
+    <li><strong>Calendar</strong> &mdash; Monthly heatmap of daily P&amp;L. Green = profitable, red = loss. Click any day</li>
+    <li><strong>R-multiple histogram</strong> &mdash; Distribution of trade outcomes</li>
+    <li><strong>MFE/MAE scatter</strong> &mdash; How well you captured available profit vs absorbed drawdowns</li>
+    <li><strong>Breakdowns</strong> &mdash; Win rate and average R by setup type, asset, direction, weekday, duration</li>
+    <li><strong>Rule adherence</strong> &mdash; Track how closely you follow your own rules</li>
+    <li><strong>Streak stats</strong> &mdash; Win/loss streaks and their impact on performance</li>
+    <li><strong>NL query</strong> &mdash; Ask questions about your trades in natural language</li>
+</ul>
+
+<h3>Sessions</h3>
+<p>Group trades by trading session (day). Add pre-session notes (plan) and post-session notes (review). AI summary generates a session debrief.</p>
+
+<h3>Playbooks</h3>
+<p>Document your setups with rules, conditions, and entry/exit criteria. Live stats computed from matching trades show how each playbook performs over time.</p>
+
+<h3>Goals</h3>
+<p>Set monthly targets: max daily loss, max trades per day, minimum R:R, win rate target. Colour-coded progress bars track your adherence.</p>
+
+<h3>AI Review</h3>
+<ul>
+    <li>Per-trade review: entry quality, exit timing, risk management grades (A&ndash;F scale)</li>
+    <li>Improvement suggestions based on your specific trade</li>
+    <li>Weekly AI review with patterns, action items, and progress tracking <span class="badge badge-purple">Premium</span></li>
+</ul>
+
+<h3>Screenshots</h3>
+<p>Auto-captured at trade open and close. View in trade detail. Up to 10 per trade with type labels (entry, exit, management, context).</p>
+
+<h3>Import &amp; Export</h3>
+<ul>
+    <li><strong>Import:</strong> Bulk CSV import (up to 50 trades per batch)</li>
+    <li><strong>Export:</strong> CSV (trades only) or JSON (full backup including sessions, playbooks, goals)</li>
+</ul>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>For a step-by-step walkthrough of every journal workflow, see the <a href="/guide#journal">Journal Guide</a>.</span>
+</div>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="settings">Settings &amp; Notifications</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Access settings at <code>/settings</code> from the hamburger menu.</p>
+
+<h3>Notification Settings</h3>
+<p>Configure how you receive alert notifications:</p>
+<ul>
+    <li><strong>Web Push</strong> &mdash; Enable browser push notifications. Works on desktop and mobile (PWA)</li>
+    <li><strong>ntfy</strong> &mdash; Provide your ntfy topic URL for push to any device</li>
+    <li><strong>Telegram</strong> &mdash; Enter your bot token and chat ID <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Discord</strong> &mdash; Provide a webhook URL <span class="badge badge-purple">Member+</span></li>
+    <li><strong>Email</strong> &mdash; HTML digest notifications</li>
+</ul>
+<p>Each channel has a <strong>Test</strong> button to verify your setup sends correctly.</p>
+
+<h3>Trading Profile</h3>
+<p>40+ fields across 11 sections that personalise every AI response. Covers trading style, risk management, psychology, market biases, goals, strengths, and weaknesses. Access via Settings &rarr; Trading Profile or click the profile icon in the AI panel.</p>
+
+<h3>Analyst Sources</h3>
+<p>Configure your preferred sources for the morning report's personal sections:</p>
+<ul>
+    <li>Up to <strong>10 X (Twitter) handles</strong> &mdash; monitored for overnight takes</li>
+    <li>Up to <strong>6 YouTube channels</strong> &mdash; latest videos summarised in your report</li>
+</ul>
+<p>Default analyst sources are provided if you don't configure your own.</p>
+
+<h3>Indicator Preferences</h3>
+<p>Your active indicators and their settings sync across devices. Indicator groups (presets) are also synced.</p>
+
+<h3>Display Preferences</h3>
+<p>Candle colours (green/red vs classic), chart background (dark/light), timeframe mode, panel width, and view mode all persist across sessions and devices.</p>
+
+<h3>Timeframe Favourites</h3>
+<p>The timeframe chips pinned to the chart toolbar (for example <kbd>1D</kbd> <kbd>4H</kbd> <kbd>1W</kbd>) sync to the server. Pin or unpin on one device and the same set appears everywhere after you log back in.</p>
+
+<h3>Ticker Bar</h3>
+<p>The header ticker's enabled modules, scroll speed, and sentiment-item list also sync to the server &mdash; configure once, and it restores everywhere.</p>
+
+<h3>Account</h3>
+<ul>
+    <li>Change display name and email</li>
+    <li>Change password</li>
+    <li>Export all your data (GDPR compliance)</li>
+    <li>Delete account</li>
+</ul>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="widgets">Mobile Widgets</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Put your market data on your phone's home screen. Four widgets are available:</p>
+
+<table>
+<thead><tr><th>Widget</th><th>What it shows</th></tr></thead>
+<tbody>
+<tr><td><strong>Watchlist</strong></td><td>Prices and 24h change for your favourites</td></tr>
+<tr><td><strong>Market Pulse</strong></td><td>Fear &amp; Greed, MVRV-Z, funding rates, regime</td></tr>
+<tr><td><strong>Positions</strong></td><td>Open positions with live P&amp;L</td></tr>
+<tr><td><strong>Alerts</strong></td><td>Active alerts with distance to target</td></tr>
+</tbody>
+</table>
+
+<p><strong>Setup</strong> (at <code>Settings &rarr; Widgets</code>): generate a widget token there, then &mdash; on <strong>iOS</strong> &mdash; download the widget script from the setup page and add it to the Scriptable app; on <strong>Android</strong> &mdash; download the Glance APK from the same page. Tokens are read-only and scoped to widget data; delete one anytime to revoke access.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="mobile">Mobile &amp; PWA</h2>
+<!-- ══════════════════════════════════════ -->
+
+<h3>Installing the App</h3>
+<ul>
+    <li><strong>iOS:</strong> Safari &rarr; Share &rarr; Add to Home Screen</li>
+    <li><strong>Android:</strong> Chrome &rarr; Menu &rarr; Install app</li>
+</ul>
+<p>Carrac runs as a Progressive Web App (PWA) with fullscreen mode, offline caching, and 30-day session persistence.</p>
+
+<h3>Touch Controls</h3>
+<ul>
+    <li><strong>Swipe left/right</strong> &mdash; Navigate to previous/next asset</li>
+    <li><strong>Two-finger pinch</strong> &mdash; Zoom the chart</li>
+    <li><strong>Y-axis drag</strong> &mdash; Scale price axis</li>
+    <li><strong>X-axis drag</strong> &mdash; Zoom time axis</li>
+    <li><strong>Tap &amp; hold</strong> &mdash; Context actions on drawings</li>
+</ul>
+
+<h3>Mobile Action Bar</h3>
+<p>Fixed bottom bar with quick-access buttons: Previous asset, Timeframe picker, Indicators, Alerts, Search, Next asset. A floating action button (FAB) provides access to drawing tools.</p>
+
+<h3>Mobile Drawing</h3>
+<p>Simplified tool palette optimised for touch. All drawing types available via the bottom sheet. Drawings sync with desktop.</p>
+
+<h3>Dual Chart on Mobile</h3>
+<p>Portrait mode stacks charts vertically. Landscape mode places them side-by-side.</p>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="shortcuts">Keyboard Shortcuts</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Press <kbd>?</kbd> in the app for the full shortcuts reference overlay. Here's the complete list:</p>
+
+<table class="ref-table">
+<thead><tr><th>Category</th><th>Shortcut</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td rowspan="5"><strong>Navigation</strong></td><td><kbd>Space</kbd></td><td>Open asset search</td></tr>
+<tr><td><kbd>,</kbd> / <kbd>.</kbd></td><td>Previous / next asset in watchlist</td></tr>
+<tr><td><kbd>G</kbd></td><td>Reset chart view (snap to latest data)</td></tr>
+<tr><td><kbd>J</kbd></td><td>Center chart on current price</td></tr>
+<tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd></td><td>Pan chart left/right</td></tr>
+
+<tr><td rowspan="7"><strong>Timeframes</strong></td><td><kbd>1</kbd></td><td>1-Day</td></tr>
+<tr><td><kbd>3</kbd></td><td>3-Day</td></tr>
+<tr><td><kbd>4</kbd></td><td>4-Hour</td></tr>
+<tr><td><kbd>5</kbd></td><td>15-Minute</td></tr>
+<tr><td><kbd>H</kbd></td><td>1-Hour</td></tr>
+<tr><td><kbd>W</kbd></td><td>1-Week</td></tr>
+<tr><td><kbd>M</kbd></td><td>1-Month</td></tr>
+
+<tr><td rowspan="8"><strong>Panels &amp; Views</strong></td><td><kbd>E</kbd> / <kbd>Shift+E</kbd></td><td>Cycle view modes forward / backward</td></tr>
+<tr><td><kbd>Q</kbd></td><td>Cycle drawer tabs</td></tr>
+<tr><td><kbd>I</kbd></td><td>Toggle indicator dropdown</td></tr>
+<tr><td><kbd>D</kbd></td><td>Toggle drawing toolbar</td></tr>
+<tr><td><kbd>N</kbd></td><td>Open News panel</td></tr>
+<tr><td><kbd>S</kbd></td><td>Open Scanner tab</td></tr>
+<tr><td><kbd>/</kbd></td><td>Open AI chat</td></tr>
+<tr><td><kbd>O</kbd></td><td>Toggle log scale</td></tr>
+
+<tr><td rowspan="11"><strong>Drawing Tools</strong></td><td><kbd>L</kbd></td><td>Trendline</td></tr>
+<tr><td><kbd>P</kbd></td><td>Parallel channel</td></tr>
+<tr><td><kbd>R</kbd></td><td>Rectangle</td></tr>
+<tr><td><kbd>F</kbd></td><td>Fibonacci retracement</td></tr>
+<tr><td><kbd>H</kbd></td><td>Horizontal line</td></tr>
+<tr><td><kbd>B</kbd></td><td>Position tool (entry/SL/TP)</td></tr>
+<tr><td><kbd>T</kbd></td><td>Text annotation</td></tr>
+<tr><td><kbd>X</kbd></td><td>Measure tool</td></tr>
+<tr><td><kbd>V</kbd></td><td>Freehand drawing</td></tr>
+<tr><td><kbd>Shift+A</kbd></td><td>Alert line</td></tr>
+<tr><td><kbd>Shift+V</kbd></td><td>Volume profile range</td></tr>
+
+<tr><td rowspan="6"><strong>Drawing Edit</strong></td><td><kbd>C</kbd></td><td>Cycle colours</td></tr>
+<tr><td><kbd>+</kbd> / <kbd>&minus;</kbd></td><td>Increase / decrease thickness</td></tr>
+<tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>Decrease / increase opacity</td></tr>
+<tr><td><kbd>Del</kbd></td><td>Delete selected drawing</td></tr>
+<tr><td><kbd>Ctrl+C</kbd> / <kbd>Ctrl+V</kbd></td><td>Copy / paste drawing</td></tr>
+<tr><td><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd></td><td>Undo / redo</td></tr>
+
+<tr><td rowspan="6"><strong>Multi-Chart</strong></td><td><kbd>Ctrl+1</kbd>&ndash;<kbd>5</kbd></td><td>Switch layouts (single, side-by-side, top/bottom, tri, quad)</td></tr>
+<tr><td><kbd>Ctrl+6</kbd></td><td>Rotate through plays</td></tr>
+<tr><td><kbd>Ctrl+7</kbd></td><td>Rotate through favourites</td></tr>
+<tr><td><kbd>Ctrl+8</kbd></td><td>TF spread &mdash; same asset, four timeframes</td></tr>
+<tr><td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>Cycle active chart pane</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Exit rotation / close modals</td></tr>
+
+<tr><td rowspan="3"><strong>Reports</strong></td><td><kbd>J</kbd> / <kbd>K</kbd></td><td>Cycle report tabs (classic report layout only)</td></tr>
+<tr><td><kbd>1</kbd>&ndash;<kbd>3</kbd></td><td>Jump to report tab directly (classic report layout only)</td></tr>
+<tr><td><kbd>?</kbd></td><td>Open shortcuts reference overlay</td></tr>
+</tbody>
+</table>
+
+
+<!-- ══════════════════════════════════════ -->
+<h2 id="api">API &amp; AI CLI Integration</h2>
+<!-- ══════════════════════════════════════ -->
+
+<p>Carrac is built as an <strong>API-first platform</strong>. Every feature available in the UI is also accessible programmatically &mdash; making it a powerful backend for AI-assisted trading workflows, custom scripts, and CLI-based analysis.</p>
+
+<h3>API Keys</h3>
+<p>Generate personal API keys in Settings for programmatic access. Keys inherit your user tier's permissions. Use them for:</p>
+<ul>
+    <li>Querying chart data and scanner results from scripts</li>
+    <li>Building custom dashboards, alerting pipelines, or Telegram bots</li>
+    <li>Powering AI assistants with real-time market context</li>
+    <li>Automating trade journaling from external platforms</li>
+</ul>
+<p>Pass your key via <code>X-API-Key</code> header or <code>Authorization: Bearer &lt;key&gt;</code>.</p>
+
+<h3>MCP Quickstart</h3>
+<p>Accounts get MCP access to most of Carrac &mdash; market data, charts, the scanner, plays, drawings, the trade journal, watchlists and reports all work with no subscription. Your AI reasoning runs inside your own Claude instance, so Carrac only serves the data and no in-app AI credits are consumed.</p>
+
+<p>Three families depend on the account tier, where the operator has enabled tiers:</p>
+<table>
+<tr><th>Family</th><th>Tools</th><th>Plan</th></tr>
+<tr><td>Backtesting</td><td><code>backtest_run</code>, <code>backtest_simulate</code>, <code>backtest_save_run</code>, <code>backtest_get_runs</code></td><td><span class="badge badge-purple">Member+</span></td></tr>
+<tr><td>Quant Engine</td><td><code>quant_get_regime</code>, <code>quant_get_correlations</code>, <code>quant_get_leadlag_ranking</code>, <code>backtest_get_historical_analog</code> and the rest of the <code>quant_*</code> family</td><td><span class="badge badge-purple">Member+</span></td></tr>
+<tr><td>Formula execution &amp; generated reports</td><td><code>indicator_run_formula</code>, <code>report_generate_conditional</code>, <code>scanner_get_transitions</code>, <code>onchain_get_smart_money</code></td><td><span class="badge badge-gold">Premium</span></td></tr>
+</table>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Tools your plan does not cover are <strong>filtered out of the tool list your AI is shown</strong>, rather than failing when called. That is why an assistant will say it cannot backtest rather than trying and erroring &mdash; the tool is not in its list.</span>
+</div>
+
+{% if not reports_paused %}<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span><strong>Free daily report:</strong> A shared BTC &amp; macro daily market overview is available to everyone &mdash; no account required. Read it at <a href="/brief">/brief</a>, or pull it from your own AI via the <code>report_get_raw</code> MCP tool.</span>
+</div>{% endif %}
+
+<div class="card">
+    <div class="card-title">Step 1 &mdash; Generate an API key</div>
+    <div class="card-desc">Go to <a href="/settings#developer">Settings &rarr; API &amp; Developer tab</a>, enter a name for your key (e.g. <em>Claude Desktop</em>), and click <strong>Create Key</strong>. Copy the key &mdash; it is shown only once.</div>
+</div>
+
+<div class="card">
+    <div class="card-title">Step 2 &mdash; Pick your MCP client</div>
+    <div class="card-desc">Any MCP-compatible AI works: Claude Code (CLI), Claude Desktop, Cursor, Windsurf, or a custom agent. Choose the one you use daily.</div>
+</div>
+
+<div class="card">
+    <div class="card-title">Step 3 &mdash; Paste the config</div>
+    <div class="card-desc">Add Carrac to your client&rsquo;s MCP config (see the client-specific blocks in the <a href="#mcp">MCP Server</a> section below). Use endpoint <code>{{ site_url }}/mcp</code> and your API key.</div>
+</div>
+
+<div class="card">
+    <div class="card-title">Step 4 &mdash; Ask your first question</div>
+    <div class="card-desc">Try: &ldquo;What&rsquo;s the current BTC trend and RSI on the daily?&rdquo; or &ldquo;Show me the strongest setups in the scanner right now.&rdquo; Your AI will call Carrac&rsquo;s live data tools and answer with real numbers.</div>
+</div>
+
+<h3>REST API</h3>
+<p>Full REST API with 200+ endpoints. Interactive Swagger UI at <code>/api/docs</code> (Tester/Premium/Admin). OpenAPI 3.0 spec at <code>/api/openapi.json</code>.</p>
+<p>Key endpoints for external integration:</p>
+<table class="ref-table">
+<thead><tr><th>Endpoint</th><th>What You Get</th></tr></thead>
+<tbody>
+<tr><td><code>/api/chart/&lt;symbol&gt;</code></td><td>OHLCV + all computed indicators for any asset</td></tr>
+<tr><td><code>/api/chart-internal/&lt;symbol&gt;</code></td><td>Full internal data (indicators, scanner, signals) &mdash; key-protected</td></tr>
+<tr><td><code>/api/scanner</code></td><td>All assets with scores, verdicts, and macro context</td></tr>
+<tr><td><code>/api/market-sentiment</code></td><td>Fear &amp; Greed, funding rates, MVRV-Z, regime</td></tr>
+<tr><td><code>/api/plays/active</code></td><td>Active plays with condition evaluation status</td></tr>
+<tr><td><code>/api/alerts</code></td><td>All alerts with trigger history</td></tr>
+<tr><td><code>/api/report/morning/latest</code></td><td>Latest AI-generated morning report</td></tr>
+<tr><td><code>/api/journal/trades</code></td><td>Trade journal entries with analytics</td></tr>
+<tr><td><code>/api/drawings/context</code></td><td>Human-readable chart drawings and annotations</td></tr>
+</tbody>
+</table>
+
+<!-- ── MCP Server ── -->
+<h3 id="mcp">MCP Server &mdash; AI CLI Integration</h3>
+
+<p>Carrac exposes a <strong>Model Context Protocol (MCP)</strong> server &mdash; the standard protocol for connecting AI assistants to external tools. This means any MCP-compatible AI (Claude Code, Claude Desktop, Cursor, Windsurf, custom agents) can <strong>directly read your market data, manage your trades, and run analysis</strong> through natural language.</p>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span><strong>What this means in practice:</strong> You can tell Claude Code "check if BTC is showing a squeeze on the daily" and it will call <code>market_get_chart</code>, read the indicators, and give you an answer grounded in your live Carrac data &mdash; not hallucinated from training data.</span>
+</div>
+
+<h4>Setup</h4>
+<p>Add Carrac as an MCP server in your AI tool's configuration. The server speaks <strong>JSON-RPC 2.0 over HTTP</strong> (Streamable HTTP transport).</p>
+<p><strong>Endpoint:</strong> <code>POST {{ site_url }}/mcp</code></p>
+<p><strong>Auth:</strong> Your API key via <code>X-API-Key</code> header</p>
+
+<p>Example configuration for Claude Code (<code>~/.claude/settings.json</code>):</p>
+<div class="card" style="font-family:monospace;font-size:0.82em;color:#7ee787;white-space:pre;overflow-x:auto;">{
+  "mcpServers": {
+    "carrac": {
+      "type": "url",
+      "url": "{{ site_url }}/mcp",
+      "headers": {
+        "X-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}</div>
+
+<p>Example configuration for Claude Desktop (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code>):</p>
+<div class="card" style="font-family:monospace;font-size:0.82em;color:#7ee787;white-space:pre;overflow-x:auto;">{
+  "mcpServers": {
+    "carrac": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote",
+        "{{ site_url }}/mcp",
+        "--header", "X-API-Key:your-api-key-here"]
+    }
+  }
+}</div>
+
+<h4>{{ mcp_tool_count }} Tools Across 7 Categories</h4>
+
+<p>Once connected, your AI assistant can call any of these tools. The tables below are highlights &mdash; the ones you'll reach for most &mdash; not the full list.</p>
+
+<p>Beyond what's tabled, your AI can also manage your watchlist, create and edit chart drawings (including drawing-based alerts), run the backtester suite, share charts/plays/trades via public links, set quant &amp; regime-change alerts, read and update your trading profile, and pull chart screenshots.</p>
+
+<h4>Market Data (6 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>market_get_chart</code></td><td>Price, change%, consensio, RSI, key levels for any symbol</td><td>"What's the RSI and trend for ETH right now?"</td></tr>
+<tr><td><code>market_get_detail</code></td><td>Everything about one asset: technicals, scanner score, alerts, plays, positions, drawings</td><td>"Give me a full breakdown of SOL"</td></tr>
+<tr><td><code>market_get_overview</code></td><td>Top-ranked assets from scanner with verdicts + macro context</td><td>"What are the strongest long setups right now?"</td></tr>
+<tr><td><code>market_search_symbol</code></td><td>Search across crypto, stocks, ETFs, indices</td><td>"Find all gold-related assets"</td></tr>
+<tr><td><code>market_get_sentiment</code></td><td>F&amp;G index, funding rates, MVRV-Z, L/S ratios, regime</td><td>"What's the current market sentiment?"</td></tr>
+<tr><td><code>market_get_calendar</code></td><td>Upcoming macro events (FOMC, CPI, NFP, etc.)</td><td>"Any important macro events this week?"</td></tr>
+</tbody>
+</table>
+
+<h4>Scanner &amp; Signals (4 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>scanner_get_screen</code></td><td>Ranked asset scores with long/short verdicts</td><td>"Show me all STRONG or GOOD long verdicts"</td></tr>
+<tr><td><code>scanner_get_confluence_zones</code></td><td>Clustered S/R zones with source labels and strength</td><td>"Where are the key support levels for BTC?"</td></tr>
+<tr><td><code>scanner_get_transitions</code></td><td>Recent indicator state changes (RSI crosses, consensio flips)</td><td>"What changed overnight? Any important flips?"</td></tr>
+<tr><td><code>scanner_get_live_stream</code></td><td>Live confluence zones, engulfing signals, transitions</td><td>"Any live signals firing across my watchlist?"</td></tr>
+</tbody>
+</table>
+
+<h4>Context &amp; Composite (2 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>drawing_list</code></td><td>Human-readable chart annotations (levels, trendlines, zones)</td><td>"What levels have I drawn on BTC?"</td></tr>
+<tr><td><code>util_batch_query</code></td><td>Multiple data types for multiple assets in one call</td><td>"Compare BTC, ETH, and SOL across all metrics"</td></tr>
+</tbody>
+</table>
+
+<h4>Plays &amp; Trade Planning (6 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>play_create</code></td><td>Create a play with thesis, conditions, and invalidation</td><td>"Create a long play on ETH if it reclaims the 200 EMA and RSI crosses above 50"</td></tr>
+<tr><td><code>play_list</code></td><td>List plays with live condition status</td><td>"How are my active plays doing?"</td></tr>
+<tr><td><code>play_evaluate</code></td><td>Force re-evaluate conditions against current market</td><td>"Re-check all conditions on my BTC play"</td></tr>
+<tr><td><code>play_get_digest</code></td><td>AI-optimised summary of all active plays</td><td>"Summarise all my plays with current status"</td></tr>
+<tr><td><code>play_update</code></td><td>Update thesis, conditions, or action plan</td><td>"Update my ETH play &mdash; add a DXY below 103 condition"</td></tr>
+<tr><td><code>play_archive</code></td><td>Complete or invalidate a play with resolution note</td><td>"Invalidate my SOL play, it broke below the trendline"</td></tr>
+</tbody>
+</table>
+
+<h4>Journal &amp; Positions (4 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>trade_get_positions</code></td><td>Open positions with live P&amp;L, scanner scores, play status</td><td>"What are my current positions and how are they doing?"</td></tr>
+<tr><td><code>trade_log</code></td><td>Log a new trade entry to the journal</td><td>"Log a long BTC entry at 68,400 with SL at 66,500 and TP at 73,000"</td></tr>
+<tr><td><code>trade_get_analytics</code></td><td>Win rate, Sharpe, drawdown, equity curve, playbook stats</td><td>"How's my trading performance this month?"</td></tr>
+<tr><td><code>trade_get_ai_review</code></td><td>AI review of a closed trade: grade, entry/exit quality</td><td>"Review my last closed trade"</td></tr>
+</tbody>
+</table>
+
+<h4>Analysis &amp; Quant (4 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>report_get_compact</code></td><td>Latest morning or weekly analysis report</td><td>"What did this morning's report say?"</td></tr>
+<tr><td><code>quant_get_data</code></td><td>Z-scores, regime, time series, macro snapshots</td><td>"Are any macro metrics at extreme z-scores?"</td></tr>
+<tr><td><code>quant_get_correlations</code></td><td>Cross-asset correlations (what drives the target)</td><td>"What's most correlated with BTC right now?"</td></tr>
+<tr><td><code>backtest_get_historical_analog</code></td><td>Historical forward returns when conditions held</td><td>"What happened to BTC when Fear &amp; Greed was below 20 and DXY was falling?"</td></tr>
+</tbody>
+</table>
+
+<h4>Alerts (2 tools)</h4>
+<table class="ref-table">
+<thead><tr><th>Tool</th><th>What It Does</th><th>Example Prompt</th></tr></thead>
+<tbody>
+<tr><td><code>alert_manage</code></td><td>Create, list, or delete price alerts</td><td>"Set an alert for BTC above 72,000 with note 'breakout level'"</td></tr>
+<tr><td><code>alert_list_triggered</code></td><td>Recently triggered alerts with prices and timestamps</td><td>"Did any of my alerts trigger overnight?"</td></tr>
+</tbody>
+</table>
+
+<h4>What You Can Build With This</h4>
+
+<div class="card">
+<div class="card-title">Morning Briefing in Your Terminal</div>
+<div class="card-desc">Ask your AI CLI: "Get the morning report, check my active plays, and tell me if anything needs attention today." The AI calls <code>report_get_compact</code>, <code>play_get_digest</code>, and <code>alert_list_triggered</code> and gives you a synthesised verbal briefing.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Conversational Trade Planning</div>
+<div class="card-desc">"I think ETH is setting up for a breakout above the 200 EMA. Create a play with RSI above 50 and DXY below 103 as conditions." The AI calls <code>play_create</code> with structured conditions, and later <code>play_evaluate</code> to track them.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Automated Journal From CLI</div>
+<div class="card-desc">"I just bought 0.5 BTC at 68,400 with a stop at 66,500." The AI calls <code>trade_log</code>. When you close: "Close my BTC trade at 71,200, I took profit manually." The AI updates the journal and can run <code>trade_get_ai_review</code> for feedback.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Macro Screening Agent</div>
+<div class="card-desc">Build a recurring script that calls <code>quant_get_data</code> for z-scores, <code>scanner_get_screen</code> for verdicts, and <code>market_get_calendar</code> for events &mdash; then has an AI summarise the macro picture. Push the result to Telegram or ntfy.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Cross-Asset Research</div>
+<div class="card-desc">"What happened historically when the yield curve inverted and crypto funding was negative?" The AI calls <code>backtest_get_historical_analog</code> with your specific z-score conditions and reports the forward return distributions.</div>
+</div>
+
+<div class="card">
+<div class="card-title">Portfolio Dashboard in Obsidian / Notion</div>
+<div class="card-desc">Use the REST API to pull <code>/api/plays/active</code>, <code>/api/alerts</code>, and <code>/api/journal/trades</code> into any note-taking tool. Build a personal dashboard that stays in sync with your Carrac data.</div>
+</div>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>The MCP server uses the same data as the web UI &mdash; same scanner scores, same indicators, same plays. What you see in the app is exactly what your AI assistant gets.</span>
+</div>
+
+<!-- ── Charts in the terminal ── -->
+<h3 id="tui">Charts in the Terminal</h3>
+<p>A live candlestick chart in any terminal, with no signup or install:</p>
+<pre><code>curl {{ site_host }}/btc</code></pre>
+
+<div class="tip">
+    <span class="tip-icon">&#9432;</span>
+    <span>Works best in a modern terminal (kitty, Ghostty, WezTerm, foot) for high-resolution candlesticks; any terminal works with the line-chart fallback.</span>
+</div>
+
+<!-- ── Widget Tokens ── -->
+<h3>Widget Tokens</h3>
+<p>Separate from API keys. Widget tokens are scoped to read-only widget data (watchlist prices, market pulse, positions). Generate at <code>Settings &rarr; Widgets</code>. Delete anytime to revoke access.</p>
+
+<!-- ── Backtester ── -->
+<h3>Backtester</h3>
+<p>Your AI can run and save backtests on your behalf: <code>backtest_simulate</code>, <code>backtest_run</code>, <code>backtest_get_historical_analog</code>, <code>backtest_save_run</code> and <code>backtest_get_runs</code>. The three models these cover are not interchangeable &mdash; see <a href="#backtester">Backtester</a> for what each one answers and how to read the results. <span class="badge badge-purple">Member+</span></p>
+
+</div>
+</div>
+
+<!-- Mobile menu button -->
+<button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Table of contents">&#9776;</button>
+
+<!-- Mobile sidebar overlay -->
+<div class="mobile-sidebar" id="mobile-sidebar">
+    <div class="mobile-sidebar-inner" id="mobile-sidebar-inner"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce | default('') }}">
+// ── Sidebar active state ──
+(function() {
+    var links = document.querySelectorAll('.sb-link');
+    var sections = [];
+    links.forEach(function(link) {
+        var id = link.getAttribute('href').replace('#', '');
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: link });
+    });
+
+    function updateActive() {
+        var scrollY = window.scrollY + 60;
+        var active = sections[0];
+        for (var i = 0; i < sections.length; i++) {
+            if (sections[i].el.offsetTop <= scrollY) active = sections[i];
+        }
+        links.forEach(function(l) { l.classList.remove('active'); });
+        if (active) active.link.classList.add('active');
+    }
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+
+    // Smooth scroll
+    links.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var id = this.getAttribute('href').replace('#', '');
+            var target = document.getElementById(id);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.replaceState(null, '', '#' + id);
+                // Close mobile sidebar
+                document.getElementById('mobile-sidebar').classList.remove('active');
+            }
+        });
+    });
+})();
+
+// ── Search filter ──
+(function() {
+    var input = document.getElementById('sb-search');
+    var links = document.querySelectorAll('.sb-link');
+    var sections = document.querySelectorAll('.sb-section');
+    input.addEventListener('input', function() {
+        var q = this.value.toLowerCase().trim();
+        links.forEach(function(link) {
+            link.style.display = !q || link.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+        // Hide empty section headers
+        sections.forEach(function(sec) {
+            var next = sec.nextElementSibling;
+            var hasVisible = false;
+            while (next && !next.classList.contains('sb-section')) {
+                if (next.classList.contains('sb-link') && next.style.display !== 'none') hasVisible = true;
+                next = next.nextElementSibling;
+            }
+            sec.style.display = hasVisible || !q ? '' : 'none';
+        });
+    });
+})();
+
+// ── Mobile sidebar ──
+(function() {
+    var btn = document.getElementById('mobile-menu-btn');
+    var overlay = document.getElementById('mobile-sidebar');
+    var inner = document.getElementById('mobile-sidebar-inner');
+    // Clone sidebar content into mobile
+    var sidebar = document.getElementById('guide-sidebar');
+    inner.innerHTML = sidebar.innerHTML;
+    // Wire up links
+    inner.querySelectorAll('.sb-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var id = this.getAttribute('href').replace('#', '');
+            var target = document.getElementById(id);
+            if (target) {
+                e.preventDefault();
+                overlay.classList.remove('active');
+                setTimeout(function() {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    history.replaceState(null, '', '#' + id);
+                }, 100);
+            }
+        });
+    });
+    btn.addEventListener('click', function() { overlay.classList.add('active'); });
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.classList.remove('active');
+    });
+})();
+</script>
+{% endblock %}

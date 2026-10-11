@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% set _sym = snap.symbol or 'Market' %}
+{% set _tf = snap.timeframe or '' %}
+{% set _chg = snap.get('change_pct') %}
+{% set _chg_txt = (('%+.1f%%'|format(_chg)) if _chg is not none else '') %}
+<title>{{ _sym }} {{ _tf }} {{ _chg_txt }} — Carrac</title>
+
+<!-- Open Graph / Twitter. ALL URLs absolute — scrapers don't resolve relative ones. -->
+<meta property="og:title" content="{{ _sym }} {{ _tf }} chart{% if _chg_txt %} ({{ _chg_txt }}){% endif %}">
+<meta property="og:description" content="A frozen {{ _sym }} {{ _tf }} chart shared via Carrac — view the live chart with 70+ indicators.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ page_url }}">
+<meta property="og:site_name" content="Carrac">
+<meta property="og:image" content="{{ card_url }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ _sym }} {{ _tf }} chart{% if _chg_txt %} ({{ _chg_txt }}){% endif %}">
+<meta name="twitter:description" content="A frozen {{ _sym }} {{ _tf }} chart shared via Carrac.">
+<meta name="twitter:image" content="{{ card_url }}">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/favicon.svg">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<style>
+  /* Layout: the chart itself is the hero (full-bleed, high-res), the topbar and
+     head rows are merged into one slim ribbon, and a clean-Inter rotating
+     ribbon carries the tips. Tokens mirror landing-hybrid.css (sage accent,
+     Inter body, mono as data utility only) — the Fraunces face stays
+     declared in report-fonts.css but is not USED on this page. */
+  :root{
+    --bg:#0e1113; --panel:#151a1d; --border:#242b30;
+    --fg1:#e9edf2; --fg2:#b5bdc6; --fg3:#8b949e; --fg4:#67707b;
+    --accent:#85b183; --accent-strong:#74a072;
+    --accent-line:rgba(133,177,131,0.30);
+    --red:#e0716c;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg2);font-family:var(--sans);
+       font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+
+  /* Everything — hero unit AND the info below it — shares one full-bleed
+     column so the info lines up flush with the chart's edges (the under-chart info should be the same width as the image). */
+  .wrap{max-width:min(1720px,96vw);margin:0 auto;padding:20px 20px 72px}
+  .fullinfo{margin-top:2px}
+
+  /* ── Hero unit: sage ribbon fused to the chart as one full-width card ── */
+  .hero-unit{border:1px solid var(--border);border-radius:12px;overflow:hidden;
+             background:var(--panel)}
+  /* Sage top ribbon: brand · sym · tf · change · Open — dark ink on sage. */
+  .ribbon-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;
+    padding:11px 16px;background:var(--accent);color:#0e1611;min-height:48px}
+  .ribbon-top .brand{font-weight:700;font-size:16px;letter-spacing:-0.01em;color:#0e1611}
+  .ribbon-top .rt-sep{color:rgba(14,22,17,.42)}
+  .ribbon-top .sym{font-family:var(--mono);font-weight:700;font-size:16px;color:#0e1611;letter-spacing:-0.01em}
+  .ribbon-top .tf{font-family:var(--mono);font-size:13px;color:rgba(14,22,17,.72)}
+  .ribbon-top .chg{font-family:var(--mono);font-weight:700;font-size:14px}
+  .ribbon-top .chg.down{color:#7a2018} .ribbon-top .chg.up{color:#0f4d2b}
+  .ribbon-top .open{margin-left:auto;font-size:13px;color:#0e1611;
+    border:1px solid rgba(14,22,17,.38);border-radius:8px;padding:5px 12px;
+    transition:background .15s;white-space:nowrap}
+  .ribbon-top .open:hover{background:rgba(14,22,17,.12)}
+
+  /* Chart sits directly under the ribbon, no seam. */
+  figure.chart{margin:0;background:var(--panel);position:relative}
+  figure.chart.zoomable{cursor:zoom-in}
+  figure.chart img{width:100%;height:auto;display:block}
+  figure.chart.zoomable::after{content:"click to enlarge";position:absolute;right:12px;bottom:10px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--fg4);background:rgba(14,17,19,.72);padding:4px 8px;border-radius:6px;
+    opacity:0;transition:opacity .15s;pointer-events:none}
+  figure.chart.zoomable:hover::after{opacity:1}
+  #lw-chart{width:100%;height:420px}
+  #share-viewer{width:100%;height:clamp(360px,52vw,640px)}
+  .frozen-badge{position:absolute;left:12px;top:10px;z-index:5;
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    color:var(--fg2);background:rgba(14,17,19,.78);padding:5px 10px;
+    border-radius:7px;border:1px solid var(--border)}
+  .frozen-badge a{color:var(--accent)}
+
+  .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 2px 0;
+        font-family:var(--mono);font-size:12px;color:var(--fg4)}
+  .meta .live{margin-left:auto;font-family:var(--sans);font-size:14px;color:var(--accent)}
+  .meta .live:hover{color:var(--fg1)}
+
+  .lb{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+      background:rgba(8,10,11,.92);z-index:50;cursor:zoom-out;padding:24px}
+  .lb.on{display:flex}
+  .lb img{max-width:98vw;max-height:94vh;border-radius:10px}
+  @media (prefers-reduced-motion:no-preference){
+    .lb{opacity:0;transition:opacity .18s}.lb.on{opacity:1}
+  }
+
+  /* ── Bottom ribbon: "On Carrac you can" + rotating line + dots + CTA ── */
+  .ribbon{margin:40px auto 0;display:flex;align-items:center;gap:24px;
+    padding:14px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    background:var(--panel);border-radius:10px}
+  .ribbon-row1{display:flex;align-items:center;gap:16px;flex:1 1 auto;min-width:0}
+  .ribbon-row2{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  /* Lead-in and rotating line share ONE size (17px) — distinguished by weight
+     + colour, not size (the two-size mix read wrong). */
+  .ribbon-lead{font-family:var(--sans);font-weight:600;font-size:17px;color:var(--accent);
+    white-space:nowrap;flex-shrink:0}
+  .ribbon-stage{position:relative;flex:1 1 auto;min-width:0;height:26px;overflow:hidden}
+  .rline{position:absolute;inset:0;margin:0;font-family:var(--sans);font-weight:400;
+    font-size:17px;line-height:26px;color:var(--fg1);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;opacity:0;visibility:hidden}
+  .rline.on{opacity:1;visibility:visible}
+  @media (prefers-reduced-motion:no-preference){
+    .rline{transition:opacity .7s ease}
+  }
+  .ribbon-dots{display:flex;gap:6px}
+  .ribbon-dots i{width:5px;height:5px;border-radius:50%;background:var(--border)}
+  .ribbon-dots i.on{background:var(--accent)}
+  .ribbon-cta{font-weight:600;font-size:14px;color:#101410;background:var(--fg1);
+       border-radius:8px;padding:9px 18px;white-space:nowrap;transition:background .15s}
+  .ribbon-cta:hover{background:#fff}
+
+  .foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);
+        display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+        font-size:13px;color:var(--fg4)}
+  .foot .mono{font-family:var(--mono);font-size:12px}
+
+  @media(max-width:700px){
+    /* Ribbon wraps to exactly two rows: lead+rotator, then dots+CTA. */
+    .ribbon{flex-direction:column;align-items:stretch;gap:10px}
+    .ribbon-row2{justify-content:space-between}
+  }
+  @media(max-width:640px){
+    .sym{font-size:15px}
+    .rline{font-size:16px;line-height:22px}
+    .ribbon-stage{height:22px}
+  }
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body>
+<div class="wrap">
+
+  {% set _utm = 'utm_source=share&utm_medium=chart_share&utm_campaign=' ~ slug %}
+  {% set hero_src = hero_url or card_url %}
+
+  <div class="hero-unit">
+    <header class="ribbon-top">
+      <span class="brand">Carrac</span>
+      <span class="rt-sep">·</span>
+      <span class="sym">{{ _sym }}</span>
+      {% if _tf %}<span class="tf">{{ _tf }}</span>{% endif %}
+      {% if _chg is not none %}
+      <span class="chg {{ 'up' if _chg >= 0 else 'down' }}">{{ _chg_txt }}</span>
+      {% endif %}
+      <a class="open" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+    </header>
+
+    {% if interactive and snap.get('candles') %}
+    {# Interactive frozen viewer: real klinecharts render of the
+       frozen moment. data-hero = JS-failure fallback image (raster hero or
+       the OG card). #}
+    <figure class="chart hero">
+      <div id="share-viewer" data-hero="{{ hero_src if snap.source in ('capture', 'server_render') else '' }}"></div>
+      <noscript>
+        {% if snap.source in ('capture', 'server_render') %}<img class="capture" src="{{ hero_src }}" alt="{{ _sym }} {{ _tf }} chart shared via Carrac">{% endif %}
+      </noscript>
+      <div class="frozen-badge">Frozen at share time · <a href="/register?{{ _utm }}" target="_blank" rel="noopener">open it live →</a></div>
+    </figure>
+    <script type="application/json" id="chart-share-data" nonce="{{ csp_nonce | default('') }}">{{ snap|tojson }}</script>
+    {% elif snap.source in ('capture', 'server_render') %}
+    {# Client capture or server-side Playwright render: the hero IS a
+       full-fidelity image — shown full-bleed, click-to-zoom. #}
+    <figure class="chart hero zoomable" id="chart">
+      <img class="capture" src="{{ hero_src }}" alt="{{ _sym }} {{ _tf }} chart shared via Carrac" loading="eager">
+    </figure>
+    {% else %}
+    <figure class="chart hero">
+      <div id="lw-chart"></div>
+    </figure>
+    <script type="application/json" id="chart-data" nonce="{{ csp_nonce | default('') }}">{{ snap|tojson }}</script>
+    {% endif %}
+  </div>
+
+  <div class="fullinfo">
+    <div class="meta">
+      <span>Frozen snapshot{% if snap.get('candle_count') %} · {{ snap.candle_count }} bars{% endif %}{% if snap.get('last_price') is not none %} · last {{ fmt_price(snap.last_price) }}{% endif %}</span>
+      <a class="live" href="/register?{{ _utm }}" target="_blank" rel="noopener">View this chart live →</a>
+    </div>
+
+    <!-- Rotating "On Carrac you can" ribbon (replaces the Fraunces-italic "did you know" block). -->
+    <section class="ribbon" id="rotator">
+      <div class="ribbon-row1">
+        <div class="ribbon-lead">On Carrac you can</div>
+        <div class="ribbon-stage">
+          <p class="rline on">register the market moves you anticipate — and your own AI keeps track of how they resolve.</p>
+          <p class="rline">set alerts on indicator states — an EMA ribbon flip, a squeeze firing, a regime change — to push, Telegram, Discord or email.</p>
+          <p class="rline">connect Claude, Gemini or any MCP client, and let your own AI reason over live market context.</p>
+          <p class="rline">see every asset's key levels clustered into ranked confluence zones — pivots, bands, EMAs, structure, volume profile.</p>
+          <p class="rline">read a daily brief on macro and the majors — written from data, not vibes.</p>
+          <p class="rline">journal your trades and get win-rate, average-R and a weekly AI review.</p>
+        </div>
+      </div>
+      <div class="ribbon-row2">
+        <div class="ribbon-dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <a class="ribbon-cta" href="/register?{{ _utm }}" target="_blank" rel="noopener">Start free →</a>
+      </div>
+    </section>
+
+    <div class="foot">
+      <span>A frozen chart shared via Carrac. Not financial advice.</span>
+      <span class="mono">{{ site_host }}/s/{{ slug }}</span>
+    </div>
+  </div>
+</div>
+
+{% if not (interactive and snap.get('candles')) and snap.source in ('capture', 'server_render') %}
+<div class="lb" id="lb"><img src="{{ hero_src }}" alt=""></div>
+{% endif %}
+
+<script nonce="{{ csp_nonce | default('') }}">
+  (function(){
+    var chart=document.getElementById('chart'),lb=document.getElementById('lb');
+    if(chart&&lb){
+      chart.addEventListener('click',function(){lb.classList.add('on')});
+      lb.addEventListener('click',function(){lb.classList.remove('on')});
+      document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.classList.remove('on')});
+    }
+    var lines=document.querySelectorAll('.rline'),dots=document.querySelectorAll('.ribbon-dots i'),
+        idx=0,paused=false,rotator=document.getElementById('rotator');
+    if(rotator&&lines.length>1){
+      rotator.addEventListener('mouseenter',function(){paused=true});
+      rotator.addEventListener('mouseleave',function(){paused=false});
+      setInterval(function(){
+        if(paused||document.hidden)return;
+        lines[idx].classList.remove('on');dots[idx].classList.remove('on');
+        idx=(idx+1)%lines.length;
+        lines[idx].classList.add('on');dots[idx].classList.add('on');
+      },12000);
+    }
+  })();
+</script>
+
+{% if interactive and snap.get('candles') %}
+<script src="{{ url_for('static', filename='js/klinecharts.min.js') }}?v={{ cache_version('js/klinecharts.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/carrac-indicator-pack.js') }}?v={{ cache_version('js/carrac-indicator-pack.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/indicator-registry.js') }}?v={{ cache_version('js/indicator-registry.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/kline-share-render.js') }}?v={{ cache_version('js/kline-share-render.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/share-chart-viewer.js') }}?v={{ cache_version('js/share-chart-viewer.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+{% elif snap.source not in ('capture', 'server_render') %}
+<script src="{{ url_for('static', filename='js/lightweight-charts.min.js') }}?v={{ cache_version('js/lightweight-charts.min.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/share-chart.js') }}?v={{ cache_version('js/share-chart.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+{% endif %}
+</body>
+</html>

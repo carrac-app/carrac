@@ -1,0 +1,214 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Privacy Policy — Carrac{% endblock %}
+{% block description %}Privacy Policy for Carrac — how we handle your data, your rights, and our commitment to data ownership and GDPR compliance.{% endblock %}
+{% block canonical %}{{ site_url }}/privacy{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Privacy Policy — Carrac","url":"{{ site_url }}/privacy"}</script>{% endblock %}
+
+{% block analytics %}{# no PostHog on Privacy #}{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+<div class="prose-page wrap">
+  <span class="eyebrow">Legal</span>
+  <p class="legal-footer-note"><strong>Operator note:</strong> this page is a template shipped with the open-source software. Whoever runs this instance is responsible for reviewing it against their own services, processors and jurisdiction before relying on it.</p>
+  <h1 style="margin-top:16px">Privacy Policy</h1>
+  <p class="legal-effective">Effective date: 13 August 2026</p>
+
+  <h2>1. Data Controller</h2>
+  <p>The data controller is <strong>{{ legal_entity.name }}</strong>{% if legal_entity.form and legal_entity.country %}, a {{ legal_entity.form }} registered in {{ legal_entity.country }}{% endif %}. For data-protection enquiries contact <strong>{{ legal_entity.contact_email }}</strong>.</p>
+  {% if legal_entity.address and 'on file' not in legal_entity.address %}<p>Registered address: {{ legal_entity.address }}{% if legal_entity.registry_number %} &middot; registry no. {{ legal_entity.registry_number }}{% endif %}{% if legal_entity.vat_id %} &middot; VAT {{ legal_entity.vat_id }}{% endif %}.</p>{% endif %}
+
+  <h2>2. What Data We Collect</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Data</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Account</strong></td>
+        <td>Email address, display name, hashed password (Argon2), who invited you, optional trader profile</td>
+        <td>Authentication, account identification, tailoring reports to you</td>
+      </tr>
+      <tr>
+        <td><strong>Sign-up attestations</strong></td>
+        <td>Timestamp, IP address and browser identifier recorded when you accept the Terms and confirm your age</td>
+        <td>Evidence that the agreement and age confirmation happened</td>
+      </tr>
+      <tr>
+        <td><strong>User content</strong></td>
+        <td>Journal entries, chart drawings, plays, alerts, watchlists, backtests, custom formulas, preferences</td>
+        <td>Core platform features — your data, stored for you</td>
+      </tr>
+      <tr>
+        <td><strong>Exchange connections</strong> (optional)</td>
+        <td>Exchange API keys (stored encrypted) and, for Hyperliquid, the wallet address you connect — only if you link an exchange to auto-import your trades</td>
+        <td>Importing your own trade history into your journal</td>
+      </tr>
+      <tr>
+        <td><strong>Billing</strong> (paid plans)</td>
+        <td>Customer and subscription identifiers issued by our payment provider; payment details themselves never touch our servers</td>
+        <td>Knowing which plan you are on</td>
+      </tr>
+      <tr>
+        <td><strong>Session</strong></td>
+        <td>Server-side session token (Redis), last active timestamp</td>
+        <td>Keeping you logged in, session security</td>
+      </tr>
+      <tr>
+        <td><strong>Assistant &amp; report usage</strong></td>
+        <td>A record per generated report or assistant request: timestamps, model used, token counts and cost — plus a short note about what API/MCP requests were for, linked via a one-way identifier</td>
+        <td>Cost accounting, abuse investigation, deciding what to build next</td>
+      </tr>
+      <tr>
+        <td><strong>Analytics</strong> (in-app, consent-gated)</td>
+        <td>Page views and product-usage events, tied to your user id and plan tier — no session recording, no email</td>
+        <td>Understanding which features are used</td>
+      </tr>
+      <tr>
+        <td><strong>Error tracking</strong></td>
+        <td>Crash reports on our own self-hosted error tracker: stack trace, request id, user id, masked URL parameters — no email</td>
+        <td>Fixing bugs and improving stability</td>
+      </tr>
+      <tr>
+        <td><strong>Security logs</strong></td>
+        <td>Masked email + IP on login attempts</td>
+        <td>Brute-force protection, security monitoring</td>
+      </tr>
+      <tr>
+        <td><strong>Early-access list</strong></td>
+        <td>Email address, IP address and timestamp if you join a brief subscription without an account</td>
+        <td>Contacting you when access opens</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. What We Do NOT Collect</h2>
+  <ul>
+    <li>We do not use third-party tracking cookies (no Google Analytics, no Facebook Pixel)</li>
+    <li>We never see or store your card or bank details — payment is handled entirely by our payment provider</li>
+    <li>Exchange API keys are collected only if you explicitly connect an exchange, are stored encrypted, and are only ever used to read your trade history. At connection time we verify the key is read-only and refuse any key with trading or withdrawal permissions</li>
+    <li>We do not track your browsing activity outside of the Platform</li>
+    <li>We do not sell, rent, or share your personal data with third parties for marketing</li>
+  </ul>
+
+  <h2>4. Legal Basis (GDPR Article 6)</h2>
+  <ul>
+    <li><strong>Contract performance</strong> (Art. 6(1)(b)): Account data, user content, exchange connections, billing state — necessary to provide the service you signed up for</li>
+    <li><strong>Legitimate interest</strong> (Art. 6(1)(f)): Error tracking, security logs, usage/cost records, sign-up attestations — necessary to keep the Platform secure, functional and accountable</li>
+    <li><strong>Consent</strong> (Art. 6(1)(a)): In-app product analytics — loads only after you accept the consent banner and can be withdrawn at any time</li>
+  </ul>
+
+  <h2>5. How We Use Your Data</h2>
+  <p>Your data is used exclusively to:</p>
+  <ul>
+    <li>Authenticate you and maintain your session</li>
+    <li>Store and display your drawings, plays, journal entries, and preferences</li>
+    <li>Import your trade history from exchanges you have connected</li>
+    <li>Generate AI reports that reference your active plays</li>
+    <li>Send you price alerts and notifications (when you opt in)</li>
+    <li>Monitor Platform health and fix bugs</li>
+    <li>Protect against brute-force attacks and abuse</li>
+  </ul>
+
+  <h2>6. Data Storage and Security</h2>
+  <ul>
+    <li><strong>Hosting</strong>: A hosting provider in Germany. Server-side only — no client-side databases</li>
+    <li><strong>Database</strong>: PostgreSQL, reachable only from the application's private container network on the same host — it is not exposed to the internet</li>
+    <li><strong>Passwords</strong>: Hashed with Argon2 (never stored in plaintext)</li>
+    <li><strong>Exchange API keys</strong>: Stored encrypted; decrypted only at the moment a sync runs</li>
+    <li><strong>Transport</strong>: HTTPS enforced via HSTS (preload), TLS 1.2+</li>
+    <li><strong>Headers</strong>: CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy</li>
+    <li><strong>Sessions</strong>: Server-side Redis with Secure, HttpOnly, SameSite=Lax cookies</li>
+    <li><strong>Backups</strong>: Nightly database backups, replicated to infrastructure we operate inside the EU, retained on a rolling schedule of up to roughly three months</li>
+  </ul>
+
+  <h2>7. Data Retention</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Retention</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Account data</td><td>Until you delete your account</td></tr>
+      <tr><td>User content (drawings, journal, etc.)</td><td>Until you delete it or your account</td></tr>
+      <tr><td>Exchange connections</td><td>Until you disconnect the exchange or delete your account</td></tr>
+      <tr><td>Sessions</td><td>14 days idle, 30 days absolute maximum</td></tr>
+      <tr><td>Security logs</td><td>Rotated by size — old entries are overwritten as new ones arrive</td></tr>
+      <tr><td>Assistant conversation history</td><td>90 days, then deleted automatically</td></tr>
+      <tr><td>Assistant &amp; report cost records</td><td>Until you delete your account (they are part of your account's accounting record)</td></tr>
+      <tr><td>Report source text</td><td>90 days, then deleted automatically</td></tr>
+      <tr><td>Notes on how the tools are used (one-way identifier, not your account id)</td><td>90 days, then deleted automatically</td></tr>
+      <tr><td>Error reports</td><td>Fixed-size store with a weekly housekeeping job — old reports are cleared automatically</td></tr>
+      <tr><td>Analytics</td><td>PostHog event data retained while consent is active; deleted on request or when consent is withdrawn</td></tr>
+      <tr><td>Early-access list</td><td>Until access opens or you ask to be removed</td></tr>
+      <tr><td>Backups</td><td>Rolling schedule (daily, weekly, monthly copies) — a deleted record ages out of all backups within roughly three months</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. Third-Party Sub-Processors</h2>
+  <p>To run the Platform we share specific data categories with the following sub-processors. Each is contractually bound by a Data Processing Agreement (DPA) where personal data flows.</p>
+  <table class="data-table">
+    <thead><tr><th>Processor</th><th>Purpose</th><th>Region</th><th>Data shared</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Cloudflare, Inc.</strong></td><td>CDN, DDoS protection, TLS termination, bot-protection challenges (Turnstile)</td><td>Global edge</td><td>IP address, request headers, user-agent</td></tr>
+      <tr><td><strong>Hosting provider</strong></td><td>Application hosting (server, Germany)</td><td>Germany</td><td>Everything stored on the server (account, content, sessions, logs)</td></tr>
+      <tr><td><strong>Anthropic, PBC</strong></td><td>Claude API — powers scheduled morning reports and the weekly review</td><td>US</td><td>Prompt content (the report context generated on your behalf), no account identifiers</td></tr>
+      <tr><td><strong>xAI Corp.</strong></td><td>Grok API — auxiliary model for select report sections</td><td>US</td><td>Prompt content, no account identifiers</td></tr>
+      <tr><td><strong>Paddle.com Market Ltd</strong></td><td>Merchant of Record — payments + invoicing + tax</td><td>UK / EU</td><td>Email, billing address, payment method (handled by Paddle directly), subscription state</td></tr>
+      <tr><td><strong>PostHog, Inc.</strong></td><td>Product analytics (consent-gated; no session recording)</td><td>EU (eu.i.posthog.com)</td><td>User id and plan tier, page views, product events — including, when you close a journaled trade, its outcome details: asset, direction, setup and exit labels, realised profit or loss, risk-reward, hold time, grade and mistake tags. No email.</td></tr>
+      <tr><td><strong>Bugsink (self-hosted)</strong></td><td>Error tracking &amp; stack traces</td><td>EU (our infrastructure)</td><td>Stack trace, request id, user id, masked URL params. No email.</td></tr>
+      <tr><td><strong>Brevo (Sendinblue SAS)</strong></td><td>Transactional email — verification, password reset, receipts</td><td>EU (FR)</td><td>Email address, message content</td></tr>
+      <tr><td><strong>Font &amp; script CDNs</strong> (Google Fonts, Cloudflare cdnjs, jsDelivr, unpkg) and a QR-code image service (qrserver.com, used only on the install screen)</td><td>Serving fonts, open-source libraries and the install QR image to your browser</td><td>Global</td><td>IP address and user-agent, as with any web request; no account data (the QR encodes only the site address)</td></tr>
+      <tr><td><strong>Binance, Hyperliquid, FRED, Stooq, Finnhub &amp; other market-data sources</strong></td><td>Market data ingestion (server-side)</td><td>Global / EU</td><td>None — outbound only, no user identifiers shared</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Live prices in your browser:</strong> when you use the app, your browser connects directly to exchange data streams (Binance, Bybit, Kraken, Gate.io, Hyperliquid) for live prices. Those services see your IP address, as with any website you visit — but no account information, and Carrac sends them nothing about you.</p>
+  <p><strong>Browser push notifications:</strong> if you enable web push alerts, your browser vendor's push service (e.g. Mozilla, Google or Apple, depending on your browser) delivers them. We store the push subscription your browser hands us — its delivery endpoint plus the two delivery keys that encrypt messages to your device.</p>
+  <p><strong>Operator alerts:</strong> internal operational notifications (deploy status, system health, a note that someone signed up) are delivered over messaging services, but carry no personal data — no emails, no names.</p>
+  <p>We do not share your account email or stored user content (journal, plays, drawings) with any party beyond the processors in the table above, and never for marketing.</p>
+  <p><strong>Report generation:</strong> when we produce your scheduled reports we keep a record of each request so we can account for costs and look into misuse. That record identifies the request rather than reproducing it; the source text behind a report is kept for 90 days and then deleted automatically.</p>
+  <p><strong>API &amp; MCP access (your own AI client):</strong> when you connect an external client to Carrac over our API or the Model Context Protocol (MCP) — for example Claude Desktop, Claude Code, Cursor, or another MCP-capable tool — the queries and context you send, and the market data we return, are processed by the third-party AI provider <em>you</em> have chosen, under your own agreement with that provider. Carrac does not control or receive the contents of your conversations with that AI client; we only process the API requests made with your key. Your API key is issued to you personally and must be kept secret (see the <a href="{{ url_for('legal.terms') }}">Terms of Service</a>).</p>
+  <p><strong>How the tools get used:</strong> when a request comes in through our API or an AI client, we record a short note about what it was for — including when something was asked of us that we don't currently offer. We use this only to improve how the tools work and to decide what to build next. It is linked to your account through a one-way identifier rather than your account id or email, and it is deleted automatically after 90 days.</p>
+
+  <h2>9. Your Rights (GDPR Articles 15–22)</h2>
+  <p>As an EU-based service, you have the following rights:</p>
+  <ul>
+    <li><strong>Access &amp; portability</strong> (Art. 15, 20): Export everything we hold about you yourself, any time — Settings &rarr; Danger Zone &rarr; Export. The export is machine-readable JSON and free on every plan.</li>
+    <li><strong>Erasure</strong> (Art. 17): Delete your account yourself — Settings &rarr; Danger Zone &rarr; Delete account. This removes or anonymises your data across our database immediately, including exchange connections and assistant conversation history. If any part of the deletion cannot complete, you are told, not left to assume. Copies held by the processors above (analytics, email) are removed as a follow-up step, and deleted records age out of backups within roughly three months.</li>
+    <li><strong>Rectification</strong> (Art. 16): Some details (such as your trader profile) you can edit in Settings; for anything you cannot edit yourself — including your email address or display name — write to us and we will correct it.</li>
+    <li><strong>Restriction</strong> (Art. 18): Request that we limit processing of your data</li>
+    <li><strong>Objection</strong> (Art. 21): Object to processing based on legitimate interest</li>
+  </ul>
+  <p>If you joined the early-access list without ever creating an account, there is no account to delete — email us and we will remove you from the list, including the operational copy of it.</p>
+  <p>To exercise any of these rights, email <strong>{{ support_email }}</strong>. We will respond within 30 days. You also have the right to lodge a complaint with your local supervisory authority.</p>
+
+  <h2>10. Cookies &amp; consent</h2>
+  <p>Carrac stores two categories of client-side data:</p>
+  <ul>
+    <li><strong>Strictly necessary</strong>: a server-side session cookie for authentication, a CSRF token, and a small set of localStorage entries that hold your in-app preferences (chosen view, last-viewed asset, etc.). These cannot be disabled while using the Platform.</li>
+    <li><strong>Analytics &amp; product-improvement (consent-gated in the app)</strong>: when you accept the consent banner inside the app we initialise PostHog product analytics (page views and product events). We do not record your screen — session replay is disabled. You can withdraw consent at any time from the Cookie preferences link, after which PostHog stops loading and existing person data can be deleted on request.</li>
+  </ul>
+  <p>On the public pages (landing, this page's siblings) we measure visits with a cookieless configuration: nothing is written to your device and no identifier persists beyond the page view.</p>
+  <p>We do not use advertising cookies, third-party trackers, or any non-essential cookies that you have not consented to.</p>
+
+  <h2>11. Children</h2>
+  <p>Carrac is not intended for anyone under the age of 18. We do not knowingly collect data from minors. If you believe a minor has created an account, contact us and we will delete it.</p>
+
+  <h2>12. International Data Transfers</h2>
+  <p>Your account and everything you create on the Platform are stored on servers in the European Union, and our analytics stay in the EU too. A few of the services listed above operate outside it — in particular Anthropic and xAI in the United States (report generation), Cloudflare's global network, and the font and script CDNs. Where personal data leaves the EU, the transfer is covered by the European Commission's Standard Contractual Clauses and the equivalent UK provisions, which hold those providers to the same standard of protection. Cloudflare may cache static files on servers worldwide; those contain no personal data. If you connect your own AI client over our API or the Model Context Protocol, anything you choose to send goes to the provider you picked, under your own agreement with them.</p>
+
+  <h2>13. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. Material changes will be communicated via email or an in-app notification. The effective date at the top of this page will always reflect the latest revision.</p>
+
+  <h2>14. Contact</h2>
+  <p>For privacy-related questions or to exercise your GDPR rights, email <strong>{{ support_email }}</strong>.</p>
+</div>
+{% endblock %}

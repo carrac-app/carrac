@@ -1,0 +1,17 @@
+{
+  "classification": "ignore",
+  "components": {
+    "adx_position": 15,
+    "freshness": 0,
+    "rsi_position": 5,
+    "volume": 10
+  },
+  "direction": "bullish",
+  "patterns": [
+    "adx_forming",
+    "unknown",
+    "volume_above_avg"
+  ],
+  "regime": "ranging",
+  "score": 30
+}

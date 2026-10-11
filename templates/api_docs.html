@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation — Carrac</title>
+    <meta name="description" content="Carrac REST API reference — endpoints for chart data, indicators, alerts, and more.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="{{ site_url }}/api/docs">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Carrac">
+    <meta property="og:title" content="API Documentation — Carrac">
+    <meta property="og:description" content="Carrac REST API reference — endpoints for chart data, indicators, alerts, and more.">
+    <meta property="og:url" content="{{ site_url }}/api/docs">
+    <meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css" integrity="sha384-rcbEi6xgdPk0iWkAQzT2F3FeBJXdG+ydrawGlfHAFIZG7wU6aKbQaRewysYpmrlW" crossorigin="anonymous">
+    <style>
+        body { margin: 0; background: #1a1a2e; }
+        #swagger-ui .topbar { display: none; }
+        /* Dark theme overrides */
+        .swagger-ui { color: #e0e0e0; }
+        .swagger-ui .info .title { color: #fff; }
+        .swagger-ui .info p, .swagger-ui .info li { color: #ccc; }
+        .swagger-ui .scheme-container { background: #16213e; box-shadow: none; }
+        .swagger-ui .opblock-tag { color: #e0e0e0; border-bottom-color: #333; }
+        .swagger-ui .opblock .opblock-summary-description { color: #aaa; }
+        .swagger-ui .btn.authorize { color: #61afef; border-color: #61afef; }
+        .swagger-ui section.models { border-color: #333; }
+        .swagger-ui .model-title { color: #e0e0e0; }
+        /* Back link */
+        .back-link {
+            display: block; padding: 12px 20px;
+            background: #16213e; color: #61afef;
+            text-decoration: none; font-family: sans-serif; font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="/">&larr; Back to Carrac</a>
+    <div style="padding:14px 20px;background:#16213e;border-bottom:1px solid #2a2e39;font-family:sans-serif;font-size:14px;color:#c9d1d9;line-height:1.6;">
+        Need an API key? Go to <a href="/settings#developer" style="color:#61afef;">Settings &rarr; API &amp; Developer tab</a> to generate one.
+        New to the MCP integration? See the <a href="/guide#mcp" style="color:#61afef;">MCP setup guide</a> to connect Claude Code, Claude Desktop, or any MCP-compatible AI to your Carrac data.
+    </div>
+
+    <!-- hand-written — this is a payload Carrac SENDS to a
+         third-party endpoint, not one of Carrac's own request/response
+         schemas, so it can't come from the OpenAPI/Swagger generation
+         below. -->
+    <div id="webhooks-docs" style="max-width:900px;margin:0 auto;padding:28px 20px;font-family:sans-serif;color:#ccc;line-height:1.6;border-bottom:1px solid #2a2e39;">
+        <h2 id="webhooks" style="color:#fff;font-size:1.3rem;margin-top:0;">Webhooks</h2>
+        <p>
+            Carrac can push every triggered alert &mdash; price, trendline, indicator,
+            formula, z-score, regime-change, derivatives, chain-strength, anomaly-cluster,
+            conditional-query, and play alerts &mdash; to a single HTTPS endpoint you configure
+            in <a href="/settings#notifications" style="color:#61afef;">Settings &rarr; Notifications &rarr; Webhook</a>
+            (paid plans). This is outbound-only: Carrac calls your endpoint, there is nothing
+            to call on Carrac's side.
+        </p>
+
+        <h3 style="color:#fff;font-size:1.05rem;">Request</h3>
+        <ul>
+            <li><code>POST</code> to your configured URL &mdash; HTTPS only, redirects are never followed</li>
+            <li><code>Content-Type: application/json</code></li>
+            <li><code>X-Carrac-Signature</code>: hex HMAC-SHA256 of the raw request body, keyed with your webhook secret</li>
+            <li>5 second timeout, up to 3 retries with exponential backoff</li>
+            <li>After 10 consecutive delivery failures the webhook is automatically disabled and you're notified on another configured channel</li>
+        </ul>
+
+        <h3 style="color:#fff;font-size:1.05rem;">Payload</h3>
+        <pre style="background:#0d1424;border:1px solid #2a2e39;border-radius:6px;padding:14px 16px;overflow-x:auto;font-size:0.82rem;line-height:1.5;"><code>{
+  "alert_id": 123456,
+  "alert_type": "price",
+  "symbol": "BTCUSDT",
+  "condition": "BTCUSDT is now $65,000.00 (above $64,000.00)",
+  "price": 65000.0,
+  "triggered_at": "2026-07-18T09:32:11Z",
+  "link": "{{ site_url }}/?symbol=BTCUSDT"
+}</code></pre>
+
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:8px;">
+            <thead><tr style="text-align:left;border-bottom:1px solid #2a2e39;">
+                <th style="padding:6px 8px;color:#fff;">Field</th>
+                <th style="padding:6px 8px;color:#fff;">Type</th>
+                <th style="padding:6px 8px;color:#fff;">Description</th>
+            </tr></thead>
+            <tbody>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>alert_id</code></td>
+                    <td style="padding:6px 8px;">integer</td>
+                    <td style="padding:6px 8px;">The alert that fired.</td>
+                </tr>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>alert_type</code></td>
+                    <td style="padding:6px 8px;">string</td>
+                    <td style="padding:6px 8px;">e.g. <code>price</code>, <code>trendline</code>, <code>indicator</code>, <code>formula</code>, <code>zscore</code>, <code>regime_transition</code>, <code>play</code>.</td>
+                </tr>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>symbol</code></td>
+                    <td style="padding:6px 8px;">string</td>
+                    <td style="padding:6px 8px;">Asset symbol, or a fixed label (<code>REGIME</code>, <code>ANOMALY</code>, <code>CHAIN</code>, <code>CONDITION</code>) for non-symbol alert types.</td>
+                </tr>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>condition</code></td>
+                    <td style="padding:6px 8px;">string</td>
+                    <td style="padding:6px 8px;">Human-readable summary of what triggered.</td>
+                </tr>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>price</code></td>
+                    <td style="padding:6px 8px;">number</td>
+                    <td style="padding:6px 8px;">Price at trigger time, when applicable (0 for alert types with no single price, e.g. regime-change).</td>
+                </tr>
+                <tr style="border-bottom:1px solid #2a2e39;">
+                    <td style="padding:6px 8px;"><code>triggered_at</code></td>
+                    <td style="padding:6px 8px;">string</td>
+                    <td style="padding:6px 8px;">ISO-8601 UTC timestamp.</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 8px;"><code>link</code></td>
+                    <td style="padding:6px 8px;">string</td>
+                    <td style="padding:6px 8px;">Absolute link back into the app for this symbol/alert.</td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+
+        <h3 style="color:#fff;font-size:1.05rem;">Verifying the signature (Python)</h3>
+        <pre style="background:#0d1424;border:1px solid #2a2e39;border-radius:6px;padding:14px 16px;overflow-x:auto;font-size:0.82rem;line-height:1.5;"><code>import hashlib
+import hmac
+
+def verify_carrac_signature(raw_body: bytes, signature_header: str, secret: str) -> bool:
+    """raw_body must be the exact request body bytes — do not re-serialize
+    the parsed JSON, whitespace/key-order differences will break the check.
+    signature_header is the X-Carrac-Signature request header.
+    secret is your webhook signing secret from Settings &rarr; Notifications.
+    """
+    expected = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+
+# Flask example:
+# @app.route("/carrac-webhook", methods=["POST"])
+# def carrac_webhook():
+#     raw = request.get_data()
+#     sig = request.headers.get("X-Carrac-Signature", "")
+#     if not verify_carrac_signature(raw, sig, WEBHOOK_SECRET):
+#         return "invalid signature", 401
+#     payload = request.get_json()
+#     ...
+#     return "", 200</code></pre>
+    </div>
+
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js" integrity="sha384-NXtFPpN61oWCuN4D42K6Zd5Rt2+uxeIT36R7kpXBuY9tLnZorzrJ4ykpqwJfgjpZ" crossorigin="anonymous" nonce="{{ csp_nonce | default('') }}"></script>
+    <script nonce="{{ csp_nonce }}">
+        SwaggerUIBundle({
+            url: '/api/openapi.json',
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+            layout: 'BaseLayout',
+            persistAuthorization: true,
+            defaultModelsExpandDepth: 0,
+            docExpansion: 'list',
+        });
+    </script>
+</body>
+</html>

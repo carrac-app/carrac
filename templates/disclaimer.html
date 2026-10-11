@@ -1,0 +1,98 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Financial Disclaimer — Carrac{% endblock %}
+{% block description %}Financial disclaimer for Carrac — all content is for informational purposes only and does not constitute financial advice.{% endblock %}
+{% block canonical %}{{ site_url }}/disclaimer{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Financial Disclaimer — Carrac","url":"{{ site_url }}/disclaimer"}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+.warning-box {
+  background: var(--red-soft);
+  border: 1px solid var(--red-line);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin: 24px 0;
+}
+.warning-box p {
+  color: var(--fg2); margin-bottom: 8px;
+}
+.warning-box p:last-child { margin-bottom: 0; }
+.warning-box strong { color: var(--red); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prose-page wrap">
+  <span class="eyebrow">Legal</span>
+  <h1 style="margin-top:16px">Financial Disclaimer</h1>
+  <p class="legal-effective">Effective date: 28 May 2026</p>
+
+  <div class="warning-box">
+    <p><strong>Carrac is not a financial advisor, broker-dealer, or investment platform.</strong></p>
+    <p>All content on this platform — including charts, indicators, scores, AI-generated reports, alerts, plays, and any other analysis — is provided strictly for informational and analytical purposes.</p>
+    <p><strong>Nothing on Carrac constitutes a recommendation to buy, sell, or hold any financial instrument.</strong></p>
+  </div>
+
+  <h2>1. Not Financial Advice</h2>
+  <p>Carrac provides market data, technical analysis tools, and AI-generated commentary. None of this constitutes financial, investment, tax, or legal advice. The Platform is a tool for research and analysis — not a substitute for professional financial guidance.</p>
+  <p>We are not registered as an investment advisor, broker-dealer, financial planner, or any other regulated financial entity in any jurisdiction.</p>
+  <p>Carrac provides market data as an information service. It is not an investment firm under MiFID II, a crypto-asset service provider (CASP) under the EU Markets in Crypto-Assets Regulation (MiCA), or a financial-service provider licensed or supervised by any national competent authority. Nothing on the Platform constitutes financial, investment, or trading advice.</p>
+
+  <h2>2. No Liability for Financial Decisions</h2>
+  <p><strong>Carrac cannot and shall not be held responsible or liable for any financial mistakes, losses, or decisions that you, the end user, make based on information obtained from the Platform.</strong></p>
+  <p>This includes, but is not limited to:</p>
+  <ul>
+    <li>Trading losses resulting from acting on data, scores, or alerts displayed on the Platform</li>
+    <li>Decisions made based on AI-generated morning reports, afternoon updates, or weekly digests</li>
+    <li>Losses from following plays, price levels, or technical signals shown on charts</li>
+    <li>Missed opportunities or delayed actions due to Platform downtime or data delays</li>
+    <li>Any financial outcome that results from your interpretation of Carrac's data or analysis</li>
+  </ul>
+  <p><strong>You are solely and entirely responsible for your own investment and trading decisions.</strong></p>
+
+  <h2>3. Risk Warning</h2>
+  <p>Trading and investing in financial markets — including cryptocurrency, equities, commodities, and forex — involves substantial risk of loss. You may lose some or all of your invested capital. Past performance of any asset, indicator, or strategy does not guarantee future results.</p>
+  <p>Cryptocurrency markets are particularly volatile and largely unregulated. Prices can move dramatically in short periods, and exchanges can experience outages, hacks, or insolvency.</p>
+  <p>You should only trade or invest with money you can afford to lose. If you are unsure about any financial decision, consult a licensed financial advisor in your jurisdiction before taking action.</p>
+
+  <h2>4. AI-Generated Content</h2>
+  <p>Carrac uses large language models (AI) to generate morning reports, afternoon updates, and weekly digests. These outputs are machine-generated and may:</p>
+  <ul>
+    <li>Contain factual errors, misinterpretations, or "hallucinations"</li>
+    <li>Reflect outdated information if market conditions change after generation</li>
+    <li>Miss important context, nuance, or breaking news</li>
+    <li>Present analysis that appears confident but is based on incomplete data</li>
+  </ul>
+  <p>AI-generated content is a starting point for your own research, not a conclusion. Always verify any claim or analysis before acting on it.</p>
+
+  <h2>5. Third-Party Data Accuracy</h2>
+  <p>Market data displayed on Carrac is sourced from third-party APIs including Binance and Hyperliquid. We do not independently verify this data and cannot guarantee its accuracy, completeness, or timeliness. Data may be delayed, incorrect, or temporarily unavailable.</p>
+  <p>Do not rely solely on Carrac's data for time-sensitive trading decisions. Always cross-reference with your broker or exchange.</p>
+
+  <h2>6. Scores and Indicators</h2>
+  <p>Carrac&rsquo;s implementation of the Consensio method (created by D. Tyler Jenks), the Scanner's condition-alignment tally, and the other indicators are quantitative tools that measure technical conditions. They are not buy or sell signals. A high score does not mean an asset will rise; a low score does not mean it will fall. These tools measure trend alignment and momentum — not future direction.</p>
+
+  <h2>7. No Guarantees</h2>
+  <p>Carrac makes no guarantees regarding:</p>
+  <ul>
+    <li>The accuracy or profitability of any data, score, or analysis</li>
+    <li>The continuous availability of the Platform or its data sources</li>
+    <li>The suitability of the Platform for your specific financial situation</li>
+    <li>The performance of any asset, strategy, or indicator displayed</li>
+  </ul>
+
+  <h2>8. Your Responsibility</h2>
+  <p>By using Carrac, you acknowledge and agree that:</p>
+  <ul>
+    <li>You are solely responsible for evaluating the risks of any financial decision</li>
+    <li>You will not hold Carrac liable for any financial losses or missed gains</li>
+    <li>You understand that all trading and investing carries risk of loss</li>
+    <li>You will seek professional financial advice when appropriate</li>
+    <li>You have read and accepted the <a href="{{ url_for('legal.terms') }}">Terms of Service</a></li>
+  </ul>
+
+  <h2>9. Contact</h2>
+  <p>For questions about this disclaimer, contact <strong>{{ support_email }}</strong>.</p>
+</div>
+{% endblock %}

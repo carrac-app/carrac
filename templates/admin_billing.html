@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Overview - Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .card { background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 16px; }
+        .card-label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .card-value { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .card-sub { font-size: 0.7rem; color: #545e6e; margin-top: 2px; }
+
+        .paddle-status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;
+            padding: 5px 12px; border-radius: 20px; margin-bottom: 24px; }
+        .paddle-ok { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+        .paddle-off { background: rgba(248, 81, 73, 0.12); color: #f85149; border: 1px solid rgba(248,81,73,0.25); }
+        .paddle-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .paddle-ok .paddle-dot { background: #3fb950; }
+        .paddle-off .paddle-dot { background: #f85149; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid #2a3140; }
+        td { font-size: 0.8rem; padding: 8px 12px; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        .section { margin-bottom: 32px; }
+        .section h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: #b0b8c4; }
+        .loading { color: #545e6e; font-size: 0.85rem; padding: 20px; }
+        .error { color: #ef5350; }
+
+        .badge-ok { color: #3fb950; font-weight: 600; }
+        .badge-pending { color: #f0a030; font-weight: 600; }
+        .badge-error { color: #f85149; font-weight: 600; }
+        .badge-num { color: #58a6ff; font-weight: 600; }
+        .mrr-val { color: #26a69a; }
+        .warn-val { color: #f0a030; }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set admin_page = 'billing' %}
+    {% include 'admin_nav.html' %}
+    <div class="header">
+        <h1>Billing</h1>
+    </div>
+
+    <div class="summary-cards" id="summary-cards">
+        <div class="card"><div class="card-label">Loading...</div></div>
+    </div>
+
+    <div id="paddle-status-bar"></div>
+
+    <div class="section">
+        <h2>Expiring Soon (7 days)</h2>
+        <div id="expiring-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>Recent Webhook Events</h2>
+        <div id="webhook-table"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div id="errors-section"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
+
+function fmtUsd(v) {
+    if (v == null) return '-';
+    return '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function fmtDate(s) {
+    if (!s) return '-';
+    try { return new Date(s).toLocaleString(); } catch(e) { return escapeHtml(s); }
+}
+
+function renderSummaryCards(data) {
+    var active = data.active_subscriptions || {};
+    var html = '';
+
+    html += '<div class="card">'
+        + '<div class="card-label">Active Subscriptions</div>'
+        + '<div class="card-value badge-num">' + (active.total || 0) + '</div>'
+        + '<div class="card-sub">member: ' + (active.member || 0) + ' &bull; premium: ' + (active.premium || 0) + '</div>'
+        + '</div>';
+
+    html += '<div class="card">'
+        + '<div class="card-label">MRR</div>'
+        + '<div class="card-value mrr-val">' + fmtUsd(data.mrr_usd) + '</div>'
+        + '<div class="card-sub">ARR ' + fmtUsd(data.arr_usd) + '</div>'
+        + '</div>';
+
+    var totals = data.totals || {};
+    html += '<div class="card">'
+        + '<div class="card-label">Paying Users</div>'
+        + '<div class="card-value badge-num">' + (totals.paying_users || 0) + '</div>'
+        + '<div class="card-sub">free: ' + (totals.free_users || 0) + '</div>'
+        + '</div>';
+
+    var inbox = data.webhook_inbox || {};
+    var backlog = inbox.backlog || 0;
+    var backlogClass = backlog > 0 ? 'warn-val' : 'badge-ok';
+    html += '<div class="card">'
+        + '<div class="card-label">Webhook Backlog</div>'
+        + '<div class="card-value ' + backlogClass + '">' + backlog + '</div>'
+        + '<div class="card-sub">race: ' + (inbox.pending_race || 0) + '</div>'
+        + '</div>';
+
+    html += '<div class="card">'
+        + '<div class="card-label">Top-up Revenue 30d</div>'
+        + '<div class="card-value">' + fmtUsd(data.topup_revenue_30d_usd) + '</div>'
+        + '<div class="card-sub">beta — $0 expected</div>'
+        + '</div>';
+
+    document.getElementById('summary-cards').innerHTML = html;
+}
+
+function renderPaddleStatus(configured) {
+    var cls = configured ? 'paddle-ok' : 'paddle-off';
+    var label = configured ? 'Paddle: configured' : 'Paddle: disabled (beta)';
+    document.getElementById('paddle-status-bar').innerHTML =
+        '<div class="paddle-status ' + cls + '"><span class="paddle-dot"></span>' + label + '</div>';
+}
+
+function renderExpiringTable(rows) {
+    var el = document.getElementById('expiring-table');
+    if (!rows || !rows.length) {
+        el.innerHTML = '<div class="loading">No subscriptions expiring in the next 7 days.</div>';
+        return;
+    }
+    var html = '<table><thead><tr><th>Email</th><th>Tier</th><th>Expires At</th><th>Days Left</th></tr></thead><tbody>';
+    rows.forEach(function(r) {
+        var daysClass = (r.days_left != null && r.days_left <= 2) ? 'warn-val' : '';
+        html += '<tr>'
+            + '<td>' + escapeHtml(r.email) + '</td>'
+            + '<td>' + escapeHtml(r.tier) + '</td>'
+            + '<td>' + fmtDate(r.expires_at) + '</td>'
+            + '<td class="' + daysClass + '">' + (r.days_left != null ? r.days_left : '-') + '</td>'
+            + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderWebhookTable(inbox) {
+    var el = document.getElementById('webhook-table');
+    var recent = (inbox || {}).recent || [];
+    if (!recent.length) {
+        el.innerHTML = '<div class="loading">No webhook events recorded yet.</div>';
+        return;
+    }
+    var html = '<table><thead><tr><th>Event Type</th><th>Received</th><th>Status</th><th>Error</th></tr></thead><tbody>';
+    recent.forEach(function(r) {
+        var statusHtml = r.processed
+            ? '<span class="badge-ok">processed</span>'
+            : '<span class="badge-pending">pending</span>';
+        html += '<tr>'
+            + '<td>' + escapeHtml(r.event_type) + '</td>'
+            + '<td>' + fmtDate(r.received_at) + '</td>'
+            + '<td>' + statusHtml + '</td>'
+            + '<td>' + (r.error ? '<span class="badge-error">' + escapeHtml(r.error) + '</span>' : '-') + '</td>'
+            + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function renderErrors(errs) {
+    if (!errs || !errs.length) return;
+    var html = '<div class="section"><h2 style="color:#f85149;">Data Errors</h2><ul style="font-size:0.8rem;color:#f85149;padding-left:20px;">';
+    errs.forEach(function(e) { html += '<li>' + escapeHtml(e) + '</li>'; });
+    html += '</ul></div>';
+    document.getElementById('errors-section').innerHTML = html;
+}
+
+function loadBillingOverview() {
+    fetch('/api/admin/billing/overview')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            renderSummaryCards(data);
+            renderPaddleStatus(data.paddle_configured);
+            renderExpiringTable(data.expiring_soon || []);
+            renderWebhookTable(data.webhook_inbox || {});
+            renderErrors(data.errors || []);
+        })
+        .catch(function(err) {
+            document.getElementById('summary-cards').innerHTML =
+                '<div class="card"><div class="card-label error">Failed to load: ' + escapeHtml(err.message) + '</div></div>';
+        });
+}
+
+loadBillingOverview();
+</script>
+</body>
+</html>

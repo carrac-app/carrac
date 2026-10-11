@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Carrac Widget</string>
+    <string name="widget_watchlist_desc">Market prices, 24h change, Consensio signals, RSI</string>
+    <string name="widget_positions_desc">Open trades with live P&amp;L in R multiples</string>
+    <string name="widget_sentiment_desc">Fear &amp; Greed, funding rate, long/short ratio</string>
+    <string name="widget_alerts_desc">Active price alerts, nearest alert, last triggered</string>
+</resources>

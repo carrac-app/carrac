@@ -1,0 +1,88 @@
+# Carrac host crontab: the scheduled jobs a self-hosted install needs.
+#
+# The app container serves requests and runs the live feeds; the quant data
+# collectors and the morning-engine reports are NOT services. They are
+# one-shot commands that this crontab starts inside the running `carrac`
+# container.
+#
+# Install:
+#   1. Set CARRAC_DIR below to the checkout that holds your compose file, and
+#      COMPOSE_FILE to the stack you run: docker-compose.yml for the
+#      production stack, docker-compose.dev.yml for the stack that
+#      scripts/quickstart.sh (or `make dev`) starts. Every job below picks it
+#      up from the environment, so it is the only line to change.
+#   2. Create the log directory:  sudo mkdir -p /var/log/carrac
+#   3. crontab -e, then paste this file (or `crontab deploy/crontab.example`
+#      after editing, which REPLACES your existing crontab).
+#
+# All times are UTC; set CRON_TZ=UTC if your cron daemon supports it.
+# Output goes to files under /var/log/carrac/, not to `docker logs`, so an
+# empty `docker logs` tells you nothing about these jobs.
+#
+# Optional keys: collectors and reports that need a key (FRED_API_KEY, an LLM
+# key for the reports, Telegram or ntfy for delivery) skip or fail loudly
+# until it is set in .env; see .env.example. Anything you do not want, delete.
+#
+# Every job can be tried by hand first:
+#   cd "$CARRAC_DIR" && COMPOSE_FILE=docker-compose.dev.yml docker compose exec -T carrac python -m quant.collectors.fear_greed --dry-run
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CARRAC_DIR=/path/to/carrac
+COMPOSE_FILE=docker-compose.yml
+
+# ─── Quant collectors ──────────────────────────────────────────────────────
+# Everything below the collectors reads what they write, so keep them ahead of
+# the analysis block (06:30 onward).
+
+15 0 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.binance_daily >> /var/log/carrac/binance_daily.log 2>&1
+30 0 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.yahoo_cross >> /var/log/carrac/yahoo_cross.log 2>&1
+45 0 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.ccxt_funding >> /var/log/carrac/ccxt_funding.log 2>&1
+0 1 * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.fear_greed >> /var/log/carrac/fear_greed.log 2>&1
+10 1 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.etf_flows >> /var/log/carrac/etf_flows.log 2>&1
+20 1 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.stablecoin_onchain >> /var/log/carrac/stablecoin_onchain.log 2>&1
+30 1 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.btc_network >> /var/log/carrac/btc_network.log 2>&1
+40 1 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.hyperliquid_smart_money >> /var/log/carrac/hyperliquid_smart_money.log 2>&1
+50 1 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.event_calendar >> /var/log/carrac/event_calendar.log 2>&1
+# Needs FRED_API_KEY.
+0 2 * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.fred_macro >> /var/log/carrac/fred_macro.log 2>&1
+0 5 * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.google_trends >> /var/log/carrac/google_trends.log 2>&1
+# CFTC publishes Fridays; collect on Saturday.
+0 6 * * 6    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.cot >> /var/log/carrac/cot.log 2>&1
+# Options change slowly. The app shows this data to admins only.
+0 */6 * * *  cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.collectors.deribit_options >> /var/log/carrac/deribit_options.log 2>&1
+
+# ─── Quant analysis (in this order; each step reads the one before) ────────
+
+30 6 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.normalize >> /var/log/carrac/normalize.log 2>&1
+35 6 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.engine.factors >> /var/log/carrac/factors.log 2>&1
+45 6 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.engine.correlations >> /var/log/carrac/correlations.log 2>&1
+50 6 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.engine.leadlag >> /var/log/carrac/leadlag.log 2>&1
+55 6 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.engine.regime >> /var/log/carrac/regime.log 2>&1
+0 7 * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.engine.conditional >> /var/log/carrac/conditional.log 2>&1
+# Evaluates users' z-score and regime alerts against the fresh numbers.
+10 7 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.check_alerts >> /var/log/carrac/check_alerts.log 2>&1
+# Weekly cleanup of the high-volume quant tables.
+0 4 * * 0    cd "$CARRAC_DIR" && docker compose exec -T carrac python -m quant.retention >> /var/log/carrac/retention.log 2>&1
+
+# ─── Morning-engine reports ────────────────────────────────────────────────
+# Needs an LLM provider key and a delivery channel in .env. `flock` stops a
+# slow run from overlapping the next one.
+
+0 6 * * *    cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode dispatch --region europe >> /var/log/carrac/morning_engine.log 2>&1
+30 12 * * *  cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode afternoon >> /var/log/carrac/morning_engine.log 2>&1
+15 15 * * 5  cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode weekly >> /var/log/carrac/morning_engine.log 2>&1
+# Sunday week-ahead briefing, one per region.
+0 14 * * 0   cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode week_ahead --region europe >> /var/log/carrac/morning_engine.log 2>&1
+0 18 * * 0   cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode week_ahead --region americas >> /var/log/carrac/morning_engine.log 2>&1
+0 22 * * 0   cd "$CARRAC_DIR" && flock -n /tmp/carrac-report.lock docker compose exec -T carrac python -m morning_engine --mode week_ahead --region asia >> /var/log/carrac/morning_engine.log 2>&1
+
+# ─── Housekeeping and alerts ───────────────────────────────────────────────
+
+# Alert when the day's AI spend crosses the warning and alert thresholds.
+0 23 * * *   cd "$CARRAC_DIR" && docker compose exec -T carrac python scripts/ai_cost_alert.py >> /var/log/carrac/ai_cost_alert.log 2>&1
+# Delete AI prompt and response logs past the retention window.
+0 4 * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python scripts/ai_log_retention_prune.py >> /var/log/carrac/ai_log_retention_prune.log 2>&1
+# Only if you take payments through Paddle:
+*/15 * * * * cd "$CARRAC_DIR" && docker compose exec -T carrac python scripts/paddle_dlq_retry.py >> /var/log/carrac/paddle_dlq_retry.log 2>&1
+0 * * * *    cd "$CARRAC_DIR" && docker compose exec -T carrac python scripts/sweep_expired_subs.py >> /var/log/carrac/sweep_expired_subs.log 2>&1

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carrac">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <title>Sign In — Carrac</title>
+    <meta name="description" content="Sign in to Carrac — AI-enhanced trading with 70+ indicators, custom formula engine, backtester, plays, and a journal with full data export.">
+    <link rel="canonical" href="{{ site_url }}/login">
+    <meta property="og:title" content="Sign In — Carrac">
+    <meta property="og:description" content="Sign in to your AI-enhanced trading platform. Charts, morning reports, custom formulas, and a journal where you own your data.">
+    <meta property="og:url" content="{{ site_url }}/login">
+    <meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#000;color:#D8B56A;z-index:9999}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid #D8B56A;outline-offset:2px}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000;
+            color: #d1d4dc;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: env(safe-area-inset-top, 0) 0 60px;
+        }
+
+        .login-container {
+            background: #0a0a0f;
+            border: 1px solid #1a1a2e;
+            border-radius: 6px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .login-header .logo-mark {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #D8B56A;
+            opacity: 0.5;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+        .login-header .logo-mark sup {
+            font-size: 0.62em;
+            vertical-align: super;
+            line-height: 0;
+        }
+        .login-header .logo-wordmark {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #d1d4dc;
+            letter-spacing: 0.02em;
+        }
+        .login-header .logo-wordmark .bracket {
+            color: #D8B56A;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #787b86;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            background: #000;
+            border: 1px solid #1a1a2e;
+            border-radius: 4px;
+            color: #d1d4dc;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #D8B56A;
+            box-shadow: 0 0 0 2px rgba(216, 181, 106, 0.12);
+        }
+
+        .form-group input::placeholder {
+            color: #787b86;
+        }
+
+        .error-message {
+            background: rgba(239, 83, 80, 0.08);
+            border: 1px solid rgba(239, 83, 80, 0.25);
+            color: #ef5350;
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 18px;
+            font-size: 0.78rem;
+            text-align: center;
+        }
+
+        .success-message {
+            background: rgba(216, 181, 106, 0.08);
+            border: 1px solid rgba(216, 181, 106, 0.28);
+            color: #D8B56A;
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 18px;
+            font-size: 0.78rem;
+            text-align: center;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 11px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            background: #D8B56A;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+
+        .submit-btn:hover {
+            background: #E6CD86;
+        }
+
+        .submit-btn:active {
+            background: #C7A455;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #1a1a2e;
+            font-size: 0.75rem;
+            color: #787b86;
+        }
+
+        .register-link a {
+            color: #8b5cf6;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            color: #a78bfa;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.72rem;
+        }
+
+        .back-link a {
+            color: #787b86;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .back-link a:hover {
+            color: #787b86;
+        }
+    </style>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <main id="main-content">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-mark">C<sup>4</sup></div>
+            <div class="logo-wordmark">Carrac</div>
+        </div>
+
+        {% if request.args.get('csrf_expired') %}
+        <div class="error-message">
+            Session expired. Please try again.
+        </div>
+        {% endif %}
+
+        {% if request.args.get('registered') %}
+        <div class="success-message" role="status">
+            Account created! You can now sign in.
+        </div>
+        {% endif %}
+
+        {% if request.args.get('reset') %}
+        <div class="success-message" role="status">
+            Password reset successful. Sign in with your new password.
+        </div>
+        {% endif %}
+
+        {% if request.args.get('verified') %}
+        <div class="success-message" role="status">
+            Email verified! You can now sign in.
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="error-message">
+            {{ error }}
+            {% if show_resend is defined and show_resend %}
+            <form method="POST" action="{{ url_for('auth.resend_verification') }}" style="margin-top:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="email" value="{{ resend_email }}">
+                <button type="submit" style="background:none;border:none;color:#8b5cf6;cursor:pointer;font-family:inherit;font-size:0.75rem;text-decoration:underline;">Resend verification email</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus autocomplete="email" aria-describedby="email-error" aria-invalid="false">
+                <span id="email-error" class="error-message" role="alert" style="display:none;margin-top:4px;padding:6px 10px;font-size:0.75rem;"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="password" required autocomplete="current-password" aria-describedby="password-error" aria-invalid="false">
+                <span id="password-error" class="error-message" role="alert" style="display:none;margin-top:4px;padding:6px 10px;font-size:0.75rem;"></span>
+                <div style="text-align:right;margin-top:6px;">
+                    <a href="{{ url_for('auth.forgot_password') }}" style="font-size:0.72rem;color:#787b86;text-decoration:none;">Forgot password?</a>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submit-btn">Sign In</button>
+        </form>
+
+        <div class="register-link">
+            Don't have an account? <a href="{{ url_for('auth.register') }}">Create one free.</a>
+        </div>
+
+        <div class="back-link">
+            <a href="/">&larr; back to {{ site_host }}</a>
+        </div>
+        <div class="back-link" style="margin-top:8px;">
+            <a href="{{ url_for('legal.terms') }}">Terms</a> &middot;
+            <a href="{{ url_for('legal.privacy') }}">Privacy</a> &middot;
+            <a href="{{ url_for('legal.disclaimer') }}">Disclaimer</a>
+        </div>
+    </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script nonce="{{ csp_nonce | default('') }}">
+    (function() {
+        var form = document.querySelector('form');
+        var btn  = document.getElementById('submit-btn');
+        if (form && btn) {
+            form.addEventListener('submit', function() {
+                btn.disabled = true;
+                btn.textContent = 'Signing in…';
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

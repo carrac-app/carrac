@@ -1,0 +1,679 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Technical Indicators — Carrac{% endblock %}
+{% block description %}Built-in indicators on Carrac: EMA Ribbon, Ichimoku, Bollinger Bands, RSI divergence, MACD, SuperTrend, Volume Profile, Smart Money Concepts, and more.{% endblock %}
+{% block canonical %}{{ site_url }}/indicators{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Technical Indicators — Carrac","url":"{{ site_url }}/indicators","description":"Complete guide to Carrac technical indicators."}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+/* ---- indicators page (v5 token reskin) ---- */
+.ind-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+
+/* card: dark panel surface, subtle border, hover lift */
+.ind-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 18px 22px;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.ind-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  transform: translateY(-1px);
+}
+
+/* indicator name — fg1, gold code badge */
+.ind-name {
+  font-size: var(--t-sm); font-weight: 600; color: var(--fg1);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.ind-name code {
+  font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--accent);
+  background: var(--bg-raised); padding: 2px 7px; border-radius: var(--r-sm);
+  font-weight: 500; border: 1px solid var(--border);
+}
+
+/* body copy hierarchy */
+.ind-summary { color: var(--fg3); font-size: var(--t-xs); margin-top: 5px; line-height: 1.5; }
+.ind-detail { margin-top: 10px; font-size: var(--t-sm); color: var(--fg3); line-height: 1.65; }
+.ind-detail strong { color: var(--fg1); font-weight: 600; }
+.ind-signals {
+  margin-top: 10px; font-size: var(--t-sm); color: var(--fg3); line-height: 1.65;
+  padding-top: 10px; border-top: 1px solid var(--border-faint);
+}
+.ind-signals strong { color: var(--fg1); font-weight: 600; }
+
+/* colour swatches — keep their inline colour, just size/shape */
+.swatch {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 2px; margin-right: 3px; vertical-align: middle;
+}
+
+/* category section headers */
+.cat-section { margin-top: 56px; }
+.cat-section:first-of-type { margin-top: 32px; }
+
+/* h1 accent word → gold */
+.page-hero h1 .accent {
+  background-image: var(--gold-grad); background-size: 220% auto;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* mono footer */
+.ind-ref-footer {
+  text-align: center; margin-top: 56px; padding-top: 24px;
+  border-top: 1px solid var(--border-faint);
+  font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--fg4); letter-spacing: .04em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Indicators · every built-in, every parameter named</span>
+    <h1>Indicator <span class="accent">Guide.</span></h1>
+    <p class="lede">Quick reference for all chart indicators. Parameters shown in parentheses. EMA Ribbon, Ichimoku, Bollinger Bands, RSI divergence, MACD, SuperTrend, Volume Profile, Smart Money Concepts, CPR, and more — all built into one platform.</p>
+  </div>
+</section>
+
+<!-- ============================ INDICATOR DOCS ============================ -->
+<section class="section tight" style="padding-top:0">
+  <div class="wrap">
+
+    <!-- ============ OSCILLATORS ============ -->
+    <div class="cat-section" id="oscillators">
+      <span class="eyebrow">Oscillators</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">RSI <code>RSI(14)</code></div>
+          <div class="ind-summary">Relative Strength Index — momentum oscillator (0–100)</div>
+          <div class="ind-detail">Measures the speed and magnitude of recent price changes. Calculated as 100 - 100/(1 + avgGain/avgLoss) over 14 bars using Wilder's smoothing.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Overbought &gt;70, oversold &lt;30. Centerline (50) acts as trend filter. Divergences between RSI and price signal potential reversals.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">RSI Divergence <code>RSI(14), lookback=3</code></div>
+          <div class="ind-summary">Detects bullish/bearish divergences between price swings and RSI swings</div>
+          <div class="ind-detail">Finds swing highs/lows in price (checking 3 bars each side), reads RSI at those points, and compares. Regular divergence: price makes new high/low but RSI doesn't. Hidden divergence: RSI makes new extreme but price doesn't.</div>
+          <div class="ind-signals"><strong>Look for:</strong> <span style="color:#26a69a">Green</span> lines = bullish divergence (potential reversal up). <span style="color:#ef5350">Red</span> lines = bearish divergence. Solid = regular, dashed = hidden. More reliable on HTF (1D/1W).</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">MACD <code>MACD(12,26,9)</code></div>
+          <div class="ind-summary">Moving Average Convergence Divergence — trend &amp; momentum</div>
+          <div class="ind-detail">MACD line = EMA(12) - EMA(26). Signal line = EMA(9) of MACD. Histogram = difference between MACD and signal.</div>
+          <div class="ind-signals"><strong>Look for:</strong> MACD crossing above signal = bullish. Histogram expanding = momentum increasing. Zero-line crossover = trend change. Divergences with price are powerful reversal signals.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">TTM Squeeze <code>BB(30,2.0) inside KC(30,2.5), min 3 bars</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#FFFF00"></span>Yellow segments when Bollinger Bands contract inside Keltner Channels</div>
+          <div class="ind-detail">When BB upper &lt; KC upper AND BB lower &gt; KC lower for at least 3 consecutive bars, a "squeeze" is active — volatility is compressing. Originally by John Carter.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Squeeze ending = imminent explosive move. Direction determined by momentum (not shown). Combine with other indicators for direction bias. Longer squeezes → bigger breakouts.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">BB Width % <code>BB(20), lookback=120, threshold=20</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00BCD4"></span>Cyan segments when Bollinger Band width is in the bottom 20th percentile of its 120-bar history</div>
+          <div class="ind-detail">Calculates BB width as (upper - lower) / basis, then ranks the current value as a percentile of the last 120 bars. When the percentile drops below 20, it signals extreme compression. Each bar is colored individually — brighter = more extreme compression, dimmer = near threshold — creating a heatmap effect that highlights hotspots within long squeeze stretches.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Cyan segments = unusually tight bands relative to recent history. Bright hotspots within a stretch mark the most extreme compression points. Often precedes a volatility expansion. More adaptive than TTM Squeeze — adjusts to the asset's own volatility regime.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">ATR % <code>ATR(14), lookback=100, threshold=20</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#E040FB"></span>Magenta segments when ATR is in the bottom 20th percentile of its 100-bar history</div>
+          <div class="ind-detail">Calculates ATR(14) then ranks it as a percentile of the last 100 bars. When ATR drops into the bottom 20%, the asset is experiencing unusually low volatility. Each bar is colored individually — brighter = more extreme compression, dimmer = near threshold — creating a heatmap effect that highlights hotspots.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Magenta segments = abnormally low volatility. Bright hotspots mark the most compressed bars. Useful for identifying coiled-spring setups. Works on any asset type, not just those with Bollinger Bands. Combine with BBW% for confluence.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">NR7 <code>lookback=7</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#FFB300"></span>Amber segments on bars where the high-low range is the narrowest of the last 7 bars</div>
+          <div class="ind-detail">Compares each bar's range (high - low) against the previous 6 bars. If it's the smallest, the bar is flagged as NR7.</div>
+          <div class="ind-signals"><strong>Look for:</strong> NR7 bars = volatility contraction at the micro level. Historically followed by range expansion within 1-3 bars. Multiple NR7 bars in sequence = very strong compression. Classic Larry Williams / Toby Crabel concept.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Williams %R <code>%R(14)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#FF6D00"></span>Orange oscillator, 0 to -100 scale</div>
+          <div class="ind-detail">%R = ((Highest High - Close) / (Highest High - Lowest Low)) × -100 over 14 periods. Inverted scale: -20 = overbought, -80 = oversold. Mathematically the inverse of Fast Stochastic %K. Developed by Larry Williams.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Above -20 = overbought (potential reversal down). Below -80 = oversold (potential reversal up). In strong trends, %R can stay overbought/oversold for extended periods — this is a feature, not a bug. Best used as a timing tool within an established trend.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CCI <code>CCI(20)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00BCD4"></span>Cyan oscillator around zero, ±100 reference lines</div>
+          <div class="ind-detail">CCI = (Typical Price - SMA of TP) / (0.015 × Mean Deviation). Typical Price = (H+L+C)/3. Measures how far price deviates from its statistical mean. Unbounded — can go well beyond ±100 in strong trends. Developed by Donald Lambert.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Above +100 = strong upward momentum (a trend-continuation reading, not necessarily overbought). Below -100 = strong downward momentum. Zero-line cross = momentum shift. CCI returning from extreme to zero is read as a mean-reversion condition. Works well for identifying cyclical turns.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Stochastic <code>Stoch(14, 3, 3)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#2196F3"></span>Blue %K + <span class="swatch" style="background:#FF9800"></span>Orange %D, 0-100 scale</div>
+          <div class="ind-detail">%K = smoothed ratio of (Close - Lowest Low) / (Highest High - Lowest Low) over 14 periods. %D = SMA(3) of %K. Measures where price closed relative to its recent range. 80/20 OB/OS zones.</div>
+          <div class="ind-signals"><strong>Look for:</strong> %K crossing above %D below 20 = bullish signal. %K crossing below %D above 80 = bearish signal. Divergence between price highs/lows and stochastic = potential reversal. In strong trends, stochastic stays pinned to extremes — not a reversal signal.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Stoch RSI <code>StochRSI(14, 14, 3, 3)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#9C27B0"></span>Purple %K + <span class="swatch" style="background:#E91E63"></span>Pink %D, 0-100 scale</div>
+          <div class="ind-detail">Applies the Stochastic formula to RSI values instead of price. More sensitive than standard Stochastic — reaches extremes more often. RSI(14) is calculated first, then Stochastic(14) is applied to the RSI series, smoothed with SMA(3) for %K and %D.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Very popular in crypto trading. Reaches OB/OS faster than Stochastic. %K/%D crosses at extremes are watched closely as momentum-exhaustion conditions. Combined with a trend filter, OS bounces have historically held up better in uptrends, and OB rejections in downtrends.</div>
+        </div>
+
+      </div>
+    </div><!-- /oscillators -->
+
+    <!-- ============ TREND & MAs ============ -->
+    <div class="cat-section" id="trend-mas">
+      <span class="eyebrow">Trend &amp; Moving Averages</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">MA <code>SMA(20)</code></div>
+          <div class="ind-summary">Simple Moving Average — 20-period average of closing prices</div>
+          <div class="ind-detail">Equal-weighted average of the last 20 closes. Smooths out short-term noise. Commonly used as a short-term trend filter.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price above MA = bullish bias. MA slope indicates trend direction. Price rejecting/bouncing off MA = support/resistance.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">EMA <code>EMA(21)</code></div>
+          <div class="ind-summary">Exponential Moving Average — gives more weight to recent prices</div>
+          <div class="ind-detail">Reacts faster than SMA to price changes due to exponential weighting. 21-period is standard for short-term trend following.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Same as MA but more responsive. EMA crossovers with price or other EMAs generate trend signals.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Daily EMAs <code>EMA(21), EMA(50), EMA(200)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00FFFF"></span>Cyan 21 <span class="swatch" style="background:#FF00FF"></span>Magenta 50 <span class="swatch" style="background:#FFFF00"></span>Yellow 200</div>
+          <div class="ind-detail">Three key daily EMAs plotted on any timeframe. The 200 EMA is the most widely watched trend indicator. 21/50 are intermediate momentum filters.</div>
+          <div class="ind-signals"><strong>Look for:</strong> "Golden cross" (50 above 200) = bull market. Price above all 3 = strong uptrend. 200 EMA often acts as dynamic support/resistance on pullbacks.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Weekly MAs <code>SMA(50w), SMA(100w), SMA(200w)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00FF00"></span>Green 50 <span class="swatch" style="background:#FF6600"></span>Orange 100 <span class="swatch" style="background:#FF0000"></span>Red 200</div>
+          <div class="ind-detail">Weekly SMAs computed server-side from weekly candles, interpolated to display on any timeframe. These are long-term trend anchors.</div>
+          <div class="ind-signals"><strong>Look for:</strong> The 200W SMA is a widely watched long-term reference. Order of MAs (50&gt;100&gt;200) = bullish alignment. Weekly MA tests are levels many traders watch for a reaction.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Bull Market Support Band <code>21W EMA + 20W SMA</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00FFAA"></span>Teal EMA <span class="swatch" style="background:#FF6B6B"></span>Red SMA</div>
+          <div class="ind-detail">The area between the 21-week EMA and 20-week SMA. In bull markets, price finds support here on pullbacks.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price bouncing off the band = bull continuation. Price closing below = potential bear phase. The band converging = major move incoming.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CM Ultimate MA <code>VWMA(20)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00E676"></span>Green when rising <span class="swatch" style="background:#FF5252"></span>Red when falling</div>
+          <div class="ind-detail">Chris Moody's color-coded moving average. A volume-weighted MA(20) — weighting each close by that bar's volume — that changes color based on direction: green when the MA is rising, red when falling.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Color change = early trend shift signal. Green-to-red flip = bearish. Red-to-green = bullish. Works best on daily and weekly timeframes.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">EMA Ribbon <code>EMA(30)/EMA(60), ATR(60) margin</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#7cb518"></span>Green bull <span class="swatch" style="background:#fb6107"></span>Orange bear <span class="swatch" style="background:#f3de2c"></span>Yellow neutral</div>
+          <div class="ind-detail">Two EMAs with color fill between them. Color determined by separation relative to ATR: green when fast EMA is sufficiently above slow (bullish trend), orange when below (bearish), yellow when within ATR margin (neutral/choppy).</div>
+          <div class="ind-signals"><strong>Look for:</strong> Color transitions signal trend changes. Green→Yellow = weakening bull. Yellow→Orange = bear confirmed. Narrow fill = low conviction.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Consensio <code>SMA(3, 7, 30)</code></div>
+          <div class="ind-summary">Multi-MA alignment method of D. Tyler Jenks (Lucid Investment Strategies), implemented in Carrac — three SMAs whose ordering defines trend strength</div>
+          <div class="ind-detail">Plots a short (3), medium (7), and long (30) period SMA on the chart. The ordering of the three lines against each other determines whether the timeframe reads full bullish, full bearish, or somewhere in between.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Short &gt; Medium &gt; Long = full consensio (strongest bullish alignment). Long &gt; Medium &gt; Short = full bearish. Partial orderings mark early-stage or weakening trends.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Consensio Lite <code>fewer MAs, same alignment logic</code></div>
+          <div class="ind-summary">Simplified Consensio overlay with less chart clutter</div>
+          <div class="ind-detail">Same MA-alignment concept as Consensio, plotted with fewer moving averages for a cleaner chart. Trades some resolution for readability — a good fit for lower timeframes or when stacking with other overlays.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Same read as Consensio — MA ordering signals trend strength — with a lighter visual footprint.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Alligator <code>SMMA(13,8,5) with offsets (8,5,3)</code></div>
+          <div class="ind-summary">Bill Williams' Alligator — jaw, teeth, lips</div>
+          <div class="ind-detail"><span style="color:#2196F3">Blue jaw</span> SMMA(13) offset 8 bars. <span style="color:#FF5252">Red teeth</span> SMMA(8) offset 5. <span style="color:#00E676">Green lips</span> SMMA(5) offset 3. "Sleeping" when intertwined, "eating" when spread apart.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Lines spreading apart = trending market. Intertwined = choppy/ranging. Lips crossing teeth crossing jaw = trend direction. Avoid trading when alligator is "sleeping".</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Gaussian Channel <code>Poles(4), Period(144), TR×1.414</code></div>
+          <div class="ind-summary">Ehlers Gaussian Filter with filtered true range channel</div>
+          <div class="ind-detail">Multi-pole Gaussian filter (EMA applied N times) creates an ultra-smooth trend line. Filtered true range × multiplier forms the channel. <span style="color:#0aff68">Green</span> when filter rising, <span style="color:#ff0a5a">red</span> when falling. Reduced Lag mode adds momentum, Fast Response averages with 1-pole for quicker reaction.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price above channel = strong uptrend. Price inside channel = consolidation/transition. Color change = trend reversal. Channel width shows volatility — narrow = low vol squeeze, wide = expansion. Works best on higher timeframes (4H, 1D).</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Ichimoku Cloud <code>Tenkan(9), Kijun(26), Senkou B(52), Disp(26)</code></div>
+          <div class="ind-summary">Complete trend system — cloud, conversion/base lines, lagging span</div>
+          <div class="ind-detail"><span style="color:#2962FF">Tenkan-sen</span> (9-period midpoint) and <span style="color:#B71C1C">Kijun-sen</span> (26-period midpoint) show momentum and support/resistance. The cloud (Kumo) is formed by Senkou Span A and B displaced 26 bars forward — <span style="color:#26A69A">green when bullish</span>, <span style="color:#EF5350">red when bearish</span>. <span style="color:#7B1FA2">Chikou Span</span> is the close displaced 26 bars backward.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price above cloud = bullish, below = bearish, inside = no trend. Tenkan crossing Kijun above the cloud is a strong bullish alignment condition. Thick cloud = strong support/resistance. Cloud twist (color change) = potential trend reversal. Chikou above price = bullish confirmation.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Pi Cycle Top <code>SMA(111) vs SMA(350)×2</code></div>
+          <div class="ind-summary">BTC cycle top indicator — cross signals macro tops</div>
+          <div class="ind-detail">When the 111-day SMA crosses above 2× the 350-day SMA, it has historically coincided with Bitcoin cycle tops within 3 days.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Crossover = potential cycle top. Only relevant for BTC on daily timeframe. Convergence = approaching danger zone. Has called every BTC cycle top so far.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">SMA 20/200 <code>SMA(20) + SMA(200)</code></div>
+          <div class="ind-summary"><span style="color:#00BFFF">Blue SMA(20)</span> + <span style="color:#FFD700">Gold SMA(200)</span> plotted together</div>
+          <div class="ind-detail">Plots two Simple Moving Averages on the same overlay — a fast SMA(20) and a slow SMA(200) — for tracking short- vs long-term trend context side by side.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price above/below each line shows short- vs long-term trend bias. SMA(20) crossing SMA(200) marks a classic golden/death cross transition. Combine with other trend tools before acting.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Bollinger Bands <code>BB(20, 2.0)</code></div>
+          <div class="ind-summary">Volatility envelope around SMA(20)</div>
+          <div class="ind-detail">Upper band = SMA(20) + 2×StdDev. Lower band = SMA(20) - 2×StdDev. Bands widen with volatility, contract during compression. Offset: shift bands ±N bars on the time axis; positive = lag the signal, negative = lead it.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price touching upper band ≠ sell signal (can "walk the band" in trends). Squeeze (narrow bands) precedes breakout. W-bottom / M-top patterns at bands are reversal signals.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Keltner Tight <code>EMA(35) ± ATR(14)×0.5</code></div>
+          <div class="ind-summary">Tight Keltner Channel preset — tighter ATR-based envelope for mean-reversion</div>
+          <div class="ind-detail">Center line is EMA(35). Upper/lower channels are ±0.5× ATR(14) from center. Tighter than the standard Keltner Channel (EMA 20, ATR 10, mult 1.5). Both visible simultaneously for wide + tight bands.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price breaking outside channel = momentum shift. Riding the upper/lower channel = strong trend. Channel narrowing = compression.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Donchian Channels <code>DC(20)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#26a69a"></span>Green upper + <span class="swatch" style="background:#ef5350"></span>Red lower + <span class="swatch" style="background:#9E9E9E"></span>Gray midline</div>
+          <div class="ind-detail">Upper channel = highest high over 20 periods. Lower channel = lowest low over 20 periods. Middle line = average of upper and lower. Originally used by Richard Donchian, popularized by the Turtle Traders.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Breakout above upper channel = potential new uptrend. Breakdown below lower channel = potential new downtrend. Channel width reflects volatility. Flat channels = consolidation. Classic trend-following systems built on this channel treat a new 20-period high as bullish continuation and a new 20-period low as bearish continuation.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Parabolic SAR <code>AF: 0.02-0.20</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#26a69a"></span>Green dots below price (uptrend) + <span class="swatch" style="background:#ef5350"></span>Red dots above price (downtrend)</div>
+          <div class="ind-detail">SAR (Stop and Reverse) uses an acceleration factor that increases as the trend continues. Dots below price = bullish, dots above = bearish. When price crosses SAR, the indicator flips direction. Developed by J. Welles Wilder Jr.</div>
+          <div class="ind-signals"><strong>Look for:</strong> SAR flip = potential trend reversal. Dots tightening toward price = trend losing momentum. Works best in trending markets. In choppy/sideways markets, generates frequent whipsaws — combine with a trend filter (e.g., ADX or moving averages).</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Keltner Channels <code>EMA(20) ± ATR(10)×1.5</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#2196F3"></span>Blue EMA basis + <span class="swatch" style="background:#FF9800"></span>Orange upper/lower bands</div>
+          <div class="ind-detail">Center line is EMA(20). Upper/lower channels are ±1.5× ATR(10) from center. Similar to Bollinger Bands but uses ATR instead of standard deviation, making it smoother and less reactive to sudden spikes.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Used with Bollinger Bands for TTM Squeeze detection — when BB contracts inside KC, volatility is compressed. Breakout above/below KC = strong momentum. Price riding upper KC = strong uptrend.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Hull MA <code>HMA(20)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#E040FB"></span>Magenta reduced-lag moving average</div>
+          <div class="ind-detail">HMA = WMA(sqrt(n)) of [2×WMA(n/2) - WMA(n)]. Uses weighted moving averages to virtually eliminate lag while maintaining smoothness. Developed by Alan Hull.</div>
+          <div class="ind-signals"><strong>Look for:</strong> HMA slope change = early trend reversal signal. Faster than EMA at detecting turns. Price above rising HMA = bullish, below falling HMA = bearish. Best used as a trend filter or trigger, not for support/resistance.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">EMA Cross <code>EMA(9) × EMA(21)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00BCD4"></span>Cyan fast EMA + <span class="swatch" style="background:#FF9800"></span>Orange slow EMA + cross markers</div>
+          <div class="ind-detail">Plots EMA(9) and EMA(21) with triangle markers at crossover points. Green triangle below price = bullish cross (fast crosses above slow). Red diamond above price = bearish cross.</div>
+          <div class="ind-signals"><strong>Look for:</strong> A bullish cross within an uptrend reads as trend continuation. Bearish cross after extended move = potential reversal. More responsive than golden/death cross (50/200) but more whipsaw-prone. Best combined with trend context.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">SuperTrend <code>ATR(10) × 3.0</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#26a69a"></span>Green line below price (uptrend) + <span class="swatch" style="background:#ef5350"></span>Red line above price (downtrend)</div>
+          <div class="ind-detail">ATR-based trend-following line that flips between support (below price, green) and resistance (above price, red). When price crosses the SuperTrend line, it reverses direction. Similar concept to Parabolic SAR but as a continuous line.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Color flip = trend change signal. Green line acting as dynamic support in uptrend. Red line acting as dynamic resistance in downtrend. Works best on higher timeframes. Wider multiplier (3.0) reduces whipsaws vs tighter settings.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">ALMA <code>ALMA(20, offset=0.85, sigma=6)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#00BCD4"></span>Cyan Gaussian-weighted moving average</div>
+          <div class="ind-detail">Arnaud Legoux Moving Average uses a Gaussian distribution curve as weights. The offset parameter (0.85) shifts the bell curve toward recent prices, reducing lag. Sigma controls the width — lower = more responsive, higher = smoother.</div>
+          <div class="ind-signals"><strong>Look for:</strong> ALMA slope change = early trend signal with minimal lag. Smoother than HMA with less overshoot. Good for trend direction and dynamic support/resistance. Compare with EMA — ALMA tracks price more closely during trends.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">KAMA <code>KAMA(10, fast=2, slow=30)</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#FFD600"></span>Yellow adaptive moving average</div>
+          <div class="ind-detail">Kaufman Adaptive Moving Average adjusts its smoothing based on an Efficiency Ratio (direction / volatility). In trending markets it speeds up (approaches fast EMA), in choppy markets it slows down (approaches slow EMA). Developed by Perry Kaufman.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Flat KAMA = choppy, no trend. Sloped KAMA = trending. KAMA is the best MA for avoiding whipsaws in ranging markets while still catching trends. Price crossing KAMA is read as a trend-continuation condition, but only when KAMA itself is sloped.</div>
+        </div>
+
+      </div>
+    </div><!-- /trend-mas -->
+
+    <!-- ============ LEVELS & ZONES ============ -->
+    <div class="cat-section" id="levels-zones">
+      <span class="eyebrow">Levels &amp; Zones</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">CPR <code>Monthly Central Pivot Range</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#9C27B0"></span>Purple pivot/TC/BC + <span class="swatch" style="background:#00E676"></span>Green R levels + <span class="swatch" style="background:#FF5252"></span>Red S levels</div>
+          <div class="ind-detail">Pivot = (High + Low + Close) / 3 of previous month. TC (Top Central) and BC (Bottom Central) define the pivot range. R1-R3 resistance and S1-S3 support levels calculated from pivot. Server-side monthly calculation from daily data.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price above pivot = bullish bias. Narrow CPR (TC ≈ BC) = trending day/week. Wide CPR = range-bound. R/S levels historically act as reaction and reversal zones.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CPR History <code>5 previous months</code></div>
+          <div class="ind-summary">Past months' TC/Pivot/BC lines — shows where previous pivots cluster</div>
+          <div class="ind-detail">Draws bounded TC, Pivot, and BC lines for the previous 5 months. Each month's levels only appear within that month's date range. Dimmer purple with dashed style.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Pivot clusters from multiple months = strong S/R zone. "Virgin" pivots (never tested) = levels price has not yet revisited.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Weekly CPR <code>Weekly Central Pivot Range</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#9C27B0"></span>Purple pivot/TC/BC + <span class="swatch" style="background:#00E676"></span>Green R levels + <span class="swatch" style="background:#FF5252"></span>Red S levels</div>
+          <div class="ind-detail">Pivot = (High + Low + Close) / 3 of previous week. R1-R3 resistance and S1-S3 support levels calculated from pivot. Faster-reacting than the monthly CPR, updating every Monday. Note: the main CPR indicator above also has its own timeframe setting (daily/weekly/monthly/quarterly/yearly) — this is a separate indicator, so you can enable it alongside a different CPR timeframe to show more than one pivot range on the chart at once.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Same read as monthly CPR, just on a weekly cadence. Narrow CPR (TC ≈ BC) = trending week, wide = range-bound.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Weekly CPR History <code>previous weeks</code></div>
+          <div class="ind-summary">Past weeks' TC/Pivot/BC lines — shows where previous weekly pivots cluster</div>
+          <div class="ind-detail">Draws bounded TC, Pivot, and BC lines for previous weeks, each bounded to that week's date range.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Pivot clusters from multiple weeks = strong S/R zone, same read as monthly CPR History but at weekly resolution.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Daily CPR <code>Daily Central Pivot Range</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#9C27B0"></span>Purple pivot/TC/BC + <span class="swatch" style="background:#00E676"></span>Green R levels + <span class="swatch" style="background:#FF5252"></span>Red S levels</div>
+          <div class="ind-detail">Pivot = (High + Low + Close) / 3 of previous day. R1-R3 resistance and S1-S3 support levels calculated from pivot. Best used as an intraday reference point on lower timeframes.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Same read as monthly CPR, at daily resolution — most useful for intraday levels.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Daily CPR History <code>previous days</code></div>
+          <div class="ind-summary">Past days' TC/Pivot/BC lines — shows where previous daily pivots cluster</div>
+          <div class="ind-detail">Draws bounded TC, Pivot, and BC lines for previous days, each bounded to that day's date range.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Pivot clusters from multiple days = intraday S/R zone.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Key Levels <code>Previous D/W/M highs &amp; lows</code></div>
+          <div class="ind-summary">Previous daily, weekly, and monthly highs and lows drawn as horizontal lines</div>
+          <div class="ind-detail">Draws the prior day's, prior week's, and prior month's high and low as flat lines extending across the chart, in a single color.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Previous highs/lows act as breakout and breakdown triggers. Price reacting on approach to one of these levels signals potential support/resistance.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Monday Range <code>Mon H/L projected through the week</code></div>
+          <div class="ind-summary">Monday's high and low extended as reference lines across the rest of the week</div>
+          <div class="ind-detail">Captures the high and low set during Monday's session and projects them forward through the remaining trading days. An ICT (Inner Circle Trader) concept — Monday often sets the tone for that week's range.</div>
+          <div class="ind-signals"><strong>Look for:</strong> A breakout beyond Monday's high or low is read as a signal for that week's directional bias. Price staying inside the range suggests consolidation.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Confluence Zones <code>multi-source S/R clusters</code></div>
+          <div class="ind-summary">Price areas where several signals stack up — drawn as shaded bands</div>
+          <div class="ind-detail">Clusters CPR pivots, moving averages (incl. SMA/EMA 200, EMA 21), volume profile (POC, value area), swing highs/lows, Bollinger bands and key levels that sit close together. Band thickness/brightness scales with the weighted strength of the cluster; <span style="color:#26a69a">teal</span> = support, <span style="color:#ef5350">red</span> = resistance. Each band is labelled with its dominant source in plain English.</div>
+          <div class="ind-signals"><strong>Look for:</strong> The thickest/brightest bands are the highest-confluence prices — where many independent signals agree. These tend to act as the strongest reaction levels. Information for your own analysis, not a recommendation.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Liquidation Heatmap <code>modeled, from OI + price + long/short ratio</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#fde725"></span>Yellow high modeled concentration + <span class="swatch" style="background:#440154"></span>Purple low modeled concentration</div>
+          <div class="ind-detail">A time x price heat layer showing where over-leveraged long and short positions may be sitting, inferred from our own Binance open-interest, price, and long/short-ratio history — never CoinGlass. These are <strong>modeled estimates</strong>: the leverage each position carries is assumed, not observed, so this is not the same as watching real liquidations happen on an order book.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Brighter/yellow bands mark higher modeled liquidation concentration and can act as price magnets during a squeeze. Dark areas carry little inferred exposure. Informational estimate for your own analysis, not observed liquidity and not advice.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">S/R Channels <code>pivot=10, maxChannels=6</code></div>
+          <div class="ind-summary">Auto-detected support/resistance zones from pivot clustering</div>
+          <div class="ind-detail">Scans 290 bars for pivot highs/lows (10-bar lookback each side). Groups nearby pivots into channels. Strength = number of pivot touches. <span style="color:#ff0000">Red</span> resistance, <span style="color:#00ff00">Green</span> support, gray when price is inside.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Multiple-touch channels = strongest levels. Channel flipping from support to resistance (or vice versa) = key breakout/breakdown confirmation.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Auto Fib <code>lookback=265 bars</code></div>
+          <div class="ind-summary">Automatic Fibonacci retracement levels from recent swing range</div>
+          <div class="ind-detail">Finds highest high and lowest low in the last 265 bars. Draws Fibonacci levels at 0, 23.6%, 38.2%, 50%, 61.8%, 78.6%, 100%. Direction (up/down) determined by which extreme came first.</div>
+          <div class="ind-signals"><strong>Look for:</strong> 61.8% is the "golden ratio" — strongest retracement. 38.2% is first significant pullback level. Price stalling at fib levels = potential reversal/continuation zone.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Fair Value Gap (FVG) <code>ATR-filtered, mitigation tracking</code></div>
+          <div class="ind-summary">Imbalance zones where price moved too fast — filtered by ATR threshold, with mitigation tracking</div>
+          <div class="ind-detail">A 3-candle pattern where candle 1's wick doesn't overlap candle 3's wick, leaving an unfilled gap. <span style="color:#00ff00">Green</span> = bullish FVG (below price), <span style="color:#ff0000">Red</span> = bearish FVG (above). Auto-threshold filters out noise FVGs smaller than 25% of ATR(14). Mitigated FVGs shown dimmed (stop at fill point). Gaps shrink as price partially fills them.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Unfilled FVGs act as magnet zones — price tends to return to fill them. FVGs at key levels = high confluence. Multiple stacked FVGs = strong directional bias. Dimmed gaps = already tested, less significant.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Liq Zones <code>drawing tool — AI-extracted from Coinglass heatmap</code></div>
+          <div class="ind-summary"><em>Drawing tool</em> (not a chart indicator) — liquidation clusters extracted from Coinglass heatmap screenshots (approximate; accuracy depends on the image)</div>
+          <div class="ind-detail">AI analyzes Coinglass liquidation heatmap screenshots to identify bright zones of concentrated liquidation levels. Rendered as drawings on the chart, not as a togglable indicator. Zones ranked by intensity (brightness). BTC/ETH only.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Bright liquidation clusters act as price magnets — large players may push price toward these zones to trigger cascading liquidations. Useful for identifying stop-hunt targets.</div>
+        </div>
+
+      </div>
+    </div><!-- /levels-zones -->
+
+    <!-- ============ VOLUME & FLOW ============ -->
+    <div class="cat-section" id="volume-flow">
+      <span class="eyebrow">Volume &amp; Flow</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">Volume <code>with SMA(20) average</code></div>
+          <div class="ind-summary">Bar volume with 20-period average line</div>
+          <div class="ind-detail">Standard volume bars. Green bars = close ≥ open (up candle). Red bars = close &lt; open (down candle). SMA(20) overlay shows average volume for context.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Volume spikes on breakouts = confirmation. Declining volume in trend = weakening. Volume climax (extreme spike) often marks reversals. Low volume at support = healthy base.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Volume Profile <code>press V to toggle</code></div>
+          <div class="ind-summary">Horizontal histogram showing volume distribution by price level</div>
+          <div class="ind-detail">Aggregates volume at each price level across visible bars, weighted toward where each candle actually traded. Shows where most trading occurred. High-volume nodes (HVN) = value areas. Low-volume nodes (LVN) = fast-move zones. POC and value area prices are labeled on the price axis. Works on any asset, not just crypto. Toggle with V key. For a profile over a specific range, use the Volume Profile Range drawing tool &mdash; it is built from finer intrabar data, supports Total / Up-Down / Delta display (delta comes from real buyer-vs-seller trade data, not candle colors), and can be resized by dragging its edges.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Point of Control (POC) = highest volume price = magnet level. HVN = consolidation zones. LVN = price moves through quickly. Value Area (70% of volume) = expected range.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Naked POC <code>crypto only</code></div>
+          <div class="ind-summary">Dashed lines at past sessions&rsquo; points of control that price has never revisited</div>
+          <div class="ind-detail">Each completed day gets a volume profile built from intrabar data; its POC is tracked forward. If price never trades back through that level, the POC stays &ldquo;naked&rdquo; and is drawn as a dashed line from its session to the right edge, labeled with its age. Touched levels disappear automatically. Up to 15 most recent naked levels over the last 90 days.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Naked POCs act as magnets &mdash; price often returns to fill them. Older untouched levels carry more weight. Confluence with other S/R strengthens the level.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">OBV <code>On Balance Volume</code></div>
+          <div class="ind-summary"><span class="swatch" style="background:#4CAF50"></span>Green cumulative volume line</div>
+          <div class="ind-detail">OBV adds volume on up-close bars and subtracts volume on down-close bars, creating a running total. The absolute value doesn't matter — the trend and divergences do. Developed by Joseph Granville.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Rising OBV + rising price = confirmed uptrend. Rising OBV + flat price = accumulation (bullish). Falling OBV + rising price = distribution (bearish divergence). OBV breakout before price breakout = leading signal.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CVD Spot <code>from Binance kline taker_buy data</code></div>
+          <div class="ind-summary">Cumulative Volume Delta — net buying vs selling pressure on spot</div>
+          <div class="ind-detail">Calculated from Binance's taker buy base asset volume in each candle. CVD = cumulative sum of (taker_buy - taker_sell) volume. Shows whether buyers or sellers are more aggressive.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Rising CVD + rising price = healthy trend. Rising price + falling CVD = bearish divergence (distribution). CVD divergences are leading indicators for reversals.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CVD Spot Divergence <code>same logic as RSI Divergence</code></div>
+          <div class="ind-summary">Detects bullish/bearish divergences between price and CVD Spot</div>
+          <div class="ind-detail">Finds swing highs/lows in price and compares them against Cumulative Volume Delta at the same points, using the same swing-detection logic as RSI Divergence.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price making a new high/low while CVD fails to confirm = divergence, an early warning of trend exhaustion. Same read as RSI Divergence, fed by volume delta instead of momentum.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">CVD Futures (USDT-M / COIN-M)</div>
+          <div class="ind-summary">Cumulative Volume Delta from Binance perpetual futures markets</div>
+          <div class="ind-detail">USDT-margined and COIN-margined futures taker buy/sell ratios. <span style="color:#00BCD4">Cyan</span> = USDT-M, <span style="color:#E040FB">Magenta</span> = COIN-M. Separate panes below chart. Data from Binance derivatives APIs.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Futures CVD diverging from spot CVD = smart money positioning. COIN-M often reflects whale activity. Futures CVD spikes = leveraged conviction.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Open Interest <code>from Binance futures</code></div>
+          <div class="ind-summary"><span style="color:#FFB300">Amber</span> rising / <span style="color:#AB47BC">Purple</span> falling — total open futures contracts</div>
+          <div class="ind-detail">Historical open interest data from Binance USDT-M futures. Shows total number of outstanding futures contracts. Rendered as colored segments in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Rising OI + rising price = new longs (bullish). Rising OI + falling price = new shorts (bearish). Falling OI = positions closing. OI spike at extreme = potential squeeze.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Derivatives (Combined) <code>CVD USDT-M + CVD COIN-M + OI</code></div>
+          <div class="ind-summary">CVD Futures and Open Interest combined into a single pane</div>
+          <div class="ind-detail">Plots USDT-margined CVD, COIN-margined CVD, and Open Interest together in one pane instead of three separate ones — a full derivatives read without eating up chart real estate.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Same signals as the individual CVD/OI indicators, read together for a faster derivatives-positioning check.</div>
+        </div>
+
+      </div>
+    </div><!-- /volume-flow -->
+
+    <!-- ============ STRUCTURE ============ -->
+    <div class="cat-section" id="structure">
+      <span class="eyebrow">Structure</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">Market Structure <code>BOS/CHoCH + Swing Labels</code></div>
+          <div class="ind-summary">Break of Structure (BOS), Change of Character (CHoCH), swing labels (HH/HL/LH/LL), strong/weak highs and lows</div>
+          <div class="ind-detail">Detects swing and internal market structure. BOS = trend continuation, CHoCH = reversal signal. Labels swing points as Higher High, Higher Low, Lower High, Lower Low. Marks strong/weak levels.</div>
+          <div class="ind-signals"><strong>Look for:</strong> CHoCH = early reversal signal. BOS = trend continuation. HH+HL = bullish structure. LH+LL = bearish. Strong Low = protected level in uptrend.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Order Blocks <code>Swing + Internal OBs</code></div>
+          <div class="ind-summary">Institutional supply/demand zones from structure breaks + FVGs within SMC context</div>
+          <div class="ind-detail">Identifies order blocks at BOS/CHoCH points — zones where institutional orders were placed. Swing OBs (colored) and internal OBs (gray). Includes SMC-context Fair Value Gaps.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Price returning to an unmitigated OB is historically a high-reaction zone. Bullish OB below price = support. Bearish OB above = resistance. Best on HTF for bias.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Equal H/L <code>Equal Highs/Lows</code></div>
+          <div class="ind-summary">Equal highs and equal lows — liquidity pools where stop orders accumulate</div>
+          <div class="ind-detail">Detects swing points at similar price levels (within ATR threshold). These represent liquidity pools where stop-loss orders cluster.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Equal highs = sell-side liquidity (stops above). Equal lows = buy-side liquidity (stops below). Price often hunts these levels before reversing.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Value Zones <code>Premium/Discount/Equilibrium</code></div>
+          <div class="ind-summary">Premium, discount, and equilibrium zones based on swing range</div>
+          <div class="ind-detail">Divides the current swing range into premium (above equilibrium), discount (below), and equilibrium (midpoint). Dotted line marks equilibrium.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Discount zones historically see higher demand; premium zones historically see higher supply. Equilibrium = fair value midpoint. Best used with structure context for confluence.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Market Sessions <code>Asian / London / New York</code></div>
+          <div class="ind-summary">Highlights the Asian, London, and New York trading sessions on the chart</div>
+          <div class="ind-detail">Shades the chart to mark each of the three major trading sessions, so you can see at a glance which session was active over any bar.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Session opens/closes are key liquidity events. A range set during one session often gets swept during the next. Useful for intraday timing on lower timeframes.</div>
+        </div>
+
+      </div>
+    </div><!-- /structure -->
+
+    <!-- ============ MACRO & QUANT ============ -->
+    <div class="cat-section" id="macro-quant">
+      <span class="eyebrow">Macro &amp; Quant</span>
+      <div class="ind-grid">
+
+        <div class="ind-card">
+          <div class="ind-name">M2 Money Supply <code>right axis</code> <code>Premium</code></div>
+          <div class="ind-summary">US M2 money supply overlaid on the price chart</div>
+          <div class="ind-detail">Weekly-dated data published monthly by the Fed, plotted on a secondary (right) Y-axis. The classic macro-crypto leading indicator — M2 expansion has historically led BTC by roughly 10 weeks.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Rising M2 = more liquidity available for risk assets. Turning points in M2 growth matter more than the raw level.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Net Liquidity <code>weekly, right axis</code> <code>Premium</code></div>
+          <div class="ind-summary">Fed Balance Sheet minus TGA minus Reverse Repo</div>
+          <div class="ind-detail">A direct measure of dollar liquidity in the banking system, plotted weekly on a secondary axis: Fed Balance &minus; Treasury General Account &minus; Reverse Repo.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Rising Net Liquidity is generally bullish for risk assets. Falling/draining liquidity is a headwind.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">DXY (Dollar Index) <code>daily, right axis</code> <code>Premium</code></div>
+          <div class="ind-summary">US Dollar Index plotted alongside price</div>
+          <div class="ind-detail">Daily DXY on a secondary Y-axis. Generally inverse to crypto — rising DXY is a headwind, falling DXY a tailwind.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Watch for divergences between DXY direction and price — when the usual inverse relationship breaks down, it is often notable.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Stablecoin Supply <code>daily, right axis</code> <code>Premium</code></div>
+          <div class="ind-summary">Total USDT supply overlaid on the price chart</div>
+          <div class="ind-detail">Daily USDT total supply on a secondary axis. Rising supply reflects capital entering the crypto ecosystem (dry powder); declining supply reflects outflows.</div>
+          <div class="ind-signals"><strong>Look for:</strong> A rapid increase in stablecoin supply is generally bullish; a sustained decline signals outflows.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Fear &amp; Greed <code>0&ndash;100</code> <code>Premium</code></div>
+          <div class="ind-summary">Crypto Fear &amp; Greed Index in its own pane</div>
+          <div class="ind-detail">The widely-tracked Crypto Fear &amp; Greed Index, scaled 0&ndash;100, plotted in a dedicated pane below the chart.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Extreme Fear (&lt;25) often marks bottoms, Extreme Greed (&gt;75) often marks tops. A classic contrarian read.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Funding Rate (3-exch) <code>Binance/OKX/Bybit avg</code> <code>Premium</code></div>
+          <div class="ind-summary">BTC perpetual funding rate averaged across three exchanges</div>
+          <div class="ind-detail">BTC perpetual funding rate averaged across Binance, OKX, and Bybit, plotted in its own pane around a zero-line equilibrium.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Extreme positive funding = crowded longs. Extreme negative = capitulation/short-crowding. Zero-line crossovers mark equilibrium shifts.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">BTC ETF Net Flow <code>daily, $M</code> <code>Premium</code></div>
+          <div class="ind-summary">Daily net flows into/out of US spot BTC ETFs</div>
+          <div class="ind-detail">Daily net flows into or out of US spot BTC ETFs, in millions of dollars, plotted in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Positive flows = institutional buying. Negative = outflows. Sustained flows in either direction often signal a regime change.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">VIX <code>CBOE Volatility Index</code> <code>Premium</code></div>
+          <div class="ind-summary">CBOE Volatility Index in its own pane</div>
+          <div class="ind-detail">The CBOE Volatility Index, tracking equity-market implied volatility, plotted in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Above 30 = high fear, below 15 = complacency. VIX spikes tend to spill into risk-off moves across all assets, including crypto.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Yield Curve (10Y-2Y) <code>Treasury spread</code> <code>Premium</code></div>
+          <div class="ind-summary">10-year minus 2-year Treasury yield spread</div>
+          <div class="ind-detail">The 10Y minus 2Y Treasury yield spread, plotted in its own pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Negative (inverted) is a classic recession signal. Steepening after an inversion often precedes macro bottoms and risk-on rallies.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Altcoin Season <code>0&ndash;100, 90-day window</code> <code>Premium</code></div>
+          <div class="ind-summary">Percentage of top altcoins outperforming BTC over 90 days</div>
+          <div class="ind-detail">The share of top altcoins beating BTC's return over a trailing 90-day window, scaled 0&ndash;100 in its own pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Above 75 = alt season. Below 25 = BTC dominance phase. Useful for timing portfolio rotation between BTC and alts.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Market Regime (global) <code>HMM classification</code> <code>Premium</code></div>
+          <div class="ind-summary">Background shading showing the prevailing market regime</div>
+          <div class="ind-detail">An HMM (Hidden Markov Model) based regime classification, shown as background bands directly behind the price chart. Based on BTC returns, VIX, and the high-yield credit spread. Updates nightly.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Green bands = favorable/risk-on regime. Red bands = unfavorable/risk-off. Regime transitions are the moments worth paying attention to.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Risk Appetite <code>PCA factor</code> <code>Premium</code></div>
+          <div class="ind-summary">PCA-derived risk appetite factor in its own pane</div>
+          <div class="ind-detail">A PCA-derived composite of VIX, the high-yield credit spread, TLT, and DXY, updated daily and plotted in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Positive = risk-on environment. Negative = risk-off. A macro risk-on/off gauge, not an asset-specific signal.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Liquidity Factor <code>PCA factor</code> <code>Premium</code></div>
+          <div class="ind-summary">PCA-derived liquidity factor in its own pane</div>
+          <div class="ind-detail">A PCA-derived composite of M2, Net Liquidity, and the Fed balance sheet, updated daily and plotted in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Positive = expanding liquidity (bullish macro backdrop). Negative = tightening liquidity.</div>
+        </div>
+
+        <div class="ind-card">
+          <div class="ind-name">Credit Stress <code>PCA factor</code> <code>Premium</code></div>
+          <div class="ind-summary">PCA-derived credit stress factor in its own pane</div>
+          <div class="ind-detail">A PCA-derived composite of the US high-yield spread, EU high-yield spread, and yield curve, updated daily and plotted in a dedicated pane.</div>
+          <div class="ind-signals"><strong>Look for:</strong> Positive = credit stress rising (bearish, systemic-risk signal). Negative = calm credit conditions.</div>
+        </div>
+
+      </div>
+    </div><!-- /macro-quant -->
+
+    <p class="ind-ref-footer">Carrac — Indicator Reference</p>
+
+  </div>
+</section>
+
+{% endblock %}

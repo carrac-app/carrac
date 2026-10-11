@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carrac">
+    <meta name="theme-color" content="#0B0E14">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <title>Create Account — Carrac</title>
+    <meta name="description" content="Join Carrac — market intelligence for humans and AI. Free charts, a live key-level scanner, twice-daily research, all readable by your own AI over MCP.">
+    <link rel="canonical" href="{{ site_url }}/register">
+    <meta property="og:title" content="Create Account — Carrac">
+    <meta property="og:description" content="Create a Carrac account.">
+    <meta property="og:url" content="{{ site_url }}/register">
+    <meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #06080C;
+            --panel: #0E121B;
+            --panel-2: #141A24;
+            --fg1: #EAECF0;
+            --fg2: #AAB2C0;
+            --fg3: #8A93A6;
+            --fg4: #5C6576;
+            --accent: #D8B56A;
+            --accent-strong: #E6CD86;
+            --accent-deep: #A8772E;
+            --accent-soft: rgba(216,181,106,0.14);
+            --accent-line: rgba(216,181,106,0.42);
+            --green: #46B17B;
+            --red: #E0697A;
+            --border: #20242C;
+            --border-strong: #2C313B;
+            --r: 5px;
+            --r-md: 7px;
+            --r-lg: 10px;
+            --gold-grad: linear-gradient(100deg,#9a7b32 0%,#e6cd86 24%,#fff6da 42%,#d8b56a 56%,#9a7b32 80%,#e6cd86 100%);
+        }
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:var(--panel);color:var(--accent);z-index:9999;border-radius:var(--r)}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid var(--accent);outline-offset:2px}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(1100px circle at 50% -10%, rgba(216,181,106,0.10), transparent 60%),
+                var(--bg-page);
+            color: var(--fg2);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px 72px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .register-container {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 38px 36px;
+            width: 100%;
+            max-width: 416px;
+            box-shadow: 0 18px 52px rgba(0,0,0,0.55);
+        }
+
+        .register-header { text-align: center; margin-bottom: 26px; }
+        .register-header .logo-mark {
+            font-size: 0.78rem; font-weight: 600; color: var(--accent);
+            letter-spacing: 0.06em; margin-bottom: 8px;
+        }
+        .register-header .logo-mark sup { font-size: 0.6em; vertical-align: super; line-height: 0; }
+        .register-header .logo-wordmark {
+            font-size: 1.42rem; font-weight: 600; color: var(--fg1); letter-spacing: -0.01em;
+        }
+        .register-header h1 {
+            font-size: 1.05rem; font-weight: 600; color: var(--fg1); margin-top: 14px; letter-spacing: -0.01em;
+        }
+        .register-header p { color: var(--fg3); font-size: 0.82rem; margin-top: 5px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; margin-bottom: 7px; font-size: 0.74rem; font-weight: 500;
+            color: var(--fg3); letter-spacing: 0.01em;
+        }
+        .form-group input {
+            width: 100%; padding: 11px 14px; font-size: 0.9rem;
+            font-family: inherit; background: var(--panel-2);
+            border: 1px solid var(--border); border-radius: var(--r);
+            color: var(--fg1); transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        .form-group input:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .form-group input::placeholder { color: var(--fg4); }
+        .form-group small { display: block; margin-top: 5px; font-size: 0.72rem; color: var(--fg4); }
+
+        .error-message {
+            background: rgba(224,105,122,0.08); border: 1px solid rgba(224,105,122,0.28);
+            color: var(--red); padding: 10px 14px; border-radius: var(--r);
+            margin-bottom: 18px; font-size: 0.8rem; text-align: center;
+        }
+        .success-message {
+            background: rgba(70,177,123,0.09); border: 1px solid rgba(70,177,123,0.30);
+            color: var(--green); padding: 10px 14px; border-radius: var(--r);
+            margin-bottom: 18px; font-size: 0.8rem; text-align: center;
+        }
+
+        .submit-btn {
+            width: 100%; height: 50px; padding: 0 24px;
+            font-size: 0.92rem; font-weight: 600; font-family: inherit;
+            background: var(--gold-grad); background-size: 220% auto; color: #2A1E08;
+            border: none; border-radius: 999px; cursor: pointer;
+            margin-top: 10px;
+            box-shadow: inset 0 1px 0 rgba(255,246,218,0.6), 0 12px 30px rgba(168,124,46,0.32);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease, background-position 0.4s ease;
+        }
+        .submit-btn:hover {
+            transform: translateY(-1.5px); background-position: right center;
+            box-shadow: inset 0 1px 0 rgba(255,246,218,0.65), 0 16px 38px rgba(168,124,46,0.42);
+        }
+        .submit-btn:active { transform: translateY(0) scale(0.985); }
+        .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .pw-hint {
+            display: block; margin-top: 5px; font-size: 0.72rem;
+            color: var(--fg4); transition: color 0.2s;
+        }
+        .pw-hint.fail { color: var(--red); }
+        .pw-hint.pass { color: var(--green); }
+
+        .pw-toggle {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--fg3); cursor: pointer;
+            font-size: 0.74rem; font-family: inherit; padding: 0;
+        }
+        .pw-toggle:hover { color: var(--fg1); }
+
+        .consent label {
+            display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+            line-height: 1; margin: 0;
+        }
+        .consent input[type=checkbox] {
+            width: 17px; height: 17px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0;
+        }
+        .consent span { font-size: 0.76rem; color: var(--fg3); line-height: 1.5; }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { color: var(--accent-strong); }
+
+        .login-link {
+            text-align: center; margin-top: 22px; padding-top: 20px;
+            border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--fg3);
+        }
+        .back-link { text-align: center; margin-top: 16px; font-size: 0.76rem; }
+        .back-link a { color: var(--fg4); }
+        .back-link a:hover { color: var(--fg2); }
+    </style>
+    {% include '_posthog_init.html' %}
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <main id="main-content">
+    <div class="register-container">
+        <div class="register-header">
+            <div class="logo-mark">[C<sup>4</sup>]</div>
+            <div class="logo-wordmark">Carrac</div>
+            <h1>Create your account</h1>
+            
+        </div>
+
+
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        {% if success %}
+        <div class="success-message">{{ success }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="utm_source" value="{{ request.args.get('utm_source', '')[:80] }}">
+            <input type="hidden" name="utm_medium" value="{{ request.args.get('utm_medium', '')[:80] }}">
+            <input type="hidden" name="utm_campaign" value="{{ request.args.get('utm_campaign', '')[:80] }}">
+            <input type="hidden" name="utm_content" value="{{ request.args.get('utm_content', '')[:80] }}">
+            <input type="hidden" name="utm_term" value="{{ request.args.get('utm_term', '')[:80] }}">
+            <input type="hidden" name="ph_anon_id" value="">
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus autocomplete="email" value="{{ form.email if form else '' }}" aria-describedby="email-error" aria-invalid="false">
+                <span id="email-error" class="error-message" role="alert" style="display:none;margin-top:5px;padding:6px 10px;font-size:0.76rem;"></span>
+                <small>We'll send a verification link to confirm it's you.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div style="position:relative;">
+                    <input type="password" id="password" name="password" placeholder="create a password" required minlength="8" autocomplete="new-password" aria-describedby="password-error pw-length pw-upper pw-lower pw-digit pw-special" aria-invalid="false" style="padding-right:46px;">
+                    <button type="button" id="pw-toggle" class="pw-toggle" aria-label="Show password">show</button>
+                </div>
+                <span id="password-error" class="error-message" role="alert" style="display:none;margin-top:5px;padding:6px 10px;font-size:0.76rem;"></span>
+                <span class="pw-hint" id="pw-length">At least 8 characters</span>
+                <span class="pw-hint" id="pw-upper">One uppercase letter</span>
+                <span class="pw-hint" id="pw-lower">One lowercase letter</span>
+                <span class="pw-hint" id="pw-digit">One number</span>
+                <span class="pw-hint" id="pw-special">One special character (!@#$%^&amp;*…)</span>
+                <small>Avoid common passwords, repeated characters, and simple sequences.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password_confirm">Confirm password</label>
+                <div style="position:relative;">
+                    <input type="password" id="password_confirm" name="password_confirm" placeholder="confirm password" required autocomplete="new-password" aria-describedby="password-confirm-error pw-match" aria-invalid="false" style="padding-right:46px;">
+                    <button type="button" id="pwc-toggle" class="pw-toggle" aria-label="Show confirm password">show</button>
+                </div>
+                <span id="password-confirm-error" class="error-message" role="alert" style="display:none;margin-top:5px;padding:6px 10px;font-size:0.76rem;"></span>
+                <span class="pw-hint" id="pw-match" style="display:none;">Passwords do not match</span>
+            </div>
+
+            <div class="form-group" id="invite-code-group" style="{{ '' if (form and form.invite_code) or (error and 'invite' in (error|lower)) else 'display:none;' }}">
+                <label for="invite_code">Invite code (optional)</label>
+                <input type="text" id="invite_code" name="invite_code" placeholder="8-character code" maxlength="8" style="text-transform: uppercase;" value="{{ form.invite_code if form else '' }}" aria-describedby="invite-code-error" aria-invalid="false">
+                <span id="invite-code-error" class="error-message" role="alert" style="display:none;margin-top:5px;padding:6px 10px;font-size:0.76rem;"></span>
+                <small>Have an invite code? Enter it here.</small>
+            </div>
+
+            <div class="form-group consent" style="margin-top:20px;">
+                <label>
+                    <input type="checkbox" name="agree_terms" id="agree_terms" required>
+                    <span>I'm 18 or older and I agree to the <a href="{{ url_for('legal.terms') }}" target="_blank">Terms of Service</a> &amp; <a href="{{ url_for('legal.privacy') }}" target="_blank">Privacy Policy</a>. I understand Carrac does not provide financial advice.</span>
+                </label>
+                <!-- Combined attestation: a checked agree_terms also affirms the 18+ statement above. -->
+                <input type="hidden" name="age_attested" value="1">
+            </div>
+
+            {% if turnstile_site_key %}
+            <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark" style="margin:18px 0 4px;"></div>
+            {% endif %}
+
+            <button type="submit" class="submit-btn" id="submit-btn">Create account</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+        </div>
+
+        <div class="back-link">
+            <a href="/">&larr; back to {{ site_host }}</a>
+        </div>
+        <div class="back-link" style="margin-top:8px;">
+            <a href="{{ url_for('legal.terms') }}">Terms</a> &middot;
+            <a href="{{ url_for('legal.privacy') }}">Privacy</a> &middot;
+            <a href="{{ url_for('legal.disclaimer') }}">Disclaimer</a>
+        </div>
+    </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    {% if turnstile_site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
+    <script nonce="{{ csp_nonce }}">
+    (function() {
+        var pw  = document.getElementById('password');
+        var pwc = document.getElementById('password_confirm');
+        var hintLen   = document.getElementById('pw-length');
+        var hintUpper = document.getElementById('pw-upper');
+        var hintLower = document.getElementById('pw-lower');
+        var hintDigit = document.getElementById('pw-digit');
+        var hintSpec  = document.getElementById('pw-special');
+        var hintMatch = document.getElementById('pw-match');
+        var submitBtn = document.getElementById('submit-btn');
+        var form = pw.closest('form');
+        var specialRe = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/;
+        var upperRe = /[A-Z]/;
+        var lowerRe = /[a-z]/;
+        var digitRe = /[0-9]/;
+
+        function setHint(el, v, pass) {
+            el.className = 'pw-hint' + (v.length === 0 ? '' : (pass ? ' pass' : ' fail'));
+        }
+
+        function checkPw() {
+            var v = pw.value;
+            setHint(hintLen,   v, v.length >= 8);
+            setHint(hintUpper, v, upperRe.test(v));
+            setHint(hintLower, v, lowerRe.test(v));
+            setHint(hintDigit, v, digitRe.test(v));
+            setHint(hintSpec,  v, specialRe.test(v));
+            checkMatch();
+        }
+
+        function checkMatch() {
+            var v1 = pw.value, v2 = pwc.value;
+            if (v2.length === 0) {
+                hintMatch.style.display = 'none';
+                pwc.setAttribute('aria-invalid', 'false');
+            } else if (v1 === v2) {
+                hintMatch.style.display = 'block';
+                hintMatch.textContent = 'Passwords match';
+                hintMatch.className = 'pw-hint pass';
+                pwc.setAttribute('aria-invalid', 'false');
+            } else {
+                hintMatch.style.display = 'block';
+                hintMatch.textContent = 'Passwords do not match';
+                hintMatch.className = 'pw-hint fail';
+                pwc.setAttribute('aria-invalid', 'true');
+            }
+        }
+
+        function makeToggle(toggleBtn, input) {
+            toggleBtn.addEventListener('click', function() {
+                var showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                toggleBtn.textContent = showing ? 'show' : 'hide';
+                toggleBtn.setAttribute('aria-label', (showing ? 'Show' : 'Hide') + ' password');
+            });
+        }
+        makeToggle(document.getElementById('pw-toggle'),  pw);
+        makeToggle(document.getElementById('pwc-toggle'), pwc);
+
+        pw.addEventListener('input', checkPw);
+        pw.addEventListener('focus', checkPw);
+        pwc.addEventListener('input', checkMatch);
+
+        form.addEventListener('submit', function(e) {
+            var v = pw.value;
+            var ok = v.length >= 8 && upperRe.test(v) && lowerRe.test(v) && digitRe.test(v) && specialRe.test(v);
+            if (!ok) {
+                e.preventDefault();
+                checkPw();
+                pw.setAttribute('aria-invalid', 'true');
+                pw.focus();
+                return;
+            }
+            if (v !== pwc.value) {
+                e.preventDefault();
+                hintMatch.style.display = 'block';
+                hintMatch.textContent = 'Passwords do not match';
+                hintMatch.className = 'pw-hint fail';
+                pwc.setAttribute('aria-invalid', 'true');
+                pwc.focus();
+                return;
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating…';
+        });
+
+        // C1: stamp the PostHog anonymous distinct_id at submit time (not
+        // page-load) since consent — and therefore posthog.init() — may not
+        // have happened yet when the page first rendered.
+        form.addEventListener('submit', function() {
+            try {
+                if (window.posthog && posthog.get_distinct_id) {
+                    var id = posthog.get_distinct_id();
+                    if (id) form.querySelector('input[name=ph_anon_id]').value = String(id).slice(0, 64);
+                }
+            } catch (e) {}
+        });
+    })();
+    </script>
+</body>
+</html>

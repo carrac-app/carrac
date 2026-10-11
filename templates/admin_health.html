@@ -1,0 +1,172 @@
+{% set admin_page = 'health' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Health — Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* ── Header ── */
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+
+        /* ── Overall badge ── */
+        .overall-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; font-size: 13px; font-weight: 700;
+            border-radius: 20px; letter-spacing: 0.04em;
+        }
+        .overall-badge.green { background: rgba(35,134,54,0.25); color: #3fb950; border: 1px solid rgba(35,134,54,0.5); }
+        .overall-badge.amber { background: rgba(210,153,34,0.25); color: #d29922; border: 1px solid rgba(210,153,34,0.5); }
+        .overall-badge.red   { background: rgba(248,81,73,0.25);  color: #f85149; border: 1px solid rgba(248,81,73,0.5); }
+
+        /* ── Refresh control ── */
+        .refresh-row { display: flex; align-items: center; gap: 12px; }
+        .btn {
+            padding: 6px 14px; font-size: 13px; font-weight: 500;
+            border: 1px solid #30363d; border-radius: 6px; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+            background: #161b22; color: #c9d1d9;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn:hover { background: #21262d; border-color: #58a6ff; }
+        .refresh-note { font-size: 12px; color: #484f58; }
+
+        /* ── Category sections ── */
+        .category-section { margin-bottom: 28px; }
+        .category-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: #8b949e; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .category-title::after {
+            content: ''; flex: 1; height: 1px; background: #21262d;
+        }
+
+        /* ── Component cards ── */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+        }
+        .card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+            padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
+            border-left: 3px solid transparent;
+            transition: border-color 0.15s;
+        }
+        .card.green { border-left-color: #3fb950; }
+        .card.amber { border-left-color: #d29922; }
+        .card.red   { border-left-color: #f85149; }
+
+        .card-top { display: flex; align-items: center; justify-content: space-between; }
+        .card-name { font-size: 14px; font-weight: 600; }
+
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .status-dot.green { background: #3fb950; box-shadow: 0 0 6px rgba(63,185,80,0.6); }
+        .status-dot.amber { background: #d29922; box-shadow: 0 0 6px rgba(210,153,34,0.6); }
+        .status-dot.red   { background: #f85149; box-shadow: 0 0 6px rgba(248,81,73,0.6); animation: pulse-red 1.5s infinite; }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 6px rgba(248,81,73,0.6); }
+            50%       { box-shadow: 0 0 12px rgba(248,81,73,0.9); }
+        }
+
+        .card-detail { font-size: 12px; color: #8b949e; line-height: 1.4; word-break: break-word; }
+        .card-meta   { display: flex; gap: 10px; font-size: 11px; color: #484f58; }
+
+        /* ── Summary KPIs ── */
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+            padding: 14px 16px; text-align: center;
+        }
+        .kpi-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .kpi-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .kpi-value.green { color: #3fb950; }
+        .kpi-value.amber { color: #d29922; }
+        .kpi-value.red   { color: #f85149; }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% include 'admin_nav.html' %}
+
+    <div class="header">
+        <h1>
+            System Health
+            <span class="overall-badge {{ overall }}">
+                <span class="status-dot {{ overall }}"></span>
+                {{ overall | upper }}
+            </span>
+        </h1>
+        <div class="refresh-row">
+            <a href="{{ url_for('admin.admin_health_page', refresh='1') }}" class="btn">
+                &#8635; Refresh now
+            </a>
+            <span class="refresh-note">Results cached ~30 s</span>
+        </div>
+    </div>
+
+    <!-- KPI summary row -->
+    {% set green_count = checks | selectattr('status', 'equalto', 'green') | list | length %}
+    {% set amber_count = checks | selectattr('status', 'equalto', 'amber') | list | length %}
+    {% set red_count   = checks | selectattr('status', 'equalto', 'red')   | list | length %}
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Healthy</div>
+            <div class="kpi-value green">{{ green_count }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Degraded</div>
+            <div class="kpi-value amber">{{ amber_count }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Critical</div>
+            <div class="kpi-value red">{{ red_count }}</div>
+        </div>
+    </div>
+
+    <!-- Per-category groups -->
+    {% for cat, items in categories.items() %}
+    <div class="category-section">
+        <div class="category-title">{{ cat | replace('_', ' ') | title }}</div>
+        <div class="cards-grid">
+            {% for check in items %}
+            <div class="card {{ check.status }}">
+                <div class="card-top">
+                    <span class="card-name">{{ check.component | replace('_', ' ') | title }}</span>
+                    <span class="status-dot {{ check.status }}"></span>
+                </div>
+                <div class="card-detail">{{ check.detail }}</div>
+                <div class="card-meta">
+                    <span>{{ check.latency_ms }} ms</span>
+                    <span>{{ check.checked_at | replace('T', ' ') | truncate(19, True, '') }} UTC</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- JSON endpoint hint -->
+    <p style="margin-top:24px; font-size:12px; color:#484f58;">
+        JSON endpoint: <code style="background:#161b22; padding:2px 6px; border-radius:4px; font-size:11px;">/api/admin/health</code>
+        — returns 200 (green/amber) or 503 (red). Suitable for Kuma / Watchdog probes.
+    </p>
+</div>
+</body>
+</html>

@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TALib.js — Unit Tests</title>
+<style>
+body { font-family: monospace; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+h1 { color: #00d4ff; }
+h2 { color: #888; margin-top: 24px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+.pass { color: #4caf50; }
+.fail { color: #ef5350; font-weight: bold; }
+.summary { font-size: 18px; margin-top: 20px; padding: 12px; border: 2px solid; border-radius: 4px; }
+.summary.all-pass { border-color: #4caf50; color: #4caf50; }
+.summary.has-fail { border-color: #ef5350; color: #ef5350; }
+pre { background: #0d0d1a; padding: 8px; border-radius: 4px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>TALib.js — Unit Tests</h1>
+<div id="results"></div>
+<script src="../static/js/ta-lib.js"></script>
+<script src="../static/js/formula-parser.js"></script>
+<script src="../static/js/backtester.js"></script>
+<script>
+(function() {
+    'use strict';
+    var results = document.getElementById('results');
+    var passed = 0, failed = 0, total = 0;
+
+    function log(html) { results.innerHTML += html + '\n'; }
+    function section(name) { log('<h2>' + name + '</h2>'); }
+
+    function approxEqual(a, b, tol) {
+        if (tol === undefined) tol = 1e-6;
+        if (isNaN(a) && isNaN(b)) return true;
+        if (isNaN(a) || isNaN(b)) return false;
+        return Math.abs(a - b) <= tol;
+    }
+
+    function assertArrayApprox(name, actual, expected, tol) {
+        total++;
+        if (actual.length !== expected.length) {
+            failed++;
+            log('<span class="fail">FAIL</span> ' + name +
+                ' — length mismatch: got ' + actual.length + ', expected ' + expected.length);
+            return;
+        }
+        for (var i = 0; i < expected.length; i++) {
+            if (!approxEqual(actual[i], expected[i], tol)) {
+                failed++;
+                log('<span class="fail">FAIL</span> ' + name +
+                    ' — index ' + i + ': got ' + actual[i] + ', expected ' + expected[i]);
+                log('<pre>actual:   [' + actual.map(function(v) { return isNaN(v) ? 'NaN' : v.toFixed(4); }).join(', ') + ']</pre>');
+                log('<pre>expected: [' + expected.map(function(v) { return isNaN(v) ? 'NaN' : v.toFixed(4); }).join(', ') + ']</pre>');
+                return;
+            }
+        }
+        passed++;
+        log('<span class="pass">PASS</span> ' + name);
+    }
+
+    function assertEqual(name, actual, expected) {
+        total++;
+        if (actual === expected || (isNaN(actual) && isNaN(expected))) {
+            passed++;
+            log('<span class="pass">PASS</span> ' + name);
+        } else {
+            failed++;
+            log('<span class="fail">FAIL</span> ' + name + ' — got ' + actual + ', expected ' + expected);
+        }
+    }
+
+    var T = window.TALib;
+    var N = NaN;
+
+    // ── Test data ───────────────────────────────────────────────────────
+
+    var simple5 = [1, 2, 3, 4, 5];
+    var simple10 = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    // Simulated OHLCV for 10 bars
+    var O = [100, 102, 101, 103, 105, 104, 106, 108, 107, 109];
+    var H = [103, 104, 103, 106, 107, 106, 109, 110, 109, 112];
+    var L = [ 99, 101, 100, 102, 104, 103, 105, 107, 106, 108];
+    var C = [102, 101, 103, 105, 104, 106, 108, 107, 109, 111];
+    var V = [1000, 1200, 800, 1500, 900, 1100, 1300, 700, 1400, 1000];
+
+    // ── Price Shorthands ────────────────────────────────────────────────
+
+    section('Price Shorthands');
+
+    assertArrayApprox('ohlc4', T.ohlc4(O, H, L, C),
+        O.map(function(_, i) { return (O[i] + H[i] + L[i] + C[i]) / 4; }));
+
+    assertArrayApprox('hlc3', T.hlc3(H, L, C),
+        H.map(function(_, i) { return (H[i] + L[i] + C[i]) / 3; }));
+
+    assertArrayApprox('hl2', T.hl2(H, L),
+        H.map(function(_, i) { return (H[i] + L[i]) / 2; }));
+
+    // ── SMA ─────────────────────────────────────────────────────────────
+
+    section('SMA');
+
+    assertArrayApprox('sma([1..5], 3)', T.sma(simple5, 3), [N, N, 2, 3, 4]);
+    assertArrayApprox('sma([1..5], 1)', T.sma(simple5, 1), [1, 2, 3, 4, 5]);
+    assertArrayApprox('sma([1..5], 5)', T.sma(simple5, 5), [N, N, N, N, 3]);
+    assertArrayApprox('sma([1..5], 6) — period > length', T.sma(simple5, 6), [N, N, N, N, N]);
+    assertArrayApprox('sma empty', T.sma([], 3), []);
+
+    // SMA with leading NaN (composed function scenario)
+    assertArrayApprox('sma with leading NaN', T.sma([N, N, 1, 2, 3, 4, 5], 3),
+        [N, N, N, N, 2, 3, 4]);
+
+    // ── EMA ─────────────────────────────────────────────────────────────
+
+    section('EMA');
+
+    // EMA(3): k = 2/4 = 0.5, seed = SMA of first 3
+    // seed = (1+2+3)/3 = 2, ema[3] = 4*0.5 + 2*0.5 = 3, ema[4] = 5*0.5 + 3*0.5 = 4
+    assertArrayApprox('ema([1..5], 3)', T.ema(simple5, 3), [N, N, 2, 3, 4]);
+
+    // EMA(2): k = 2/3 = 0.6667, seed = (1+2)/2 = 1.5
+    // ema[2] = 3*0.6667 + 1.5*0.3333 = 2.5, ema[3] = 4*0.6667 + 2.5*0.3333 = 3.5
+    // ema[4] = 5*0.6667 + 3.5*0.3333 = 4.5
+    assertArrayApprox('ema([1..5], 2)', T.ema(simple5, 2), [N, 1.5, 2.5, 3.5, 4.5], 1e-4);
+
+    // EMA with leading NaN
+    assertArrayApprox('ema with leading NaN', T.ema([N, N, 1, 2, 3, 4, 5], 3),
+        [N, N, N, N, 2, 3, 4]);
+
+    // ── WMA ─────────────────────────────────────────────────────────────
+
+    section('WMA');
+
+    // WMA(3): weights [1,2,3], denom=6
+    // wma[2] = (1*1 + 2*2 + 3*3)/6 = 14/6 = 2.3333
+    // wma[3] = (2*1 + 3*2 + 4*3)/6 = 20/6 = 3.3333
+    // wma[4] = (3*1 + 4*2 + 5*3)/6 = 26/6 = 4.3333
+    assertArrayApprox('wma([1..5], 3)', T.wma(simple5, 3),
+        [N, N, 14/6, 20/6, 26/6], 1e-4);
+
+    // ── HMA ─────────────────────────────────────────────────────────────
+
+    section('HMA');
+
+    // HMA(4): halfLen=2, sqrtLen=2
+    // wma(2) of simple10 starts at index 1
+    // wma(4) of simple10 starts at index 3
+    // diff = 2*wma(2) - wma(4), then wma(2) of diff
+    var hmaResult = T.hma(simple10, 4);
+    assertEqual('hma length', hmaResult.length, 10);
+    assertEqual('hma early NaN', isNaN(hmaResult[0]), true);
+    assertEqual('hma has values', !isNaN(hmaResult[5]), true);
+
+    // ── ALMA ────────────────────────────────────────────────────────────
+
+    section('ALMA');
+
+    var almaResult = T.alma(simple10, 5);
+    assertEqual('alma length', almaResult.length, 10);
+    assertEqual('alma early NaN', isNaN(almaResult[3]), true);
+    assertEqual('alma has values', !isNaN(almaResult[4]), true);
+    // ALMA with offset=0.85 weights toward the end → should be close to recent values
+    assertEqual('alma weighted toward end', almaResult[9] > 17, true);
+
+    // ── KAMA ────────────────────────────────────────────────────────────
+
+    section('KAMA');
+
+    var kamaResult = T.kama(simple10, 3);
+    assertEqual('kama length', kamaResult.length, 10);
+    assertEqual('kama early NaN', isNaN(kamaResult[2]), true);
+    assertEqual('kama has values', !isNaN(kamaResult[3]), true);
+    // In a strong trend, KAMA should track closely
+    assertEqual('kama tracks trend', Math.abs(kamaResult[9] - 19) < 2, true);
+
+    // ── RSI ─────────────────────────────────────────────────────────────
+
+    section('RSI');
+
+    // Monotonically increasing prices → RSI = 100
+    var up = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    var rsiUp = T.rsi(up, 3);
+    assertArrayApprox('rsi all up = 100', rsiUp.slice(3),
+        [100, 100, 100, 100, 100, 100, 100], 1e-4);
+
+    // Monotonically decreasing → RSI = 0
+    var down = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+    var rsiDown = T.rsi(down, 3);
+    assertArrayApprox('rsi all down = 0', rsiDown.slice(3),
+        [0, 0, 0, 0, 0, 0, 0], 1e-4);
+
+    // Flat → RSI = 100 (no losses)
+    // Actually: all changes are 0, avgGain=0, avgLoss=0 → avgLoss===0 → RSI=100
+    var flat = [5, 5, 5, 5, 5];
+    assertArrayApprox('rsi flat = 100', T.rsi(flat, 2), [N, N, 100, 100, 100], 1e-4);
+
+    // ── TR / ATR ────────────────────────────────────────────────────────
+
+    section('TR / ATR');
+
+    // TR: max(H-L, |H-prevC|, |L-prevC|)
+    var trResult = T.tr(H, L, C);
+    assertEqual('tr length', trResult.length, 10);
+    // First bar: H-L = 103-99 = 4
+    assertArrayApprox('tr[0] = H-L', [trResult[0]], [4]);
+    // Second bar: max(104-101, |104-102|, |101-102|) = max(3, 2, 1) = 3
+    assertArrayApprox('tr[1]', [trResult[1]], [3]);
+
+    var atrResult = T.atr(H, L, C, 3);
+    assertEqual('atr length', atrResult.length, 10);
+    assertEqual('atr early NaN', isNaN(atrResult[1]), true);
+    assertEqual('atr has values', !isNaN(atrResult[2]), true);
+
+    // ── Bollinger Bands ─────────────────────────────────────────────────
+
+    section('Bollinger Bands');
+
+    var bbU = T.bb_upper(C, 5, 2);
+    var bbL = T.bb_lower(C, 5, 2);
+    var bbM = T.bb_mid(C, 5);
+    assertEqual('bb lengths match', bbU.length === bbL.length && bbL.length === bbM.length, true);
+    // Upper should be above mid, mid above lower
+    for (var i = 4; i < 10; i++) {
+        assertEqual('bb_upper[' + i + '] > bb_mid', bbU[i] > bbM[i], true);
+        assertEqual('bb_mid[' + i + '] > bb_lower', bbM[i] > bbL[i], true);
+    }
+
+    // ── Keltner Channels ────────────────────────────────────────────────
+
+    section('Keltner Channels');
+
+    var kcU = T.keltner_upper(H, L, C, 5, 1.5);
+    var kcL = T.keltner_lower(H, L, C, 5, 1.5);
+    assertEqual('keltner has values', !isNaN(kcU[4]) && !isNaN(kcL[4]), true);
+    assertEqual('keltner upper > lower', kcU[4] > kcL[4], true);
+
+    // ── StdDev ──────────────────────────────────────────────────────────
+
+    section('Standard Deviation');
+
+    // All same values → stdev = 0
+    assertArrayApprox('stdev constant = 0', T.stdev([5, 5, 5, 5, 5], 3),
+        [N, N, 0, 0, 0]);
+
+    // [1,2,3]: mean=2, stdev = sqrt(((1-2)^2 + (2-2)^2 + (3-2)^2) / 3) = sqrt(2/3) ≈ 0.8165
+    assertArrayApprox('stdev [1,2,3]', [T.stdev([1, 2, 3], 3)[2]],
+        [Math.sqrt(2/3)], 1e-4);
+
+    // ── CCI ─────────────────────────────────────────────────────────────
+
+    section('CCI');
+
+    var cciResult = T.cci(H, L, C, 5);
+    assertEqual('cci length', cciResult.length, 10);
+    assertEqual('cci has values at 4', !isNaN(cciResult[4]), true);
+
+    // ── Williams %R ─────────────────────────────────────────────────────
+
+    section('Williams %R');
+
+    var willrResult = T.willr(H, L, C, 5);
+    assertEqual('willr range', willrResult[4] >= -100 && willrResult[4] <= 0, true);
+
+    // ── Stochastic ──────────────────────────────────────────────────────
+
+    section('Stochastic');
+
+    var stochK = T.stoch_k(H, L, C, 5);
+    assertEqual('stoch_k range', stochK[4] >= 0 && stochK[4] <= 100, true);
+
+    var stochD = T.stoch_d(H, L, C, 5, 1, 3);
+    assertEqual('stoch_d has values', !isNaN(stochD[6]), true);
+
+    // ── MFI ─────────────────────────────────────────────────────────────
+
+    section('MFI');
+
+    var mfiResult = T.mfi(H, L, C, V, 5);
+    assertEqual('mfi has values', !isNaN(mfiResult[5]), true);
+    assertEqual('mfi range 0-100', mfiResult[5] >= 0 && mfiResult[5] <= 100, true);
+
+    // ── ADX / +DI / -DI ────────────────────────────────────────────────
+
+    section('ADX / DI');
+
+    // Need longer data for ADX (needs 2*len bars)
+    var H20 = [], L20 = [], C20 = [];
+    for (var i = 0; i < 30; i++) {
+        H20.push(100 + i + Math.sin(i) * 3);
+        L20.push(98 + i + Math.sin(i) * 3);
+        C20.push(99 + i + Math.sin(i) * 3);
+    }
+    var adxResult = T.adx(H20, L20, C20, 5);
+    assertEqual('adx length', adxResult.length, 30);
+    assertEqual('adx has values at 10', !isNaN(adxResult[10]), true);
+
+    var pdiResult = T.plus_di(H20, L20, C20, 5);
+    var mdiResult = T.minus_di(H20, L20, C20, 5);
+    assertEqual('plus_di has values', !isNaN(pdiResult[5]), true);
+    assertEqual('minus_di has values', !isNaN(mdiResult[5]), true);
+
+    // ── SuperTrend ──────────────────────────────────────────────────────
+
+    section('SuperTrend');
+
+    var stResult = T.supertrend(H20, L20, C20, 5, 2);
+    assertEqual('supertrend length', stResult.length, 30);
+    assertEqual('supertrend has values', !isNaN(stResult[10]), true);
+
+    // ── PSAR ────────────────────────────────────────────────────────────
+
+    section('Parabolic SAR');
+
+    var psarResult = T.psar(H20, L20);
+    assertEqual('psar length', psarResult.length, 30);
+    assertEqual('psar[0] defined', !isNaN(psarResult[0]), true);
+    // SAR should be either above or below the price range
+    var sarAboveOrBelow = psarResult[10] > H20[10] || psarResult[10] < L20[10];
+    assertEqual('psar outside candle body', sarAboveOrBelow, true);
+
+    // ── MACD ────────────────────────────────────────────────────────────
+
+    section('MACD');
+
+    var data20 = [];
+    for (var i = 0; i < 30; i++) data20.push(100 + i * 0.5 + Math.sin(i) * 2);
+    var macdL = T.macd_line(data20, 5, 10, 3);
+    var macdS = T.macd_signal(data20, 5, 10, 3);
+    var macdH = T.macd_hist(data20, 5, 10, 3);
+    assertEqual('macd_line has values', !isNaN(macdL[15]), true);
+    assertEqual('macd_signal has values', !isNaN(macdS[15]), true);
+    // hist = line - signal
+    assertArrayApprox('macd_hist = line - signal', [macdH[15]],
+        [macdL[15] - macdS[15]], 1e-6);
+
+    // ── OBV ─────────────────────────────────────────────────────────────
+
+    section('Volume Indicators');
+
+    var obvResult = T.obv(C, V);
+    assertEqual('obv[0] = 0', obvResult[0], 0);
+    // C[1]=101 < C[0]=102 → obv[1] = 0 - 1200 = -1200
+    assertEqual('obv[1] = -1200', obvResult[1], -1200);
+    // C[2]=103 > C[1]=101 → obv[2] = -1200 + 800 = -400
+    assertEqual('obv[2] = -400', obvResult[2], -400);
+
+    // ── A/D ─────────────────────────────────────────────────────────────
+
+    var adResult = T.ad(H, L, C, V);
+    assertEqual('ad length', adResult.length, 10);
+
+    // ── CMF ─────────────────────────────────────────────────────────────
+
+    var cmfResult = T.cmf(H, L, C, V, 5);
+    assertEqual('cmf has values', !isNaN(cmfResult[4]), true);
+    assertEqual('cmf range', cmfResult[4] >= -1 && cmfResult[4] <= 1, true);
+
+    // ── VWAP ────────────────────────────────────────────────────────────
+
+    var vwapResult = T.vwap(H, L, C, V, 5);
+    assertEqual('vwap has values', !isNaN(vwapResult[4]), true);
+    // VWAP should be within the price range
+    assertEqual('vwap in price range', vwapResult[4] > 99 && vwapResult[4] < 112, true);
+
+    // ── Highest / Lowest ────────────────────────────────────────────────
+
+    section('Bar Reference');
+
+    assertArrayApprox('highest([1..5], 3)', T.highest(simple5, 3), [N, N, 3, 4, 5]);
+    assertArrayApprox('lowest([1..5], 3)', T.lowest(simple5, 3), [N, N, 1, 2, 3]);
+
+    // ── Median ──────────────────────────────────────────────────────────
+
+    assertArrayApprox('median([1..5], 3)', T.median(simple5, 3), [N, N, 2, 3, 4]);
+    // Even window
+    assertArrayApprox('median([1..5], 2)', T.median(simple5, 2), [N, 1.5, 2.5, 3.5, 4.5]);
+
+    // ── Sum ─────────────────────────────────────────────────────────────
+
+    assertArrayApprox('sum([1..5], 3)', T.sum(simple5, 3), [N, N, 6, 9, 12]);
+
+    // ── Change / ROC / Mom ──────────────────────────────────────────────
+
+    assertArrayApprox('change([1..5], 1)', T.change(simple5, 1), [N, 1, 1, 1, 1]);
+    assertArrayApprox('change([1..5], 2)', T.change(simple5, 2), [N, N, 2, 2, 2]);
+    assertArrayApprox('roc([1,2,4], 1)', T.roc([1, 2, 4], 1), [N, 100, 100]);
+    assertArrayApprox('mom = change', T.mom(simple5, 1), T.change(simple5, 1));
+
+    // ── Offset ──────────────────────────────────────────────────────────
+
+    assertArrayApprox('offset([1..5], 2)', T.offset(simple5, 2), [N, N, 1, 2, 3]);
+    assertArrayApprox('offset([1..5], -1)', T.offset(simple5, -1), [2, 3, 4, 5, N]);
+
+    // ── Crossover / Crossunder ──────────────────────────────────────────
+
+    section('Logic / Signals');
+
+    var a = [1, 3, 2, 4, 1];
+    var b = [2, 2, 3, 3, 3];
+    assertArrayApprox('crossover', T.crossover(a, b), [0, 1, 0, 1, 0]);
+    assertArrayApprox('crossunder', T.crossunder(a, b), [0, 0, 1, 0, 1]);
+
+    // ── Valuewhen ───────────────────────────────────────────────────────
+
+    var cond = [0, 1, 0, 1, 0];
+    var src =  [10, 20, 30, 40, 50];
+    assertArrayApprox('valuewhen', T.valuewhen(cond, src), [N, 20, 20, 40, 40]);
+
+    // ── Barssince ───────────────────────────────────────────────────────
+
+    assertArrayApprox('barssince', T.barssince(cond), [N, 0, 1, 0, 1]);
+
+    // ── Count ───────────────────────────────────────────────────────────
+
+    assertArrayApprox('count', T.count([1, 0, 1, 1, 0, 1], 3), [N, N, 2, 2, 2, 2]);
+
+    // ── Math ────────────────────────────────────────────────────────────
+
+    section('Math');
+
+    assertArrayApprox('abs', T.abs([-1, 0, 3, -5]), [1, 0, 3, 5]);
+    assertArrayApprox('sqrt', T.sqrt([0, 1, 4, 9, -1]), [0, 1, 2, 3, N]);
+    assertArrayApprox('pow', T.pow([2, 3], [3, 2]), [8, 9]);
+    assertArrayApprox('log', T.log([1, Math.E, -1]), [0, 1, N], 1e-6);
+    assertArrayApprox('exp', T.exp([0, 1]), [1, Math.E], 1e-6);
+    assertArrayApprox('round', T.round([1.2345, 6.789], [2, 1]), [1.23, 6.8], 1e-10);
+    assertArrayApprox('clamp', T.clamp([1, 5, 10], [2, 2, 2], [8, 8, 8]), [2, 5, 8]);
+    assertArrayApprox('max_val', T.max_val([1, 5, 3], [4, 2, 6]), [4, 5, 6]);
+    assertArrayApprox('min_val', T.min_val([1, 5, 3], [4, 2, 6]), [1, 2, 3]);
+
+    // ── Edge Cases ──────────────────────────────────────────────────────
+
+    section('Edge Cases');
+
+    // Empty arrays
+    assertArrayApprox('sma empty', T.sma([], 3), []);
+    assertArrayApprox('ema empty', T.ema([], 3), []);
+    assertArrayApprox('rsi empty', T.rsi([], 14), []);
+
+    // Single element
+    assertArrayApprox('sma single', T.sma([42], 1), [42]);
+    assertArrayApprox('sma single, period 2', T.sma([42], 2), [N]);
+
+    // All same values
+    var allSame = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5];
+    assertArrayApprox('sma constant', T.sma(allSame, 3), [N, N, 5, 5, 5, 5, 5, 5, 5, 5]);
+    assertArrayApprox('ema constant', T.ema(allSame, 3), [N, N, 5, 5, 5, 5, 5, 5, 5, 5]);
+    assertArrayApprox('stdev constant = 0', T.stdev(allSame, 3),
+        [N, N, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+    // Period = 1
+    assertArrayApprox('sma period=1', T.sma(simple5, 1), simple5);
+    assertArrayApprox('ema period=1', T.ema(simple5, 1), simple5);
+
+    // Composed functions: SMA of RSI (leading NaN handling)
+    var longData = [];
+    for (var i = 0; i < 50; i++) longData.push(100 + Math.sin(i * 0.5) * 10);
+    var rsiData = T.rsi(longData, 14);
+    var smaOfRsi = T.sma(rsiData, 5);
+    // RSI starts at index 14, SMA(5) of RSI should start at index 18
+    assertEqual('sma(rsi) early NaN', isNaN(smaOfRsi[17]), true);
+    assertEqual('sma(rsi) starts at 18', !isNaN(smaOfRsi[18]), true);
+
+    // EMA of RSI (composed)
+    var emaOfRsi = T.ema(rsiData, 5);
+    assertEqual('ema(rsi) starts at 18', !isNaN(emaOfRsi[18]), true);
+
+    // ══════════════════════════════════════════════════════════════════════
+    // FormulaParser Tests
+    // ══════════════════════════════════════════════════════════════════════
+
+    var FP = window.FormulaParser;
+    var ohlcv = { open: O, high: H, low: L, close: C, volume: V };
+
+    function fpEval(formula) { return FP.evaluate(formula, ohlcv); }
+    function fpError(formula) { return FP.evaluate(formula, ohlcv).error; }
+
+    // ── Bar Offset Syntax [n] ─────────────────────────────────────────
+
+    section('FormulaParser: Bar Offset [n]');
+
+    // close[1] = OFFSET(close, 1)
+    var closeOff1 = fpEval('close[1]');
+    assertArrayApprox('close[1] = OFFSET(close, 1)',
+        closeOff1.values, T.offset(C, 1));
+
+    // close[2]
+    assertArrayApprox('close[2]', fpEval('close[2]').values, T.offset(C, 2));
+
+    // close[0] = close (no shift)
+    assertArrayApprox('close[0] = close', fpEval('close[0]').values, C);
+
+    // Negative offset: close[-1] (forward-looking)
+    assertArrayApprox('close[-1] forward-looking',
+        fpEval('close[-1]').values, T.offset(C, -1));
+
+    // Function call with offset: SMA(close, 3)[1]
+    var sma3 = T.sma(C, 3);
+    assertArrayApprox('SMA(close, 3)[1]',
+        fpEval('SMA(close, 3)[1]').values, T.offset(sma3, 1));
+
+    // Shorthand: SMA(3)[2]
+    assertArrayApprox('SMA(3)[2]',
+        fpEval('SMA(3)[2]').values, T.offset(T.sma(C, 3), 2));
+
+    // Expression with offset: close > close[1]
+    var result = fpEval('close > close[1]');
+    assertEqual('close > close[1] no error', result.error, null);
+    // Bar 0: close[1] = NaN → NaN. Bar 1: 101 > 102 = 0. Bar 2: 103 > 101 = 1
+    assertEqual('close > close[1] at bar 2', result.values[2], 1);
+    assertEqual('close > close[1] at bar 1', result.values[1], 0);
+
+    // Chained offset: close[1][1] = close[2]
+    assertArrayApprox('close[1][1] = close[2]',
+        fpEval('close[1][1]').values, fpEval('close[2]').values);
+
+    // Error: non-integer offset
+    assertEqual('[1.5] error', fpError('close[1.5]') !== null, true);
+
+    // ── Let Bindings ──────────────────────────────────────────────────
+
+    section('FormulaParser: Let Bindings');
+
+    // Simple let
+    var letResult = fpEval('let x = SMA(close, 3) x');
+    assertArrayApprox('let x = SMA(3); x',
+        letResult.values, T.sma(C, 3));
+
+    // Let with arithmetic
+    assertArrayApprox('let x = SMA(3); x * 2',
+        fpEval('let x = SMA(close, 3) x * 2').values,
+        T.sma(C, 3).map(function(v) { return v * 2; }));
+
+    // Multiple lets
+    var multiLet = fpEval('let fast = EMA(close, 3) let slow = EMA(close, 5) fast - slow');
+    var expected = T.ema(C, 3).map(function(v, i) { return v - T.ema(C, 5)[i]; });
+    assertArrayApprox('let fast, let slow, fast - slow',
+        multiLet.values, expected);
+
+    // Let sees previous bindings
+    var seqLet = fpEval('let a = 5 let b = a + 1 b');
+    assertEqual('let a = 5, let b = a + 1 → 6',
+        seqLet.values[0], 6);
+
+    // Let shadowing
+    var shadow = fpEval('let x = 5 let x = x + 1 x');
+    assertEqual('let shadow: x = 5, x = x + 1 → 6',
+        shadow.values[0], 6);
+
+    // Scalar let used as function param (prefix heuristic)
+    var scalarParam = fpEval('let p = 14 RSI(p)');
+    assertEqual('let p = 14; RSI(p) works', scalarParam.error, null);
+    assertArrayApprox('let p = 14; RSI(p) = RSI(14)',
+        scalarParam.values, T.rsi(C, 14));
+
+    // Let with bar offset
+    var letOffset = fpEval('let prev = close[1] close - prev');
+    assertEqual('let prev = close[1]; close - prev works', letOffset.error, null);
+
+    // Complex: let with functions and offset
+    var complex = fpEval('let mid = EMA(close, 3) let prev_mid = mid[1] mid > prev_mid');
+    assertEqual('complex let + offset no error', complex.error, null);
+
+    // Error: too many lets
+    assertEqual('11 lets error',
+        fpError('let a=1 let b=1 let c=1 let d=1 let e=1 let f=1 let g=1 let h=1 let i=1 let j=1 let k=1 k') !== null, true);
+
+    // Error: let without =
+    assertEqual('let without = error', fpError('let x close') !== null, true);
+
+    // Error: let without name
+    assertEqual('let without name error', fpError('let = 5 1') !== null, true);
+
+    // ── Existing formulas still work ──────────────────────────────────
+
+    section('FormulaParser: Regression');
+
+    // Basic expression
+    assertArrayApprox('basic SMA still works',
+        fpEval('SMA(close, 3)').values, T.sma(C, 3));
+
+    // Comparison
+    assertEqual('comparison still works',
+        fpEval('close > open').error, null);
+
+    // IF / AND / OR / NOT
+    assertEqual('IF still works',
+        fpEval('IF(close > open, 1, 0)').error, null);
+
+    // CROSSOVER
+    assertEqual('CROSSOVER still works',
+        fpEval('CROSSOVER(EMA(3), EMA(5))').error, null);
+
+    // 2000 char limit
+    assertEqual('2000 char limit', fpError('x'.repeat(2001)) !== null, true);
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Backtester Tests
+    // ══════════════════════════════════════════════════════════════════════
+
+    var BT = window.Backtester;
+
+    // Small precise dataset: price goes 100 → 150 → 200 → 150 → 100
+    var tiny = {
+        open:   [100, 100, 100, 100, 100],
+        high:   [105, 155, 205, 155, 105],
+        low:    [95,  95,  95,  95,  95],
+        close:  [100, 150, 200, 150, 100],
+        volume: [1000, 1000, 1000, 1000, 1000]
+    };
+
+    // 30-bar dataset for multi-trade tests: up 100→130 then down 130→102
+    var btC30 = [], btO30 = [], btH30 = [], btL30 = [], btV30 = [];
+    for (var i = 0; i < 30; i++) {
+        var base = 100 + (i < 15 ? i * 2 : (30 - i) * 2);
+        btC30.push(base); btO30.push(base - 1);
+        btH30.push(base + 2); btL30.push(base - 2); btV30.push(1000);
+    }
+    var ohlcv30 = { open: btO30, high: btH30, low: btL30, close: btC30, volume: btV30 };
+
+    // ── Validation ────────────────────────────────────────────────────
+
+    section('Backtester: Validation');
+
+    assertEqual('missing entry', BT.run({ exit: '1' }, tiny).error !== null, true);
+    assertEqual('missing exit', BT.run({ entry: '1' }, tiny).error !== null, true);
+    assertEqual('bad entry formula', BT.run({ entry: 'BADFUNC()', exit: '1' }, tiny).error !== null, true);
+    assertEqual('bad exit formula', BT.run({ entry: '1', exit: 'BADFUNC()' }, tiny).error !== null, true);
+    assertEqual('empty data', BT.run({ entry: '1', exit: '1' },
+        { open:[], high:[], low:[], close:[], volume:[] }).error !== null, true);
+    assertEqual('startBar > endBar', BT.run({ entry: '1', exit: '1',
+        startBar: 3, endBar: 1 }, tiny).error !== null, true);
+
+    // ── Single Long Trade (exact math) ────────────────────────────────
+    // Entry: CROSSOVER(close, 120) → bar 1 only (100→150 crosses 120)
+    // Exit:  close >= 200 → bar 2 (close=200)
+    // Capital: 15000, units = 15000/150 = 100, PnL = (200-150)*100 = 5000
+
+    section('Backtester: Single Long Trade');
+
+    var bt1 = BT.run({
+        entry: 'CROSSOVER(close, 120)',
+        exit: 'close >= 200',
+        direction: 'long',
+        commissionPercent: 0,
+        initialCapital: 15000
+    }, tiny);
+    assertEqual('long: no error', bt1.error, null);
+    assertEqual('long: 1 trade', bt1.trades.length, 1);
+    assertEqual('long: entry bar 1', bt1.trades[0].entryBar, 1);
+    assertEqual('long: exit bar 2', bt1.trades[0].exitBar, 2);
+    assertEqual('long: entry price', bt1.trades[0].entryPrice, 150);
+    assertEqual('long: exit price', bt1.trades[0].exitPrice, 200);
+    assertEqual('long: direction', bt1.trades[0].direction, 'long');
+    assertArrayApprox('long: pnl = 5000', [bt1.trades[0].pnl], [5000], 0.01);
+    assertArrayApprox('long: pnl% = 33.33', [bt1.trades[0].pnlPercent], [33.333], 0.01);
+    assertEqual('long: bars held = 1', bt1.trades[0].bars, 1);
+    assertArrayApprox('long: final equity = 20000', [bt1.equity[4]], [20000], 0.01);
+
+    // ── Commission ────────────────────────────────────────────────────
+    // Round-trip commission = 2 * 0.01 * 15000 = 300. Net = 5000 - 300 = 4700.
+
+    section('Backtester: Commission');
+
+    var btComm = BT.run({
+        entry: 'CROSSOVER(close, 120)',
+        exit: 'close >= 200',
+        direction: 'long',
+        commissionPercent: 1,
+        initialCapital: 15000
+    }, tiny);
+    assertArrayApprox('commission: pnl = 4700', [btComm.trades[0].pnl], [4700], 0.01);
+    assertArrayApprox('commission: final equity = 19700', [btComm.equity[4]], [19700], 0.01);
+
+    // ── Short Direction ───────────────────────────────────────────────
+    // Same signals, short: PnL = (200-150) * (-1) * 100 = -5000
+
+    section('Backtester: Short');
+
+    var btShort = BT.run({
+        entry: 'CROSSOVER(close, 120)',
+        exit: 'close >= 200',
+        direction: 'short',
+        commissionPercent: 0,
+        initialCapital: 15000
+    }, tiny);
+    assertEqual('short: direction', btShort.trades[0].direction, 'short');
+    assertArrayApprox('short: pnl = -5000', [btShort.trades[0].pnl], [-5000], 0.01);
+    assertArrayApprox('short: final equity = 10000', [btShort.equity[4]], [10000], 0.01);
+
+    // ── No Trades ─────────────────────────────────────────────────────
+
+    section('Backtester: No Trades');
+
+    var btNone = BT.run({
+        entry: '0', exit: '1', direction: 'long', initialCapital: 10000
+    }, tiny);
+    assertEqual('no trades: 0 trades', btNone.trades.length, 0);
+    assertEqual('no trades: equity unchanged', btNone.equity[4], 10000);
+    assertEqual('no trades: stats zeroed', btNone.stats.totalTrades, 0);
+
+    // ── Position Sizing ───────────────────────────────────────────────
+    // 50%: posValue = 7500, units = 50, PnL = 50 * 50 = 2500
+
+    section('Backtester: Position Sizing');
+
+    var btHalf = BT.run({
+        entry: 'CROSSOVER(close, 120)',
+        exit: 'close >= 200',
+        direction: 'long',
+        sizePercent: 50,
+        commissionPercent: 0,
+        initialCapital: 15000
+    }, tiny);
+    assertArrayApprox('50% size: pnl = 2500', [btHalf.trades[0].pnl], [2500], 0.01);
+
+    // ── Both Direction (Reversal) ─────────────────────────────────────
+    // entry='1', exit='1': opens long bar 0, closes + reverses each bar.
+    // Should alternate long → short → long → ...
+
+    section('Backtester: Both Direction');
+
+    var btBoth = BT.run({
+        entry: '1', exit: '1', direction: 'both',
+        commissionPercent: 0, initialCapital: 15000
+    }, tiny);
+    assertEqual('both: no error', btBoth.error, null);
+    assertEqual('both: multiple trades', btBoth.trades.length >= 3, true);
+    assertEqual('both: first long', btBoth.trades[0].direction, 'long');
+    assertEqual('both: second short', btBoth.trades[1].direction, 'short');
+    assertEqual('both: third long', btBoth.trades[2].direction, 'long');
+
+    // ── Equity Curve ──────────────────────────────────────────────────
+
+    section('Backtester: Equity Curve');
+
+    assertEqual('equity length = data length', bt1.equity.length, 5);
+    assertArrayApprox('equity[0] = capital', [bt1.equity[0]], [15000], 0.01);
+    // Bar 1: position opened at 150, unrealized = 0
+    assertArrayApprox('equity[1] = capital (just entered)', [bt1.equity[1]], [15000], 0.01);
+    // Bar 2: trade closed, equity = 20000
+    assertArrayApprox('equity[2] = 20000 (after exit)', [bt1.equity[2]], [20000], 0.01);
+
+    // ── Stats ─────────────────────────────────────────────────────────
+
+    section('Backtester: Stats');
+
+    assertEqual('stats: 1 trade', bt1.stats.totalTrades, 1);
+    assertEqual('stats: 1 winner', bt1.stats.winners, 1);
+    assertEqual('stats: 0 losers', bt1.stats.losers, 0);
+    assertArrayApprox('stats: win rate 100%', [bt1.stats.winRate], [1.0], 0.01);
+    assertEqual('stats: max dd >= 0', bt1.stats.maxDrawdown >= 0, true);
+    assertArrayApprox('stats: total return', [bt1.stats.totalReturn], [5000], 0.01);
+    assertArrayApprox('stats: return %', [bt1.stats.totalReturnPercent], [33.333], 0.01);
+    assertEqual('stats: avg bars = 1', bt1.stats.avgBarsInTrade, 1);
+    // Short: 1 loser
+    assertEqual('short stats: 0 winners', btShort.stats.winners, 0);
+    assertEqual('short stats: 1 loser', btShort.stats.losers, 1);
+
+    // ── Multiple Trades (30-bar data) ─────────────────────────────────
+
+    section('Backtester: Multiple Trades');
+
+    var btMulti = BT.run({
+        entry: 'CROSSOVER(close, SMA(close, 5))',
+        exit: 'CROSSUNDER(close, SMA(close, 5))',
+        direction: 'long',
+        commissionPercent: 0,
+        initialCapital: 10000
+    }, ohlcv30);
+    assertEqual('multi: no error', btMulti.error, null);
+    assertEqual('multi: has trades', btMulti.trades.length > 0, true);
+    assertEqual('multi: equity length', btMulti.equity.length, 30);
+    assertEqual('multi: win rate in range',
+        btMulti.stats.winRate >= 0 && btMulti.stats.winRate <= 1, true);
+    var multiReturn = btMulti.equity[29] - 10000;
+    assertArrayApprox('multi: return matches equity',
+        [btMulti.stats.totalReturn], [multiReturn], 0.01);
+
+    // ── Edge Cases ────────────────────────────────────────────────────
+
+    section('Backtester: Edge Cases');
+
+    // Start at last bar
+    var btEnd = BT.run({
+        entry: '1', exit: '1', direction: 'long',
+        commissionPercent: 0, initialCapital: 10000, startBar: 4
+    }, tiny);
+    assertEqual('start at last bar: no error', btEnd.error, null);
+
+    // ── Formula Engine Integration ────────────────────────────────────
+
+    section('Backtester: Formula Engine Integration');
+
+    // Let bindings in strategy formulas
+    var btLet = BT.run({
+        entry: 'let fast = EMA(close, 2) let slow = SMA(close, 3) CROSSOVER(fast, slow)',
+        exit: 'let fast = EMA(close, 2) let slow = SMA(close, 3) CROSSUNDER(fast, slow)',
+        direction: 'long',
+        commissionPercent: 0.1,
+        initialCapital: 10000
+    }, ohlcv30);
+    assertEqual('let strategy: no error', btLet.error, null);
+    assertEqual('let strategy: has stats', btLet.stats !== null, true);
+
+    // Bar offset in entry formula
+    var btOff = BT.run({
+        entry: 'close > close[1] AND close[1] > close[2]',
+        exit: 'close < close[1]',
+        direction: 'long',
+        commissionPercent: 0,
+        initialCapital: 10000
+    }, ohlcv30);
+    assertEqual('offset strategy: no error', btOff.error, null);
+
+    // ── Z-Score ─────────────────────────────────────────────────────────
+
+    section('Z-Score');
+
+    // [10,12,14] mean=12, pop stdev=sqrt(8/3)=1.6330, zscore(14)=(14-12)/1.6330=1.2247
+    // [12,14,16] mean=14, pop stdev=sqrt(8/3)=1.6330, zscore(16)=1.2247
+    // [14,16,18] mean=16, pop stdev=sqrt(8/3)=1.6330, zscore(18)=1.2247
+    assertArrayApprox('zscore basic', T.zscore([10, 12, 14, 16, 18], 3),
+        [N, N, 1.2247, 1.2247, 1.2247], 1e-3);
+
+    // Constant array → z-score = 0 (no variation, std=0 branch)
+    assertArrayApprox('zscore constant = 0', T.zscore([5, 5, 5, 5, 5], 3),
+        [N, N, 0, 0, 0]);
+
+    // ── Percentile Rank ────────────────────────────────────────────────
+
+    section('Percentile Rank');
+
+    // Each value is the max of its window → 100% rank (all values <= current)
+    assertArrayApprox('percentile ascending', T.percentile([1, 2, 3, 4, 5], 3),
+        [N, N, 100, 100, 100], 0.01);
+
+    // Each value is the min of its window → only itself <= current → 33.33%
+    assertArrayApprox('percentile descending', T.percentile([5, 4, 3, 2, 1], 3),
+        [N, N, 33.33, 33.33, 33.33], 0.01);
+
+    // ── Normalize ──────────────────────────────────────────────────────
+
+    section('Normalize');
+
+    // Each value is the max of its window → normalize = 1.0
+    assertArrayApprox('normalize ascending', T.normalize([1, 2, 3, 4, 5], 3),
+        [N, N, 1.0, 1.0, 1.0]);
+
+    // Constant array → mn==mx → 0.5 (edge case in implementation)
+    assertArrayApprox('normalize constant = 0.5', T.normalize([7, 7, 7, 7, 7], 3),
+        [N, N, 0.5, 0.5, 0.5]);
+
+    // ── Correlation ────────────────────────────────────────────────────
+
+    section('Correlation');
+
+    // Perfectly correlated: a = 10*b
+    assertArrayApprox('corr perfect positive', T.corr([1,2,3,4,5], [10,20,30,40,50], 3),
+        [N, N, 1.0, 1.0, 1.0], 1e-6);
+
+    // Perfectly anti-correlated
+    assertArrayApprox('corr perfect negative', T.corr([1,2,3,4,5], [50,40,30,20,10], 3),
+        [N, N, -1.0, -1.0, -1.0], 1e-6);
+
+    // Same array with itself → correlation = 1.0
+    assertArrayApprox('corr self = 1.0', T.corr([3,7,2,9,4], [3,7,2,9,4], 3),
+        [N, N, 1.0, 1.0, 1.0], 1e-6);
+
+    // ── Beta ───────────────────────────────────────────────────────────
+
+    section('Beta');
+
+    // a = 2*b exactly → beta = cov(a,b)/var(b) = 2
+    assertArrayApprox('beta = 2 (a = 2*b)', T.beta([2,4,6,8,10], [1,2,3,4,5], 3),
+        [N, N, 2.0, 2.0, 2.0], 1e-6);
+
+    // ── Linear Regression Value ────────────────────────────────────────
+
+    section('Linear Regression Value');
+
+    // linreg returns fitted value at end of window
+    // [1,2,3]: y=x+1, value at x=2 → 3. [2,3,4]: value=4. [3,4,5]: value=5.
+    assertArrayApprox('linreg perfect linear', T.linreg([1, 2, 3, 4, 5], 3),
+        [N, N, 3, 4, 5]);
+
+    // ── Linear Regression Slope ────────────────────────────────────────
+
+    section('Linear Regression Slope');
+
+    // Perfect linear [1..5] → slope = 1.0 everywhere
+    assertArrayApprox('linreg_slope = 1.0', T.linreg_slope([1, 2, 3, 4, 5], 3),
+        [N, N, 1.0, 1.0, 1.0], 1e-6);
+
+    // Constant → slope = 0
+    assertArrayApprox('linreg_slope constant = 0', T.linreg_slope([5, 5, 5, 5, 5], 3),
+        [N, N, 0, 0, 0]);
+
+    // ── R-Squared ──────────────────────────────────────────────────────
+
+    section('R-Squared');
+
+    // Perfect linear fit → R² = 1.0
+    assertArrayApprox('r_squared perfect linear', T.r_squared([1, 2, 3, 4, 5], 3),
+        [N, N, 1.0, 1.0, 1.0], 1e-6);
+
+    // Noisy data → R² < 1.0
+    var noisyR2 = T.r_squared([1, 5, 2, 8, 3], 3);
+    assertEqual('r_squared noisy < 1.0', noisyR2[2] < 1.0, true);
+    assertEqual('r_squared noisy >= 0', noisyR2[2] >= 0, true);
+
+    // ── Skewness ───────────────────────────────────────────────────────
+
+    section('Skewness');
+
+    // Symmetric data [1,2,3] → skew ≈ 0
+    var skewSym = T.skew([1, 2, 3, 4, 5], 3);
+    assertArrayApprox('skew symmetric ≈ 0', [skewSym[2], skewSym[3], skewSym[4]],
+        [0, 0, 0], 1e-6);
+
+    // Right-skewed data → positive skew (many small, one large)
+    var skewRight = T.skew([1, 1, 1, 1, 10], 5);
+    assertEqual('skew right-skewed > 0', skewRight[4] > 0, true);
+
+    // ── Realized Volatility ────────────────────────────────────────────
+
+    section('Realized Volatility');
+
+    // Constant prices → log returns = 0 → vol = 0
+    assertArrayApprox('realized_vol constant = 0',
+        T.realized_vol([100, 100, 100, 100, 100], 3),
+        [N, N, N, 0, 0]);
+
+    // Volatile prices → vol > 0
+    var rvResult = T.realized_vol([100, 110, 95, 105, 90], 3);
+    assertEqual('realized_vol volatile > 0', rvResult[3] > 0, true);
+    assertEqual('realized_vol is number', !isNaN(rvResult[3]), true);
+
+    // ── FormulaParser Quant Integration ────────────────────────────────
+
+    section('FormulaParser Quant Integration');
+
+    var FP = window.FormulaParser;
+
+    // QUANT_VARS exists and has expected keys
+    assertEqual('QUANT_VARS exists', typeof FP.QUANT_VARS, 'object');
+    assertEqual('QUANT_VARS has m2', FP.QUANT_VARS.m2, 'M2');
+    assertEqual('QUANT_VARS has fear_greed', FP.QUANT_VARS.fear_greed, 'FEAR_GREED');
+    assertEqual('QUANT_VARS has regime', FP.QUANT_VARS.regime, 'REGIME');
+    assertEqual('QUANT_VARS has btc', FP.QUANT_VARS.btc, 'BTC');
+
+    // getQuantDeps: macro variable inside function
+    var depsM2 = FP.getQuantDeps('SMA(M2, 10)');
+    assertEqual('getQuantDeps SMA(M2) length', depsM2.length, 1);
+    assertEqual('getQuantDeps SMA(M2) value', depsM2[0], 'M2');
+
+    // getQuantDeps: cross-asset price reference
+    var depsETH = FP.getQuantDeps('CORR(close, ETH, 30)');
+    assertEqual('getQuantDeps CORR(close, ETH) length', depsETH.length, 1);
+    assertEqual('getQuantDeps CORR(close, ETH) value', depsETH[0], 'ETH');
+
+    // getQuantDeps: no quant deps in standard TA formula
+    var depsNone = FP.getQuantDeps('RSI(close, 14)');
+    assertEqual('getQuantDeps RSI(close) = empty', depsNone.length, 0);
+
+    // getQuantDeps: multiple quant vars in one formula
+    var depsMulti = FP.getQuantDeps('IF(REGIME == 1, FEAR_GREED, 0)');
+    assertEqual('getQuantDeps multi length', depsMulti.length, 2);
+    assertEqual('getQuantDeps multi has REGIME', depsMulti.indexOf('REGIME') >= 0, true);
+    assertEqual('getQuantDeps multi has FEAR_GREED', depsMulti.indexOf('FEAR_GREED') >= 0, true);
+
+    // ── Summary ─────────────────────────────────────────────────────────
+
+    var allPass = failed === 0;
+    log('<div class="summary ' + (allPass ? 'all-pass' : 'has-fail') + '">' +
+        (allPass ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED') +
+        ' — ' + passed + '/' + total + ' passed, ' + failed + ' failed</div>');
+})();
+</script>
+</body>
+</html>

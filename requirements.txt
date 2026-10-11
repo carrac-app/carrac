@@ -1,0 +1,51 @@
+# Runtime dependencies: what the app needs, with the floor (or exact pin) it
+# needs it at. requirements.lock is the exact package set the production image
+# installs and CI tests; every package named here must be pinned there at a
+# version that satisfies the specifier (enforced by tests/test_requirements_lock.py).
+# The lock may carry more: it also holds transitive dependencies. Test and lint
+# tooling is in requirements-dev.txt.
+Flask==3.1.3
+Flask-WTF==1.2.1
+Flask-Limiter==3.5.0
+Flask-Session==0.8.0  # exact-pinned: session storage format must not drift
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+asgiref>=3.8.0
+slowapi==0.1.9  # FastAPI rate limiting against the same Redis backend as Flask-Limiter
+pandas>=2.2.2
+numpy>=2.0.2
+scipy>=1.14.0
+requests==2.33.0  # CVE-2026-25645
+gunicorn==23.0.0
+yfinance==0.2.49
+pywebpush>=2.3.0
+PyYAML>=6.0
+markdown>=3.5.0
+bleach==6.4.0  # exact-pinned (security-critical, HTML sanitization)
+playwright>=1.40.0
+redis==8.0.1  # exact-pinned (security-critical, session/cache backend)
+psycopg2-binary==2.9.12  # exact-pinned (security-critical, DB driver)
+msgspec==0.21.1  # exact-pin: session cookie codec for the FastAPI strangler bridge (session_middleware.py)
+defusedxml==0.7.1  # exact-pinned (security-critical, XML parsing)
+argon2-cffi==25.1.0  # exact-pinned (security-critical, password hashing)
+# Exact-pinned: newer releases changed their HTTP dependency, which removes httpx that the tests import.
+anthropic==0.116.0
+sentry-sdk[flask]>=2.0.0
+alembic>=1.13.0
+pytrends>=4.9.0
+ccxt>=4.0.0
+hmmlearn>=0.3.0
+ruptures>=1.1.0
+websocket-client>=1.7.0
+qrcode>=7.4  # curl /reg funnel — ANSI QR (pure-python, get_matrix only)
+Pillow>=12.3.0  # share-card renderer (carrac/shares/card.py) — mint-time only, no browser
+# Imported directly, so declared here; floors match requirements.lock.
+cryptography>=50.0.0
+itsdangerous>=2.2.0
+pydantic>=2.13.4
+starlette>=1.3.1
+Werkzeug>=3.1.9
+# Transitive floors: older releases carry known advisories (versions match requirements.lock)
+anyio>=4.14.2
+multidict>=6.9.1  # CVE-2026-104874 — ccxt 4.5.85 pins the vulnerable 6.7.1, the floor makes pip back off to a ccxt that does not
+idna>=3.18

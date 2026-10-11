@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% if not assets_public %}<meta name="robots" content="noindex, nofollow">{% endif %}
+<title>{{ name }} ({{ symbol }}) — market structure &amp; key levels · Carrac</title>
+<meta name="description" content="{{ name }} ({{ symbol }}) market structure from Carrac: trend, RSI, Mayer stretch, and the nearest support / resistance levels — deterministic facts, refreshed through the trading day. Observations, not advice.">
+<link rel="canonical" href="{{ canonical }}">
+<meta property="og:title" content="{{ symbol }} — live indicator readout · Carrac">
+<meta property="og:description" content="{{ name }} ({{ symbol }}) market structure from Carrac: trend, RSI, Mayer stretch, and the nearest support / resistance levels — deterministic facts, refreshed through the trading day.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:site_name" content="Carrac">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ symbol }} — live indicator readout · Carrac">
+<meta name="twitter:description" content="{{ name }} ({{ symbol }}) market structure from Carrac — deterministic facts, refreshed through the trading day.">
+<meta name="twitter:image" content="{{ site_url }}/static/og-dashboard.png">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.fc-wrap{max-width:1100px;margin:0 auto;padding:40px 24px 100px;}
+.fc-nav{font-size:12px;color:var(--faint);margin-bottom:18px;}
+.fc-nav a{color:var(--gold);text-decoration:none;}
+.fc-h1{font-size:30px;margin:0 0 6px;}
+.fc-h1 .tk{font-family:"Inter";font-size:14px;color:var(--faint);border:1px solid var(--rule);border-radius:5px;padding:2px 8px;margin-left:8px;vertical-align:middle;}
+.intro{font-size:13.5px;color:var(--cream-2);max-width:70ch;line-height:1.6;margin:0 0 8px;}
+.disc{font-size:11px;color:var(--faint);border-top:1px solid var(--rule);padding-top:10px;margin:0 0 32px;}
+.fc-topnav{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.fc-topnav .fc-nav{margin-bottom:0;}
+.fc-open{font-size:12.5px;color:var(--cream-2);text-decoration:none;border:1px solid var(--rule);border-radius:7px;padding:6px 12px;white-space:nowrap;}
+.fc-open:hover{border-color:var(--gold-dim);color:var(--gold);}
+.fc-ctaband{border:1px solid var(--rule);border-radius:12px;background:var(--ink-2);padding:20px 24px;margin:8px 0 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.fc-ctaband p{margin:0;font-size:13.5px;color:var(--cream-2);max-width:56ch;}
+.fc-cta-btn{font-family:"Inter",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--gold);border-radius:8px;padding:9px 16px;text-decoration:none;white-space:nowrap;}
+.fc-cta-btn:hover{background:#d4b87e;}
+</style>
+{% include '_posthog_marketing.html' %}
+</head>
+<body class="ed-scope">
+<div class="fc-wrap">
+  {% set _utm = 'utm_source=assets&utm_medium=seo&utm_campaign=' ~ symbol|lower %}
+  <div class="fc-topnav">
+    <div class="fc-nav"><a href="/assets">← All tracked assets</a></div>
+    <a class="fc-open" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+  </div>
+  <h1 class="fc-h1 serif">{{ name }}<span class="tk">{{ symbol }}</span></h1>
+  <p class="intro">Deterministic market structure for {{ name }} — computed from price, moving averages, RSI, volume, and key levels, refreshed through the trading day.</p>
+  <p class="disc">Observations only; not financial advice. Data from Carrac&rsquo;s analytics engine.</p>
+  {% set facts_list = facts_list if facts_list is defined else [] %}
+  {% include 'partials/_facts_modules.html' %}
+  <div class="fc-ctaband">
+    <p>{{ symbol }} tracked live — alerts, plays, and the full indicator stack are one signup away.</p>
+    <a class="fc-cta-btn" href="/register?{{ _utm }}" target="_blank" rel="noopener">Get started free →</a>
+  </div>
+</div>
+</body>
+</html>

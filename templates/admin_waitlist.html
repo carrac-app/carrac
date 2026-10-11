@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waitlist - Carrac Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e14; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 1.3rem; font-weight: 700; }
+
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .card { background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 16px; }
+        .card-label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .card-value { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .card-sub { font-size: 0.7rem; color: #545e6e; margin-top: 2px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid #2a3140; }
+        td { font-size: 0.8rem; padding: 8px 12px; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        .section { margin-bottom: 32px; }
+        .section h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: #b0b8c4; }
+        .loading { color: #545e6e; font-size: 0.85rem; padding: 20px; }
+        .error-text { color: #ef5350; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .badge-waiting  { background: rgba(255,152,0,0.15); color: #ff9800; border: 1px solid rgba(255,152,0,0.3); }
+        .badge-invited  { background: rgba(88,166,255,0.12); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+        .badge-registered { background: rgba(63,185,80,0.12); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+
+        /* Release wave panel */
+        .release-panel { background: #131921; border: 1px solid #2a3140; border-radius: 8px; padding: 20px; margin-bottom: 32px; }
+        .release-panel h2 { font-size: 0.95rem; font-weight: 600; color: #b0b8c4; margin-bottom: 16px; }
+        .release-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 0.7rem; color: #7a8494; text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-group input { background: #0a0e14; border: 1px solid #2a3140; border-radius: 6px; color: #e6edf3; padding: 6px 10px; font-size: 0.85rem; width: 100px; }
+        .form-group input[type="text"] { width: 160px; }
+        .form-group input:focus { outline: none; border-color: #3d4a5c; }
+        .btn { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; border: none; cursor: pointer; font-family: inherit; }
+        .btn-preview { background: #242b35; color: #b0b8c4; border: 1px solid #2a3140; }
+        .btn-preview:hover { background: #2a3140; color: #e6edf3; }
+        .btn-send { background: #26a69a; color: #fff; }
+        .btn-send:hover { background: #1e8f84; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #release-result { margin-top: 16px; }
+        .result-card { background: #0d1117; border: 1px solid #2a3140; border-radius: 6px; padding: 14px; font-size: 0.8rem; }
+        .result-card .result-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .result-card .result-row span:first-child { color: #7a8494; }
+        .result-list { margin-top: 10px; max-height: 200px; overflow-y: auto; }
+        .result-list-item { padding: 3px 0; border-bottom: 1px solid #1e2430; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+        .result-list-item:last-child { border-bottom: none; }
+        .result-error { color: #ef5350; }
+        .result-ok { color: #3fb950; }
+        .result-dryrun { color: #ff9800; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #2a3140; border-top-color: #26a69a; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set admin_page = 'waitlist' %}
+    {% include 'admin_nav.html' %}
+    <div class="header">
+        <h1>Waitlist</h1>
+    </div>
+
+    <div class="summary-cards" id="summary-cards">
+        <div class="card"><div class="card-label">Loading...</div></div>
+    </div>
+
+    <!-- Release wave panel -->
+    <div class="release-panel">
+        <h2>Release Wave</h2>
+        <div class="release-form">
+            <div class="form-group">
+                <label for="wave-count">Count</label>
+                <input type="number" id="wave-count" min="1" max="100" value="10" placeholder="1-100">
+            </div>
+            <div class="form-group">
+                <label for="wave-cohort">Cohort (optional)</label>
+                <input type="text" id="wave-cohort" placeholder="e.g. wave1">
+            </div>
+            <button class="btn btn-preview" id="btn-preview">Preview (dry run)</button>
+            <button class="btn btn-send" id="btn-send">Send Invites</button>
+        </div>
+        <div id="release-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Waitlist Entries</h2>
+        <div id="entries-table"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
+
+function badgeHtml(status) {
+    var cls = { waiting: 'badge-waiting', invited: 'badge-invited', registered: 'badge-registered' }[status] || '';
+    return '<span class="badge ' + cls + '">' + escapeHtml(status) + '</span>';
+}
+
+function fmtDate(s) {
+    if (!s) return '-';
+    try { return new Date(s).toISOString().slice(0, 16).replace('T', ' '); } catch(e) { return s; }
+}
+
+function loadWaitlist() {
+    fetch('/api/admin/waitlist')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            renderSummary(data.counts);
+            renderEntries(data.entries || []);
+        })
+        .catch(function(err) {
+            document.getElementById('summary-cards').innerHTML = '<div class="card"><div class="card-label error-text">' + escapeHtml(err.message) + '</div></div>';
+            document.getElementById('entries-table').innerHTML = '<div class="loading error-text">' + escapeHtml(err.message) + '</div>';
+        });
+}
+
+function renderSummary(counts) {
+    if (!counts) return;
+    var html = '';
+    html += '<div class="card"><div class="card-label">Waiting</div><div class="card-value" style="color:#ff9800;">' + counts.waiting + '</div><div class="card-sub">pending invite</div></div>';
+    html += '<div class="card"><div class="card-label">Invited</div><div class="card-value" style="color:#58a6ff;">' + counts.invited + '</div><div class="card-sub">code sent, not registered</div></div>';
+    html += '<div class="card"><div class="card-label">Registered</div><div class="card-value" style="color:#3fb950;">' + counts.registered + '</div><div class="card-sub">converted</div></div>';
+    html += '<div class="card"><div class="card-label">Total</div><div class="card-value">' + counts.total + '</div><div class="card-sub">all statuses</div></div>';
+    document.getElementById('summary-cards').innerHTML = html;
+}
+
+function renderEntries(entries) {
+    if (!entries.length) {
+        document.getElementById('entries-table').innerHTML = '<div class="loading">No entries yet.</div>';
+        return;
+    }
+    var html = '<table><thead><tr><th>Email</th><th>Status</th><th>Source</th><th>Cohort</th><th>Signed Up</th><th>Invited At</th></tr></thead><tbody>';
+    entries.forEach(function(e) {
+        html += '<tr>';
+        html += '<td>' + escapeHtml(e.email) + '</td>';
+        html += '<td>' + badgeHtml(e.status) + '</td>';
+        html += '<td>' + escapeHtml(e.source || '-') + '</td>';
+        html += '<td>' + escapeHtml(e.cohort || '-') + '</td>';
+        html += '<td>' + fmtDate(e.created_at) + '</td>';
+        html += '<td>' + fmtDate(e.invited_at) + '</td>';
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('entries-table').innerHTML = html;
+}
+
+function getFormValues() {
+    var countVal = parseInt(document.getElementById('wave-count').value, 10);
+    if (isNaN(countVal) || countVal < 1 || countVal > 100) {
+        alert('Count must be between 1 and 100.');
+        return null;
+    }
+    var cohort = (document.getElementById('wave-cohort').value || '').trim() || null;
+    return { count: countVal, cohort: cohort };
+}
+
+function postRelease(payload, onDone) {
+    var resultEl = document.getElementById('release-result');
+    resultEl.innerHTML = '<div class="loading"><span class="spinner"></span>Running...</div>';
+    document.getElementById('btn-preview').disabled = true;
+    document.getElementById('btn-send').disabled = true;
+
+    fetch('/api/admin/waitlist/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        document.getElementById('btn-preview').disabled = false;
+        document.getElementById('btn-send').disabled = false;
+        renderReleaseResult(data);
+        if (onDone) onDone(data);
+    })
+    .catch(function(err) {
+        document.getElementById('btn-preview').disabled = false;
+        document.getElementById('btn-send').disabled = false;
+        resultEl.innerHTML = '<div class="result-card error-text">' + escapeHtml(err.message) + '</div>';
+    });
+}
+
+function renderReleaseResult(data) {
+    var resultEl = document.getElementById('release-result');
+    var isDry = data.dry_run;
+    var html = '<div class="result-card">';
+    html += '<div class="result-row"><span>Mode</span><span class="' + (isDry ? 'result-dryrun' : 'result-ok') + '">' + (isDry ? 'DRY RUN — no emails sent' : 'LIVE — invites sent') + '</span></div>';
+    html += '<div class="result-row"><span>Requested</span><span>' + escapeHtml(data.requested) + '</span></div>';
+    html += '<div class="result-row"><span>Released</span><span class="result-ok">' + (data.released ? data.released.length : 0) + '</span></div>';
+    if (data.errors && data.errors.length) {
+        html += '<div class="result-row"><span>Errors</span><span class="result-error">' + data.errors.length + '</span></div>';
+    }
+
+    var picks = data.released || [];
+    if (picks.length) {
+        html += '<div class="result-list">';
+        picks.forEach(function(p) {
+            html += '<div class="result-list-item ' + (isDry ? 'result-dryrun' : 'result-ok') + '">';
+            html += (isDry ? '&#9702; ' : '&#10003; ') + escapeHtml(p.email);
+            if (!isDry && p.invite_code) html += ' <span style="color:#545e6e;">(' + escapeHtml(p.invite_code) + ')</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+
+    if (data.errors && data.errors.length) {
+        html += '<div class="result-list">';
+        data.errors.forEach(function(e) {
+            html += '<div class="result-list-item result-error">&#x26A0; ' + escapeHtml(e) + '</div>';
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    resultEl.innerHTML = html;
+}
+
+document.getElementById('btn-preview').addEventListener('click', function() {
+    var vals = getFormValues();
+    if (!vals) return;
+    postRelease({ count: vals.count, cohort: vals.cohort, dry_run: true }, null);
+});
+
+document.getElementById('btn-send').addEventListener('click', function() {
+    var vals = getFormValues();
+    if (!vals) return;
+    var msg = 'Send ' + vals.count + ' real invite' + (vals.count === 1 ? '' : 's') + (vals.cohort ? ' (cohort: ' + vals.cohort + ')' : '') + '?\n\nThis will send emails and mark rows as invited. There is no undo.';
+    if (!confirm(msg)) return;
+    postRelease({ count: vals.count, cohort: vals.cohort, dry_run: false }, function() {
+        // Refresh counts after a real release.
+        loadWaitlist();
+    });
+});
+
+loadWaitlist();
+</script>
+</body>
+</html>

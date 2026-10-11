@@ -1,0 +1,10 @@
+[
+  {
+    "version": "0.226.22",
+    "date": "2026-10-09",
+    "title": "Open-source reference release",
+    "changes": [
+      "The complete system, published as open source under the AGPL."
+    ]
+  }
+]

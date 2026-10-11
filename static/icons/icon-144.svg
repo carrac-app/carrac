@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="144" height="144" viewBox="0 0 144 144" xmlns="http://www.w3.org/2000/svg">
+  <rect width="144" height="144" rx="21.6" fill="#0a0d13"/>
+  <text x="72" y="72" font-family="JetBrains Mono, monospace" font-size="72" font-weight="700" fill="#e6cd86" text-anchor="middle" dominant-baseline="central">[C<tspan font-size="41.76" dy="-23.04">4</tspan><tspan dy="23.04">]</tspan></text>
+</svg>

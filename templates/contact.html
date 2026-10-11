@@ -1,0 +1,26 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Contact — Carrac{% endblock %}
+{% block description %}Contact the Carrac team. We typically respond within 48 hours on business days.{% endblock %}
+{% block canonical %}{{ site_url }}/contact{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Contact — Carrac","url":"{{ site_url }}/contact"}</script>{% endblock %}
+
+{% block content %}
+<div class="prose-page">
+  <span class="eyebrow">Contact</span>
+  <h1 style="margin-top:16px">Talk to the team.</h1>
+  <p>Have a question, found a bug, or want to share feedback? Email is the fastest way to reach us — billing enquiries, account access, and feature ideas are all welcome.</p>
+
+  <div class="card">
+    <h2>Email</h2>
+    <a href="mailto:{{ support_email }}" class="big-link">{{ support_email }}</a>
+    <p class="note">We typically respond within 48 hours on business days.</p>
+  </div>
+
+  <div class="card">
+    <h2>Looking for answers first?</h2>
+    <a href="/guide" class="big-link">Read the guide &rarr;</a>
+    <p class="note">The full guide covers charting, indicators, the Quant engine, journal, and connecting your own AI over MCP.</p>
+  </div>
+</div>
+{% endblock %}

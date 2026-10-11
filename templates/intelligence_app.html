@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence{% if intel_asset %} · {{ intel_asset }}{% endif %} — Carrac</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #131921;
+            --bg-tertiary: #1c2129;
+            --bg-elevated: #242b35;
+            --border-subtle: #1e2430;
+            --border-default: #2a3140;
+            --border-emphasis: #3d4757;
+            --text-primary: #e6edf3;
+            --text-secondary: #b0b8c4;
+            --text-tertiary: #7a8494;
+            --text-muted: #545e6e;
+            --color-bullish: #26a69a;
+            --color-bullish-bright: #4dd0c4;
+            --color-bearish: #ef5350;
+            --color-bearish-bright: #ff7b72;
+            --color-neutral: #ff9800;
+            --color-info: #58a6ff;
+            --color-accent: #6bc985;
+            --font-ui: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.32);
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--color-info); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ── Header ─────────────────────────────────────── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .back-link { font-size: 0.8rem; color: var(--text-tertiary); }
+        .page-title { font-size: 1.1rem; font-weight: 700; color: var(--color-accent); }
+        .engine-freshness {
+            margin-left: auto;
+            font-size: 0.72rem;
+            color: var(--text-tertiary);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 3px 10px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 999px;
+        }
+        .engine-freshness.fresh { color: var(--color-bullish); border-color: rgba(38,166,91,0.3); }
+        .engine-freshness.stale { color: var(--color-neutral); border-color: rgba(255,152,0,0.4); }
+        .engine-freshness.broken { color: var(--color-bearish); border-color: rgba(239,83,80,0.4); }
+        .freshness-chip {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 7px;
+            font-size: 0.65rem;
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', monospace;
+            vertical-align: middle;
+            cursor: help;
+        }
+        .freshness-chip.stale { background: rgba(255,152,0,0.15); color: var(--color-neutral); border: 1px solid rgba(255,152,0,0.35); }
+        .freshness-chip.broken { background: rgba(239,83,80,0.15); color: var(--color-bearish); border: 1px solid rgba(239,83,80,0.4); }
+        .asset-picker {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            color: var(--text);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+        .asset-picker:hover { border-color: var(--color-accent); }
+        .widget-narrative {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-left: 2px solid var(--color-accent);
+            background: rgba(100, 181, 246, 0.06);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            line-height: 1.4;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        }
+        .widget-narrative strong { color: var(--text); font-weight: 600; }
+        .chain-weakest-btn {
+            background: transparent;
+            border: 1px dashed var(--border-default);
+            color: var(--text-tertiary);
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .chain-weakest-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background: rgba(100, 181, 246, 0.05);
+        }
+        .pair-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+        }
+        .pair-modal.open { display: block; }
+        .pair-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+        }
+        .pair-modal-card {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 720px;
+            max-width: 92vw;
+            max-height: 86vh;
+            overflow: auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .pair-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .pair-modal-header h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--color-accent);
+        }
+        .pair-modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        .pair-modal-close:hover { color: var(--text); }
+        .alert-btn {
+            background: transparent;
+            border: 1px solid var(--border-default);
+            color: var(--text-muted);
+            font-size: 0.68rem;
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+            margin-left: auto;
+        }
+        .alert-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background: rgba(100, 181, 246, 0.05);
+        }
+        .chain-header .alert-btn { margin-left: auto; }
+        .qe-flash {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-surface);
+            border: 1px solid var(--color-bullish);
+            color: var(--text);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 9500;
+            pointer-events: none;
+        }
+        .qe-flash.show { opacity: 1; transform: translateY(0); }
+        .qe-flash.qe-flash-error { border-color: var(--color-bearish); }
+
+        /* ── Tab Bar ────────────────────────────────────── */
+        .tab-bar {
+            border-bottom: 1px solid var(--border-default);
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            position: relative;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .int-tab {
+            padding: 8px 14px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: color var(--transition-fast), background var(--transition-fast);
+            white-space: nowrap;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: var(--font-ui);
+        }
+        .int-tab:hover { color: var(--text-primary); }
+        .int-tab.active {
+            background: rgba(107,201,133,0.12);
+            color: var(--color-accent);
+            border-bottom-color: transparent;
+        }
+        .tab-indicator {
+            position: absolute;
+            bottom: 0;
+            height: 2px;
+            background: var(--color-accent);
+            border-radius: 1px;
+            transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px rgba(107, 201, 133, 0.3);
+        }
+        .tab-key {
+            display: inline-block;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            padding: 0 4px;
+            margin-left: 6px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Layout ─────────────────────────────────────── */
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px 40px; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 768px) {
+            .page-header, .tab-bar, .container { padding-left: 16px; padding-right: 16px; }
+            .two-col { grid-template-columns: 1fr; }
+            .hm-label { position: sticky; left: 0; z-index: 2; background: var(--bg-primary); }
+            .regime-history-bar { height: 16px; }
+            .rh-labels { font-size: 0.6rem; }
+        }
+        .info-icon.tip-visible .info-tip { display: block; }
+
+        /* ── Cards ──────────────────────────────────────── */
+        .macro-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+        .macro-card h3 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+            letter-spacing: 0.02em;
+        }
+        .text-muted { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* ── NL Summary ────────────────────────────────── */
+        .nl-summary { border-left: 3px solid var(--color-accent); }
+        .nl-summary h3 { margin-bottom: 8px; }
+        .nl-bullets { list-style: none; padding: 0; margin: 0; }
+        .nl-bullets li {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+        .nl-bullets li::before {
+            content: '\2022';
+            color: var(--color-accent);
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .nl-bullets li:last-child { border-bottom: none; }
+        .nl-bullish { color: var(--color-bullish-bright); font-weight: 600; }
+        .nl-bearish { color: var(--color-bearish-bright); font-weight: 600; }
+        .text-secondary { color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 8px; }
+        .text-bullish { color: var(--color-bullish); }
+        .text-bearish { color: var(--color-bearish); }
+
+        /* ── Loading / Error ────────────────────────────── */
+        .loading-spinner { color: var(--text-muted); padding: 40px; text-align: center; }
+        .error-msg { color: var(--color-bearish); padding: 20px; background: rgba(239,83,80,0.1); border-radius: var(--radius-sm); }
+
+        /* ── Skeleton Loading ──────────────────────────── */
+        .skeleton {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            position: relative;
+            overflow: hidden;
+        }
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .skeleton-banner { height: 72px; margin-bottom: 16px; border-radius: var(--radius-md); }
+        .skeleton-card   { height: 200px; margin-bottom: 16px; }
+        .skeleton-card-sm { height: 120px; margin-bottom: 16px; }
+        .skeleton-row    { height: 14px; margin-bottom: 8px; border-radius: 3px; }
+        .skeleton-row.w80 { width: 80%; }
+        .skeleton-row.w60 { width: 60%; }
+        .skeleton-row.w40 { width: 40%; }
+
+        /* ── Regime Banner ──────────────────────────────── */
+        .regime-banner {
+            border-radius: var(--radius-md);
+            padding: 16px 24px;
+            margin-bottom: 16px;
+        }
+        .regime-favorable { background: rgba(38,166,154,0.12); border: 1px solid rgba(38,166,154,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .regime-unfavorable { background: rgba(239,83,80,0.12); border: 1px solid rgba(239,83,80,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .regime-banner-main { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .regime-label { font-size: 1rem; font-weight: 700; letter-spacing: 0.1em; }
+        .regime-favorable .regime-label { color: var(--color-bullish-bright); }
+        .regime-unfavorable .regime-label { color: var(--color-bearish-bright); }
+        .regime-prob, .regime-duration { color: var(--text-secondary); font-size: 0.8rem; }
+        .regime-banner-desc { color: var(--text-secondary); font-size: 0.8rem; margin-top: 6px; }
+
+        /* ── Anomaly Cluster ────────────────────────────── */
+        .anomaly-cluster { border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 16px; }
+        .cluster-yellow { background: rgba(255,152,0,0.12); border: 1px solid rgba(255,152,0,0.3); }
+        .cluster-red { background: rgba(239,83,80,0.12); border: 1px solid rgba(239,83,80,0.3); }
+        .cluster-title { font-weight: 600; margin-bottom: 8px; }
+        .cluster-yellow .cluster-title { color: var(--color-neutral); }
+        .cluster-red .cluster-title { color: var(--color-bearish); }
+        .cluster-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cluster-tag {
+            background: var(--bg-elevated);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── Correlation List (Overview) ────────────────── */
+        .corr-list { display: flex; flex-direction: column; gap: 6px; }
+        .corr-row { display: flex; align-items: center; gap: 8px; }
+        .corr-metric { width: 60px; font-size: 0.75rem; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+        .corr-bar-bg { flex: 1; height: 14px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden; }
+        .corr-bar { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .corr-val { width: 52px; font-size: 0.75rem; text-align: right; flex-shrink: 0; }
+
+        /* ── Data Tables ────────────────────────────────── */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .data-table th {
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-emphasis);
+            color: var(--text-tertiary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.06em;
+        }
+        .data-table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        .data-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+        .data-table tr:hover td { background: rgba(107, 201, 133, 0.06); }
+        .data-table tr.highlight td { background: rgba(107,201,133,0.15); transition: background 0.3s; }
+
+        /* ── Heatmap ────────────────────────────────────── */
+        .heatmap-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px; }
+        .heatmap-grid { display: grid; gap: 1px; min-width: 700px; }
+        .hm-corner { background: var(--bg-primary); }
+        .hm-header {
+            background: var(--bg-primary);
+            text-align: center;
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            padding: 4px 0;
+            overflow: hidden;
+        }
+        .hm-header span { display: block; transform: rotate(-45deg); white-space: nowrap; margin-top: 12px; }
+        .hm-label {
+            background: var(--bg-primary);
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            text-align: right;
+            justify-content: flex-end;
+        }
+        .hm-cell {
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: opacity var(--transition-fast);
+            min-width: 0;
+        }
+        .hm-cell:hover { opacity: 0.7; outline: 1px solid var(--text-primary); z-index: 1; }
+        .hm-diag { background: var(--bg-tertiary) !important; cursor: default; }
+        .hm-diag:hover { opacity: 1; outline: none; }
+        .hm-cat-break { border-left: 2px solid var(--border-emphasis); }
+        .hm-row-break { border-top: 2px solid var(--border-emphasis); }
+
+        /* ── Heatmap Legend ─────────────────────────────── */
+        .heatmap-legend {
+            height: 12px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #3b82f6, #1e3a5f, #1c2129, #5c2020, #ef4444);
+            margin: 8px 90px 4px 90px;
+        }
+        .heatmap-legend-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 90px;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .corr-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .corr-controls button {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+        }
+        .corr-controls button:hover { border-color: var(--color-accent); color: var(--text-primary); }
+        .corr-regime-ctrl { display: flex; gap: 0; }
+        .corr-regime-btn {
+            border-radius: 0 !important;
+            border-right-width: 0 !important;
+        }
+        .corr-regime-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm) !important; }
+        .corr-regime-btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important; border-right-width: 1px !important; }
+        .corr-regime-btn.active { border-color: var(--color-accent) !important; color: var(--color-accent) !important; background: rgba(107,201,133,0.12) !important; }
+
+        /* ── Filter Pills ──────────────────────────────── */
+        .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .filter-pill {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 3px 10px;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .filter-pill:hover { border-color: var(--color-accent); color: var(--text-primary); }
+        .filter-pill.active {
+            background: rgba(107,201,133,0.15);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* ── Chain Visualization ───────────────────────── */
+        .chain-section { margin-bottom: 20px; }
+        .chain-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+        .chain-header h4 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); text-transform: capitalize; }
+        .chain-desc { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-mono); }
+        .chain-strength-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .chain-strength-bar { flex: 1; height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden; max-width: 200px; }
+        .chain-strength-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .chain-strength-val { font-weight: 600; font-size: 0.75rem; min-width: 36px; }
+        .chain-weakest { font-size: 0.65rem; color: var(--text-muted); }
+        .chain-sparkline { width: 80px; height: 24px; flex-shrink: 0; }
+        .chain-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 12px 0; -webkit-overflow-scrolling: touch; }
+        .chain-node {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            padding: 8px 12px;
+            text-align: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 64px;
+        }
+        .chain-node-label { font-size: 0.65rem; font-weight: 600; color: var(--text-secondary); }
+        .chain-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 56px;
+            flex-shrink: 0;
+            padding: 0 2px;
+        }
+        .chain-link-lag { font-size: 0.55rem; color: var(--text-muted); margin-bottom: 2px; }
+        .chain-link-line { height: 0; width: 100%; }
+        .chain-link-r { font-size: 0.6rem; font-weight: 600; margin-top: 2px; }
+        .chain-link-arrow { font-size: 0.6rem; color: var(--text-muted); }
+
+        /* ── Explainer Panels ──────────────────────────── */
+        .explainer-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: none; border: 1px solid var(--border-default);
+            color: var(--text-muted); font-size: 0.6rem; font-weight: 700;
+            cursor: pointer; margin-left: 6px; vertical-align: middle;
+            font-family: var(--font-ui); transition: all 0.15s ease;
+        }
+        .explainer-btn:hover { border-color: var(--color-info); color: var(--color-info); }
+        .explainer-btn.active { background: var(--color-info); color: var(--bg-primary); border-color: var(--color-info); }
+        .explainer-panel {
+            display: none; background: var(--bg-tertiary);
+            border: 1px solid var(--border-default); border-radius: 8px;
+            padding: 14px 18px; margin: 10px 0 12px;
+            font-size: 0.75rem; line-height: 1.7; color: var(--text-secondary);
+        }
+        .explainer-panel.open { display: block; animation: fadeSlide 0.15s ease; }
+        .explainer-panel h4 { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin: 0 0 6px; }
+        .explainer-panel p { margin: 0 0 8px; }
+        .explainer-panel p:last-child { margin-bottom: 0; }
+        .explainer-panel ul { padding-left: 16px; margin: 6px 0; }
+        .explainer-panel li { margin-bottom: 4px; }
+        .explainer-panel .caveat {
+            background: rgba(255,152,0,0.08); border: 1px solid rgba(255,152,0,0.2);
+            border-radius: 4px; padding: 6px 10px; margin-top: 8px;
+            font-size: 0.7rem; color: var(--text-muted);
+        }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Regime Tab ─────────────────────────────────── */
+        .regime-current {
+            text-align: center;
+            padding: 32px;
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+        .regime-state-label { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.15em; }
+        .regime-favorable .regime-state-label { color: var(--color-bullish-bright); }
+        .regime-unfavorable .regime-state-label { color: var(--color-bearish-bright); }
+        .regime-prob-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.08);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .regime-meta { color: var(--text-muted); font-size: 0.75rem; margin-top: 8px; }
+
+        .regime-favorable-card { border-left: 3px solid var(--color-bullish); }
+        .regime-unfavorable-card { border-left: 3px solid var(--color-bearish); }
+
+        .regime-stats { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; }
+        .stat-label { color: var(--text-tertiary); font-size: 0.75rem; }
+        .stat-val { font-weight: 600; font-size: 0.8rem; }
+
+        /* Transition matrix */
+        .transition-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+        .tm-corner { background: var(--bg-primary); }
+        .tm-header {
+            background: var(--bg-elevated);
+            padding: 8px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .tm-label {
+            background: var(--bg-elevated);
+            padding: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+        .tm-cell {
+            padding: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .tm-stay { background: rgba(38,166,154,0.1); color: var(--color-bullish); }
+        .tm-switch { background: rgba(239,83,80,0.08); color: var(--color-bearish); }
+        .tm-durations {
+            display: flex;
+            gap: 24px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Changepoints */
+        .changepoint-timeline { display: flex; flex-direction: column; gap: 8px; }
+        .cp-item { display: flex; align-items: center; gap: 12px; }
+        .cp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-neutral); flex-shrink: 0; }
+        .cp-date { font-size: 0.75rem; color: var(--text-primary); font-weight: 600; min-width: 90px; }
+        .cp-label { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Regime history bar */
+        .regime-history-bar {
+            display: flex;
+            height: 24px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .rh-segment { min-width: 1px; cursor: pointer; }
+        .rh-fav { background: var(--color-bullish); }
+        .rh-unf { background: var(--color-bearish); }
+        .rh-segment:hover { opacity: 0.7; }
+        .rh-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); }
+
+        /* ── Conditions Tab ─────────────────────────────── */
+        .condition-builder {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .cond-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .cond-row select, .cond-row input {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+        }
+        .cond-row select { min-width: 120px; }
+        .cond-row input[type="number"] { width: 70px; }
+        .cond-row select:focus, .cond-row input:focus { outline: none; border-color: var(--color-accent); }
+
+        .cond-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .btn-run {
+            background: var(--color-accent);
+            color: var(--bg-primary);
+            border: none;
+            padding: 6px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .btn-run:hover { opacity: 0.85; }
+        .btn-preset {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 0.7rem;
+        }
+        .btn-preset:hover { border-color: var(--color-accent); color: var(--text-primary); }
+
+        .cond-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .cond-stats .stat-item {
+            background: var(--bg-elevated);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            flex: 1 1 120px;
+            text-align: center;
+        }
+        .cond-stats .stat-label { display: block; margin-bottom: 4px; }
+        .cond-stats .stat-val { display: block; font-size: 1rem; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-green { background: rgba(38,166,154,0.2); color: var(--color-bullish-bright); }
+        .badge-red { background: rgba(239,83,80,0.2); color: var(--color-bearish-bright); }
+
+        /* Histogram */
+        .histogram {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 120px;
+            margin: 16px 0;
+            padding: 0 4px;
+        }
+        .hist-bar-container { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .hist-bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s; }
+        .hist-label { font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; }
+
+        .instance-dates { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 0; }
+        .date-tag { background: var(--bg-elevated); padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; color: var(--text-muted); }
+        details summary { cursor: pointer; color: var(--text-secondary); font-size: 0.8rem; }
+
+        /* ── Z-Score Bars ───────────────────────────────── */
+        .zscore-bars { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+        .zbar-row { display: flex; align-items: center; gap: 8px; }
+        .zbar-label { width: 80px; font-size: 0.65rem; color: var(--text-muted); text-align: right; flex-shrink: 0; }
+        .zbar-track {
+            flex: 1;
+            height: 12px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        .zbar-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border-emphasis);
+        }
+        .zbar-fill[data-animate] { width: 0 !important; }
+        .zbar-fill.animated { transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .zbar-extreme { animation: pulse-glow 2s ease-in-out infinite alternate; }
+        @keyframes pulse-glow {
+            from { filter: brightness(1); }
+            to   { filter: brightness(1.4); box-shadow: 0 0 8px currentColor; }
+        }
+        .zbar-fill {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 3px;
+        }
+        .zbar-right { left: 50%; }
+        .zbar-left { right: 50%; }
+        .zbar-val { width: 42px; font-size: 0.65rem; text-align: right; color: var(--text-secondary); flex-shrink: 0; }
+
+        /* ── Info Tooltips ──────────────────────────────── */
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-muted);
+            font-size: 0.55rem;
+            font-weight: 700;
+            font-style: italic;
+            cursor: help;
+            margin-left: 6px;
+            position: relative;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+        .info-icon:hover { border-color: var(--color-accent); color: var(--color-accent); }
+        .info-icon .info-tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-emphasis);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 0.7rem;
+            font-style: normal;
+            font-weight: 400;
+            color: var(--text-secondary);
+            white-space: normal;
+            width: 280px;
+            max-width: 90vw;
+            line-height: 1.5;
+            box-shadow: var(--shadow-md);
+            z-index: 100;
+            pointer-events: none;
+        }
+        .info-icon:hover .info-tip { display: block; }
+        .info-tip code { background: var(--bg-tertiary); padding: 1px 4px; border-radius: 2px; font-size: 0.65rem; color: var(--color-info); }
+
+        /* ── About Tab ──────────────────────────────────── */
+        .about-section { margin-bottom: 24px; }
+        .about-section h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .about-section p { color: var(--text-secondary); margin-bottom: 8px; line-height: 1.6; }
+        .about-section ul { color: var(--text-secondary); padding-left: 20px; margin-bottom: 8px; }
+        .about-section li { margin-bottom: 4px; }
+        /* ── Data Lab ───────────────────────────────────── */
+        .dl-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .dl-tag-x {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+        .dl-tag-x:hover { color: var(--color-bearish); }
+        @media (max-width: 768px) {
+            #dl-results-grid { grid-template-columns: 1fr !important; }
+        }
+
+        .about-section code {
+            background: var(--bg-elevated);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            color: var(--color-info);
+        }
+        .about-section .source-table { margin: 8px 0; }
+        .about-section .source-table td { font-size: 0.7rem; }
+        .about-section blockquote {
+            border-left: 3px solid var(--color-accent);
+            padding: 8px 16px;
+            margin: 8px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        .about-section .caveat {
+            background: rgba(255,152,0,0.08);
+            border: 1px solid rgba(255,152,0,0.2);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            margin: 8px 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<div class="page-header">
+    <a href="{{ url_for('dashboard.index') }}" class="back-link">&larr; Chart</a>
+    <span class="page-title">Intelligence</span>
+    
+    {% if available_assets %}
+    <select id="intel-asset-picker" class="asset-picker" aria-label="Intelligence asset">
+        {% for a in available_assets %}
+        <option value="{{ a }}"{% if a == intel_asset %} selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    <span id="engine-freshness" class="engine-freshness" title="Last engine run">&mdash;</span>
+</div>
+
+<script nonce="{{ csp_nonce | default('') }}">
+    window.INTEL_ASSET = {{ intel_asset | tojson | safe if intel_asset else '"BTC"' | safe }};
+    window.INTEL_ASSETS = {{ available_assets | tojson | safe if available_assets else '[]' | safe }};
+</script>
+
+<!-- ── Tab Bar ─────────────────────────────────────────────────── -->
+<div class="tab-bar">
+    <button class="int-tab active" data-tab="overview">Overview<span class="tab-key">1</span></button>
+    <button class="int-tab" data-tab="correlations">Correlations<span class="tab-key">2</span></button>
+    <button class="int-tab" data-tab="regime">Regime<span class="tab-key">3</span></button>
+    <button class="int-tab" data-tab="conditions">Conditions<span class="tab-key">4</span></button>
+    <button class="int-tab" data-tab="metrics">Metrics<span class="tab-key">5</span></button>
+    <button class="int-tab" data-tab="series">Series<span class="tab-key">6</span></button>
+    <button class="int-tab" data-tab="datalab">Data Lab<span class="tab-key">7</span></button>
+    <button class="int-tab" data-tab="chains">Chains<span class="tab-key">8</span></button>
+    <button class="int-tab" data-tab="about">About<span class="tab-key">9</span></button>
+    <div class="tab-indicator" id="tab-indicator"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: OVERVIEW                                                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-overview" class="tab-pane active">
+    <div class="container">
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:0.5rem">
+            <button data-action="exportAnomalies" title="Export anomalies" style="background:none;border:1px solid rgba(255,255,255,0.2);color:#9ca3af;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem">&#11123; Anomalies</button>
+            <button data-action="exportZscores" title="Export z-scores" style="background:none;border:1px solid rgba(255,255,255,0.2);color:#9ca3af;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem">&#11123; Z-Scores</button>
+        </div>
+        <div id="overview-content"><div class="loading-spinner">Loading...</div></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: CORRELATIONS                                            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-correlations" class="tab-pane">
+    <div class="container">
+        <div class="corr-controls">
+            <button id="corr-window-toggle" data-window="60">60d window</button>
+            <div id="corr-regime-toggle" class="corr-regime-ctrl">
+                <button class="corr-regime-btn active" data-regime="">All</button>
+                <button class="corr-regime-btn" data-regime="favorable">Favorable</button>
+                <button class="corr-regime-btn" data-regime="unfavorable">Unfavorable</button>
+            </div>
+            <button id="corr-view-toggle" data-view="heatmap">Network</button>
+            <button data-action="exportCorrelations" title="Export CSV" style="margin-left:auto;background:none;border:1px solid rgba(255,255,255,0.2);color:#9ca3af;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem">&#11123; CSV</button>
+        </div>
+        <div class="filter-pills" id="heatmap-category-filter">
+            <span class="filter-pill active" data-cat="Price">Price</span>
+            <span class="filter-pill active" data-cat="Macro">Macro</span>
+            <span class="filter-pill active" data-cat="Derivatives">Derivatives</span>
+            <span class="filter-pill active" data-cat="Sentiment">Sentiment</span>
+            <span class="filter-pill active" data-cat="Factors">Factors</span>
+        </div>
+        <div id="heatmap-container" style="min-height:600px"><div class="loading-spinner">Loading...</div></div>
+        <div id="network-container" style="display:none;min-height:520px"></div>
+        <div id="corr-table-container"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: REGIME                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-regime" class="tab-pane">
+    <div class="container">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem">
+            <button data-action="exportRegimeHistory" title="Export regime history CSV" style="background:none;border:1px solid rgba(255,255,255,0.2);color:#9ca3af;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem">&#11123; CSV</button>
+        </div>
+        <div id="regime-content"><div class="loading-spinner">Loading...</div></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 4: CONDITIONS                                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-conditions" class="tab-pane">
+    <div class="container">
+        <div class="macro-card">
+            <h3>Conditional Query Builder <span class="info-icon">i<span class="info-tip">Define z-score conditions and see what happened historically when they held. Uses 90-day z-scores. Presets offer common macro scenarios. Results show forward return distribution for the target asset.</span></span></h3>
+            <form id="condition-form">
+                <div class="condition-builder">
+                    <div class="cond-row">
+                        <select id="cond-metric-0">
+                            <option value="">-- Metric --</option>
+                            <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="SOL">SOL</option>
+                            <option value="SPX">SPX</option><option value="GOLD">GOLD</option><option value="OIL">OIL</option>
+                            <option value="DXY">DXY</option><option value="TLT">TLT</option><option value="HYG">HYG</option>
+                            <option value="FED_FUNDS">FED_FUNDS</option><option value="YIELD_10Y">YIELD_10Y</option>
+                            <option value="YIELD_10Y2Y">YIELD_10Y2Y</option><option value="M2">M2</option>
+                            <option value="HY_SPREAD">HY_SPREAD</option><option value="VIX">VIX</option>
+                            <option value="FUNDING_BTC">FUNDING_BTC</option><option value="FUNDING_ETH">FUNDING_ETH</option>
+                            <option value="OPTIONS_PC_BTC">OPTIONS_PC_BTC</option><option value="DVOL_BTC">DVOL_BTC</option>
+                            <option value="FEAR_GREED">FEAR_GREED</option><option value="STABLECOIN_SUPPLY">STABLECOIN_SUPPLY</option>
+                            <option value="GTREND_BUY_BTC">GTREND_BUY_BTC</option><option value="COT_BTC_SPEC">COT_BTC_SPEC</option>
+                        </select>
+                        <select id="cond-op-0">
+                            <option value="gt">&gt; (greater than)</option>
+                            <option value="lt">&lt; (less than)</option>
+                            <option value="gte">&ge; (greater or equal)</option>
+                            <option value="lte">&le; (less or equal)</option>
+                        </select>
+                        <input type="number" id="cond-val-0" step="0.1" placeholder="z-score">
+                    </div>
+                    <div class="cond-row">
+                        <select id="cond-metric-1">
+                            <option value="">-- Metric --</option>
+                            <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="SOL">SOL</option>
+                            <option value="SPX">SPX</option><option value="GOLD">GOLD</option><option value="OIL">OIL</option>
+                            <option value="DXY">DXY</option><option value="TLT">TLT</option><option value="HYG">HYG</option>
+                            <option value="FED_FUNDS">FED_FUNDS</option><option value="YIELD_10Y">YIELD_10Y</option>
+                            <option value="YIELD_10Y2Y">YIELD_10Y2Y</option><option value="M2">M2</option>
+                            <option value="HY_SPREAD">HY_SPREAD</option><option value="VIX">VIX</option>
+                            <option value="FUNDING_BTC">FUNDING_BTC</option><option value="FUNDING_ETH">FUNDING_ETH</option>
+                            <option value="OPTIONS_PC_BTC">OPTIONS_PC_BTC</option><option value="DVOL_BTC">DVOL_BTC</option>
+                            <option value="FEAR_GREED">FEAR_GREED</option><option value="STABLECOIN_SUPPLY">STABLECOIN_SUPPLY</option>
+                            <option value="GTREND_BUY_BTC">GTREND_BUY_BTC</option><option value="COT_BTC_SPEC">COT_BTC_SPEC</option>
+                        </select>
+                        <select id="cond-op-1">
+                            <option value="gt">&gt; (greater than)</option>
+                            <option value="lt">&lt; (less than)</option>
+                            <option value="gte">&ge; (greater or equal)</option>
+                            <option value="lte">&le; (less or equal)</option>
+                        </select>
+                        <input type="number" id="cond-val-1" step="0.1" placeholder="z-score">
+                    </div>
+                    <div class="cond-row">
+                        <select id="cond-metric-2">
+                            <option value="">-- Metric --</option>
+                            <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="SOL">SOL</option>
+                            <option value="SPX">SPX</option><option value="GOLD">GOLD</option><option value="OIL">OIL</option>
+                            <option value="DXY">DXY</option><option value="TLT">TLT</option><option value="HYG">HYG</option>
+                            <option value="FED_FUNDS">FED_FUNDS</option><option value="YIELD_10Y">YIELD_10Y</option>
+                            <option value="YIELD_10Y2Y">YIELD_10Y2Y</option><option value="M2">M2</option>
+                            <option value="HY_SPREAD">HY_SPREAD</option><option value="VIX">VIX</option>
+                            <option value="FUNDING_BTC">FUNDING_BTC</option><option value="FUNDING_ETH">FUNDING_ETH</option>
+                            <option value="OPTIONS_PC_BTC">OPTIONS_PC_BTC</option><option value="DVOL_BTC">DVOL_BTC</option>
+                            <option value="FEAR_GREED">FEAR_GREED</option><option value="STABLECOIN_SUPPLY">STABLECOIN_SUPPLY</option>
+                            <option value="GTREND_BUY_BTC">GTREND_BUY_BTC</option><option value="COT_BTC_SPEC">COT_BTC_SPEC</option>
+                        </select>
+                        <select id="cond-op-2">
+                            <option value="gt">&gt; (greater than)</option>
+                            <option value="lt">&lt; (less than)</option>
+                            <option value="gte">&ge; (greater or equal)</option>
+                            <option value="lte">&le; (less or equal)</option>
+                        </select>
+                        <input type="number" id="cond-val-2" step="0.1" placeholder="z-score">
+                    </div>
+                </div>
+                <div class="cond-actions">
+                    <div class="cond-row">
+                        <select id="cond-target">
+                            <option value="BTC">Target: BTC</option>
+                            <option value="ETH">Target: ETH</option>
+                            <option value="SOL">Target: SOL</option>
+                            <option value="SPX">Target: SPX</option>
+                            <option value="GOLD">Target: GOLD</option>
+                            <option value="OIL">Target: OIL</option>
+                            <option value="DXY">Target: DXY</option>
+                            <option value="TLT">Target: TLT</option>
+                            <option value="HYG">Target: HYG</option>
+                        </select>
+                        <input type="number" id="cond-horizon" value="30" min="1" max="180" style="width:60px" placeholder="days">
+                        <span style="color:var(--text-muted);font-size:0.7rem">day horizon</span>
+                    </div>
+                    <button type="submit" class="btn-run">Run Query</button>
+                    <div id="preset-buttons" style="display:flex;gap:4px;flex-wrap:wrap;margin-left:8px">
+                        <button type="button" class="btn-preset" data-preset="Risk-off">Risk-off</button>
+                        <button type="button" class="btn-preset" data-preset="Euphoria">Euphoria</button>
+                        <button type="button" class="btn-preset" data-preset="Liquidity squeeze">Liq. squeeze</button>
+                        <button type="button" class="btn-preset" data-preset="Credit stress">Credit stress</button>
+                        <button type="button" class="btn-preset" data-preset="Macro calm">Macro calm</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div id="condition-results"></div>
+        <div class="macro-card">
+            <div id="condition-analogues"><div class="loading-spinner">Loading...</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 5: ABOUT                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 7: TIME SERIES VIEWER                                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-series" class="tab-pane">
+    <div class="container">
+        <div class="macro-card" style="margin-bottom:1rem">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="series-metric-1" style="flex:1;min-width:140px;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.85rem">
+                    <option value="">Select metric...</option>
+                </select>
+                <select id="series-metric-2" style="flex:1;min-width:140px;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.85rem">
+                    <option value="">Overlay (optional)...</option>
+                </select>
+                <select id="series-range" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.85rem">
+                    <option value="90">90 days</option>
+                    <option value="180">180 days</option>
+                    <option value="365" selected>1 year</option>
+                    <option value="730">2 years</option>
+                    <option value="0">All</option>
+                </select>
+                <button id="series-plot-btn" style="padding:6px 16px;border-radius:6px;border:none;background:var(--color-accent);color:#000;font-weight:600;cursor:pointer;font-size:0.85rem">Plot</button>
+            </div>
+        </div>
+        <div class="macro-card" style="padding:12px">
+            <div id="series-chart" style="height:400px"><p style="text-align:center;color:var(--text-muted);padding:3rem 0">Select a metric and click Plot</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 6: METRICS BROWSER                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-metrics" class="tab-pane">
+    <div class="container">
+        <div class="macro-card" style="margin-bottom:1rem">
+            <input type="text" id="metrics-search" placeholder="Search metrics..." style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.9rem">
+        </div>
+        <div id="metrics-content"><div class="loading-spinner">Loading...</div></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 8: DATA LAB                                                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-datalab" class="tab-pane">
+    <div class="container">
+        <div class="macro-card" style="margin-bottom:1rem">
+            <h3 style="margin-bottom:12px">Data Lab</h3>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+                    <label style="color:var(--text-tertiary);font-size:0.7rem;min-width:60px;padding-top:8px">Metrics</label>
+                    <div style="flex:1;min-width:200px">
+                        <div id="dl-metric-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+                        <select id="dl-metric-add" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                            <option value="">+ Add metric...</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <label style="color:var(--text-tertiary);font-size:0.7rem;min-width:60px">Group by</label>
+                    <select id="dl-group" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                        <option value="">None</option>
+                        <option value="regime">Regime</option>
+                        <option value="zscore_bucket">Z-Score Bucket</option>
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                    <label style="color:var(--text-tertiary);font-size:0.7rem">Agg</label>
+                    <select id="dl-agg" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                        <option value="mean">Mean</option>
+                        <option value="median">Median</option>
+                        <option value="count">Count</option>
+                        <option value="p25">P25</option>
+                        <option value="p75">P75</option>
+                    </select>
+                    <label style="color:var(--text-tertiary);font-size:0.7rem">Chart</label>
+                    <select id="dl-chart-type" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                        <option value="auto">Auto</option>
+                        <option value="line">Line</option>
+                        <option value="bar">Bar</option>
+                        <option value="scatter">Scatter</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <label style="color:var(--text-tertiary);font-size:0.7rem;min-width:60px">Range</label>
+                    <input type="date" id="dl-from" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                    <span style="color:var(--text-muted)">&mdash;</span>
+                    <input type="date" id="dl-to" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:0.8rem">
+                    <button id="dl-run" style="padding:6px 16px;border-radius:6px;border:none;background:var(--color-accent);color:#000;font-weight:600;cursor:pointer;font-size:0.8rem;margin-left:auto">Run Query</button>
+                    <button id="dl-export" style="background:none;border:1px solid rgba(255,255,255,0.2);color:#9ca3af;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:0.75rem" title="Export CSV">&#11123; CSV</button>
+                </div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="dl-results-grid">
+            <div class="macro-card" style="padding:12px">
+                <div id="dl-table"><p style="text-align:center;color:var(--text-muted);padding:2rem 0;font-size:0.8rem">Select metrics and click Run Query</p></div>
+            </div>
+            <div class="macro-card" style="padding:12px">
+                <div id="dl-chart" style="height:360px"><p style="text-align:center;color:var(--text-muted);padding:2rem 0;font-size:0.8rem">Chart will appear here</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 8: CHAINS                                                  -->
+<div id="pane-chains" class="tab-pane">
+    <div class="container">
+        <div class="corr-controls">
+            <button id="chain-freq-toggle" data-freq="daily">Daily</button>
+        </div>
+        <div id="chains-content"><div class="loading-spinner">Loading...</div></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 9: ABOUT                                                   -->
+<div id="pane-about" class="tab-pane">
+    <div class="container">
+
+        <div class="macro-card about-section">
+            <h3>What is the Quant Engine?</h3>
+            <p>The Quant Engine is Carrac's market intelligence system. It collects daily data from 11 sources across crypto, equities, macro, and sentiment &mdash; normalizes everything into comparable z-scores &mdash; then runs correlation, lead-lag, regime, factor, and chain analysis to surface patterns human eyes would miss.</p>
+            <p>Data collection started in <strong>March 2026</strong>. Price data (Binance, Yahoo Finance) is backfilled to <strong>2017&ndash;2020</strong> for most assets. FRED macro series go back to <strong>2000</strong> or later depending on the series. This gives the statistical models 6&ndash;25 years of daily observations to work with.</p>
+            <p>The engine currently tracks <strong>45 canonical metrics</strong> across 6 domains (price, macro, derivatives, sentiment, on-chain, and composite factors), computes <strong>820+ correlation pairs</strong>, monitors <strong>38 lead-lag relationships</strong> at both daily and weekly resolution, and measures <strong>3 macro transmission chains</strong>.</p>
+            <p>All analysis updates nightly. Eleven collectors run between 00:15 and 06:30 UTC. PCA factors, correlations, lead-lag (daily + weekly), regime detection, and anomaly clustering then run from 06:30 to 07:00 UTC. By 07:05 everything is fresh for the day.</p>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>What Each Tab Does</h3>
+            <table class="data-table source-table">
+                <thead><tr><th style="width:120px">Tab</th><th>What you can do</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>1. Overview</strong></td><td>Get a full picture in 30 seconds. The natural-language summary tells you: what regime we're in, whether anomalies are firing, what BTC is most correlated with right now, and which historical period looks most similar to today. Below that: transmission chain health bars (clickable), daily/weekly lead-lag toggle, macro readings, z-score radar, funding rates, ETF flows, upcoming events, and anomaly cluster history. This is the tab the morning report bot reads. Click [?] on any section for a detailed explanation.</td></tr>
+                    <tr><td><strong>2. Correlations</strong></td><td>Explore how 41 metrics relate to each other. Use the <strong>category filter pills</strong> (Price, Macro, Derivatives, Sentiment, Factors) to focus the heatmap on the domains you care about. Toggle between 60-day and 120-day windows, or switch to the network graph view. Click any heatmap cell to jump to the detail table row with exact r-values and p-values.</td></tr>
+                    <tr><td><strong>3. Regime</strong></td><td>See whether the market is in a favorable or unfavorable regime, how confident the model is, and how long the current regime has lasted. The forecast widget shows the probability of staying in the current state over 7, 30, and 90 days. The history chart shows every regime transition since data collection began, with macro event markers (FOMC, CPI, etc.) overlaid. The confidence line below reveals when the model was uncertain about transitions.</td></tr>
+                    <tr><td><strong>4. Conditions</strong></td><td>Ask "what if" questions. Define up to 3 z-score conditions (e.g., "VIX above 2 sigma AND credit spreads above 1.5 sigma") and see what happened historically &mdash; how many times it occurred, what the forward return distribution looked like, and whether today matches. Five presets cover common scenarios: risk-off, euphoria, liquidity squeeze, credit stress, and macro calm. Below the query builder, the analogues section shows the 5 historical dates most similar to today's macro environment.</td></tr>
+                    <tr><td><strong>5. Metrics</strong></td><td>Browse every metric in the database. Search by name, domain, or asset. See row counts, date ranges, and data freshness. Click "Plot" on any row to jump directly to the Series viewer with that metric loaded.</td></tr>
+                    <tr><td><strong>6. Series</strong></td><td>Plot any metric over time with zoom and pan. Select a primary metric and optionally overlay a second one on a separate Y-axis. Useful for visual comparison (e.g., overlay M2 money supply against BTC price). Choose time ranges from 90 days to the full history.</td></tr>
+                    <tr><td><strong>7. Data Lab</strong></td><td>Pivot-table exploration. Select up to 10 metrics, then group them by regime (favorable/unfavorable), z-score bucket (&lt;-2 through &gt;2), or time period (monthly/quarterly). Choose an aggregation (mean, median, count, P25, P75). The system returns both a table and an auto-generated chart. Example: select VIX + HY_SPREAD, group by regime, agg = mean &mdash; instantly see that VIX averages 18 in favorable vs 28 in unfavorable regimes. Export any result to CSV.</td></tr>
+                    <tr><td><strong>8. Chains</strong></td><td>Transmission chain analysis. See how macro signals propagate to BTC through 3 named chains: <strong>Monetary Policy</strong> (FED_FUNDS &rarr; YIELD_2Y &rarr; YIELD_10Y &rarr; HY_SPREAD &rarr; SPX &rarr; BTC), <strong>Dollar Liquidity</strong> (M2 &rarr; NET_LIQUIDITY &rarr; DXY &rarr; GOLD &rarr; BTC), and <strong>Risk Appetite</strong> (VIX &rarr; HY_SPREAD &rarr; SPX &rarr; BTC). Each link shows its correlation, lag, and persistence. The chain strength (geometric mean of |r|) tells you overall signal quality. The weakest link shows where the signal breaks down. Toggle between daily and weekly frequency.</td></tr>
+                    <tr><td><strong>9. About</strong></td><td>This page &mdash; methodology, data sources, glossary.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Data Sources &amp; History</h3>
+            <table class="data-table source-table">
+                <thead><tr><th>Source</th><th>Data</th><th>Assets / Series</th><th>History</th><th>Frequency</th></tr></thead>
+                <tbody>
+                    <tr><td>Binance</td><td>OHLCV, funding rates, open interest</td><td>BTC, ETH, SOL + 25 alts</td><td>2020+</td><td>Daily</td></tr>
+                    <tr><td>Yahoo Finance</td><td>Daily prices</td><td>SPX, NASDAQ, GOLD, OIL, DXY, VIX, TLT, HYG, COPPER, EEM + 15 more</td><td>2000+</td><td>Daily</td></tr>
+                    <tr><td>FRED (Federal Reserve)</td><td>Macro series</td><td>FED_FUNDS, YIELD_2Y, YIELD_10Y, M2, HY_SPREAD, FED_BALANCE + 30 more</td><td>2000+ (38 series)</td><td>Daily to monthly</td></tr>
+                    <tr><td>CFTC</td><td>Commitments of Traders</td><td>BTC speculative net positioning</td><td>2022+</td><td>Weekly (Sat)</td></tr>
+                    <tr><td>On-chain (ETH + Tron) + market-cap feed</td><td>Stablecoin supply &amp; market cap</td><td>USDT/USDC supply, stablecoin dominance %</td><td>2022+</td><td>Daily</td></tr>
+                    <tr><td>Alternative.me</td><td>Sentiment index</td><td>Crypto Fear &amp; Greed (0-100)</td><td>2020+</td><td>Daily</td></tr>
+                    <tr><td>Google Trends</td><td>Search interest</td><td>9 keywords (buy bitcoin, crypto crash, etc.)</td><td>2020+</td><td>Monthly</td></tr>
+                    <tr><td>ccxt (OKX + Bybit)</td><td>Funding rates</td><td>BTC, ETH cross-exchange average</td><td>2023+</td><td>Daily</td></tr>
+                    <tr><td>Farside.co.uk</td><td>ETF flows</td><td>BTC spot ETF net inflows/outflows (USD)</td><td>2024-01+</td><td>Daily</td></tr>
+                    <tr><td>Derived</td><td>Computed metrics</td><td>Net Dollar Liquidity, Altcoin Season Index, Cross-Dispersion, Stablecoin Dominance</td><td>Matches inputs</td><td>Daily</td></tr>
+                    <tr><td>PCA Factors</td><td>Composite factors</td><td>Risk Appetite (VIX, HY, TLT, DXY), Liquidity (M2, NetLiq, FedBal), Credit Stress (HY, HY_EU, Curve)</td><td>2000+</td><td>Daily</td></tr>
+                </tbody>
+            </table>
+            <p>Sparse series (COT weekly, Google Trends monthly, FRED with publication lag) are forward-filled to daily frequency for alignment. This means recent values repeat until the next data point arrives.</p>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>How Z-Scores Work</h3>
+            <p>Every metric is converted to a <strong>z-score</strong>: how many standard deviations the current value is from its rolling median. We use the Median Absolute Deviation (MAD) instead of standard deviation because it's resistant to outliers.</p>
+            <blockquote>A z-score of <strong>+2.0</strong> means the metric is 2 standard deviations above normal. A z-score of <strong>-1.5</strong> means 1.5 below. Anything beyond <strong>&plusmn;2.0</strong> is considered extreme.</blockquote>
+            <p>Z-scores are computed over <strong>90-day</strong> (primary, used for anomalies and conditions) and <strong>30-day</strong> (short-term momentum) rolling windows. This is what makes it possible to compare VIX (which trades at 15-25) with BTC funding rates (which hover near 0.01%) on the same scale.</p>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Methodology</h3>
+
+            <p><strong>Correlations (Tab 2)</strong> &mdash; Spearman rank correlations between 41 canonical metrics (~820 unique pairs). Recalculated daily over 60-day and 120-day rolling windows. Use the category filter pills to focus on specific domains (Price, Macro, Derivatives, Sentiment, Factors). Spearman is used instead of Pearson because it's robust to outliers and fat tails. Price series use log returns (not raw prices). Regime-dependent mode filters data by HMM state before computing correlations.</p>
+
+            <p><strong>Lead-Lag (Tab 1, Overview)</strong> &mdash; Cross-correlations at different time lags for 38 focus pairs, including both direct macro&rarr;BTC pairs and intermediate chain links (e.g., FED_FUNDS&rarr;YIELD_2Y, YIELD_10Y&rarr;HY_SPREAD). Fast signals tested over &plusmn;14 days, slow signals over &plusmn;90 days. Uses a 730-day rolling window. Available at both daily and weekly frequency &mdash; weekly smooths noise and often produces stronger macro correlations. Persistence checking splits the window into two halves and verifies the lag is consistent.</p>
+
+            <p><strong>Transmission Chains (Tab 8)</strong> &mdash; Three named macro propagation paths: Monetary Policy (FED_FUNDS &rarr; YIELD_2Y &rarr; YIELD_10Y &rarr; HY_SPREAD &rarr; SPX &rarr; BTC), Dollar Liquidity (M2 &rarr; NET_LIQUIDITY &rarr; DXY &rarr; GOLD &rarr; BTC), and Risk Appetite (VIX &rarr; HY_SPREAD &rarr; SPX &rarr; BTC). Each link shows its Spearman r, lag in days, and whether it's persistent. Chain strength is the geometric mean of |r| across all links. The weakest link shows where the macro signal degrades most.</p>
+
+            <p><strong>PCA Composite Factors</strong> &mdash; Three factors built using Principal Component Analysis (numpy eigendecomposition, no sklearn). Risk Appetite combines VIX, HY_SPREAD, TLT, and DXY (44% explained variance). Liquidity combines M2, NET_LIQUIDITY, and FED_BALANCE (57% explained). Credit Stress combines HY_SPREAD, HY_SPREAD_EU, and YIELD_10Y2Y (69% explained). Each factor is the first principal component of its group, capturing the dominant shared signal. Sign convention ensures positive values match intuitive interpretation (e.g., high Risk Appetite = risk-on).</p>
+
+            <p><strong>Regime Detection (Tab 3)</strong> &mdash; A 2-state Hidden Markov Model trained on BTC returns, VIX level, and HY credit spread. Learns favorable (higher returns, low VIX, tight spreads) and unfavorable (opposite) states. The transition matrix shows persistence probabilities. PELT change-point detection independently finds structural breaks in the data.</p>
+
+            <p><strong>Conditional Analysis (Tab 4)</strong> &mdash; Filters historical dates where user-defined z-score conditions held simultaneously, then computes forward return distributions. The histogram shows what happened over the next N days (default 30). Hit rate, mean, median, and edge vs baseline are reported. The analogue search uses cosine similarity of 10-metric z-score vectors to find the most similar past environments.</p>
+
+            <p><strong>Data Lab (Tab 7)</strong> &mdash; Aggregates z-scores across any combination of metrics, grouped by regime, z-score bucket, or time period. Uses CTE-based SQL with parameterized queries. Useful for answering questions like "what is the average VIX z-score during unfavorable regimes?" or "how does credit stress evolve quarter by quarter?"</p>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Example Queries (Conditions Tab)</h3>
+
+            <p><strong>Risk-off:</strong> <code>VIX:gt:2,HY_SPREAD:gt:1.5</code></p>
+            <p class="text-secondary">Elevated fear + credit stress. If hit rate is 30%, BTC fell in 70% of such cases.</p>
+
+            <p><strong>Euphoria:</strong> <code>FEAR_GREED:gt:2,FUNDING_BTC:gt:1.5</code></p>
+            <p class="text-secondary">Extreme greed + elevated funding (overleveraged longs). Often marks local tops.</p>
+
+            <p><strong>Liquidity squeeze:</strong> <code>M2:lt:-1,DXY:gt:1.5</code></p>
+            <p class="text-secondary">Contracting money supply + strong dollar. Hostile for risk assets.</p>
+
+            <p><strong>Interpreting results:</strong> &lt;10 instances = anecdotal. 10-30 = hypothesis. 30+ = meaningful pattern if hit rate is consistently &gt;60% or &lt;40%. Large mean vs median gap = outlier skew.</p>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Caveats</h3>
+            <ul>
+                <li><strong>Not trading signals.</strong> This is a research tool. All analysis is backward-looking.</li>
+                <li><strong>Multiple comparisons:</strong> With 27 metrics and many threshold combos, spurious patterns appear by chance. Treat results as hypotheses.</li>
+                <li><strong>FRED publication lag:</strong> Macro data like M2 arrives weeks late. A "leading" correlation with M2 may partly reflect this lag.</li>
+                <li><strong>HMM is in-sample:</strong> The regime model uses the full time series (including future data) to label past states. It's descriptive, not predictive.</li>
+                <li><strong>Sparse data:</strong> COT (weekly), Google Trends (monthly), and some FRED series are forward-filled to daily. Correlations involving these have lower effective sample sizes.</li>
+            </ul>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Glossary &amp; Abbreviations</h3>
+            <table class="data-table source-table">
+                <thead><tr><th style="width:140px">Term</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>z-score</strong></td><td>How many standard deviations a value is from its rolling median. +2 = very high, -2 = very low, 0 = normal.</td></tr>
+                    <tr><td><strong>r (correlation)</strong></td><td>Spearman rank correlation coefficient. Ranges from -1 (perfect inverse) to +1 (perfect positive). 0 = no relationship.</td></tr>
+                    <tr><td><strong>p-value</strong></td><td>Probability of seeing this correlation by chance. Lower = more statistically significant. We show unadjusted values; &lt;0.05 is conventionally "significant."</td></tr>
+                    <tr><td><strong>Hit rate</strong></td><td>Percentage of historical instances where the forward return was positive.</td></tr>
+                    <tr><td><strong>Regime</strong></td><td>Market state classified by the HMM: <span style="color:var(--color-bullish)">favorable</span> (higher BTC returns, low VIX, tight spreads) or <span style="color:var(--color-bearish)">unfavorable</span> (opposite).</td></tr>
+                    <tr><td><strong>HMM</strong></td><td>Hidden Markov Model &mdash; a statistical model that infers hidden states (regimes) from observable data.</td></tr>
+                    <tr><td><strong>PELT</strong></td><td>Pruned Exact Linear Time &mdash; an algorithm for detecting structural change points in time series data.</td></tr>
+                    <tr><td><strong>MAD</strong></td><td>Median Absolute Deviation &mdash; a robust measure of variability, used instead of standard deviation for z-score computation.</td></tr>
+                    <tr><td><strong>Cosine similarity</strong></td><td>Measures how similar two vectors are by their angle (0-1). Used for historical analogue matching. 1.0 = identical direction.</td></tr>
+                    <tr><td><strong>Log return</strong></td><td>ln(price_today / price_yesterday). Used instead of % change because it's time-additive and symmetric.</td></tr>
+                    <tr><td><strong>Forward-fill</strong></td><td>Carrying the last known value forward until new data arrives. Used for weekly/monthly series to create daily data.</td></tr>
+                    <tr><td><strong>PCA</strong></td><td>Principal Component Analysis &mdash; extracts the dominant shared signal from a group of correlated metrics. PC1 (first principal component) captures the most variance.</td></tr>
+                    <tr><td><strong>Explained variance</strong></td><td>How much of the total variance PC1 captures. 69% for Credit Stress means the HY spreads + yield curve share a strong common factor.</td></tr>
+                    <tr><td><strong>Chain strength</strong></td><td>Geometric mean of |r| across all links in a transmission chain. Measures overall signal quality from start (macro) to end (BTC).</td></tr>
+                    <tr><td><strong>Persistence</strong></td><td>Whether a lead-lag relationship holds in both halves of the data window. Persistent = solid line in chain view. Non-persistent = dashed (may not be reliable).</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Metric Abbreviations</h3>
+            <table class="data-table source-table">
+                <thead><tr><th style="width:140px">Abbreviation</th><th>Full name</th><th>What it measures</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>BTC, ETH, SOL</strong></td><td>Bitcoin, Ethereum, Solana</td><td>Crypto asset daily log returns</td></tr>
+                    <tr><td><strong>SPX, NASDAQ</strong></td><td>S&amp;P 500, Nasdaq Composite</td><td>US equity indices (large-cap, tech-heavy)</td></tr>
+                    <tr><td><strong>DXY</strong></td><td>US Dollar Index</td><td>Dollar strength vs basket of 6 currencies</td></tr>
+                    <tr><td><strong>VIX</strong></td><td>CBOE Volatility Index</td><td>Implied volatility of S&amp;P 500 options ("fear gauge")</td></tr>
+                    <tr><td><strong>TLT</strong></td><td>iShares 20+ Year Treasury ETF</td><td>Long-duration US government bonds (inverse to yields)</td></tr>
+                    <tr><td><strong>HYG</strong></td><td>iShares High Yield Corp Bond ETF</td><td>High-yield (junk) corporate bonds &mdash; proxy for credit risk appetite</td></tr>
+                    <tr><td><strong>GOLD, OIL, COPPER</strong></td><td>Gold, Crude Oil &amp; Copper futures</td><td>Commodity prices. Copper ("Dr. Copper") is a leading industrial demand indicator</td></tr>
+                    <tr><td><strong>EEM</strong></td><td>iShares Emerging Markets ETF</td><td>Emerging market equities &mdash; proxy for global risk appetite and dollar sensitivity</td></tr>
+                    <tr><td><strong>FED_FUNDS</strong></td><td>Federal Funds Rate</td><td>The US central bank's overnight lending rate</td></tr>
+                    <tr><td><strong>YIELD_2Y</strong></td><td>2-Year Treasury Yield</td><td>Most sensitive to Fed policy expectations. Moves before 10Y</td></tr>
+                    <tr><td><strong>YIELD_10Y</strong></td><td>10-Year Treasury Yield</td><td>US government borrowing cost at 10 years</td></tr>
+                    <tr><td><strong>YIELD_10Y2Y</strong></td><td>10Y-2Y Yield Spread</td><td>Yield curve slope. Negative = inverted curve (recession signal)</td></tr>
+                    <tr><td><strong>YIELD_10Y3M</strong></td><td>10Y-3M Yield Spread</td><td>Alternative yield curve measure. Often considered a more reliable recession predictor than 10Y-2Y</td></tr>
+                    <tr><td><strong>M2</strong></td><td>M2 Money Supply</td><td>Broad money in the US economy. Expansion = more liquidity</td></tr>
+                    <tr><td><strong>NET_LIQUIDITY</strong></td><td>Net Dollar Liquidity</td><td>FED_BALANCE &minus; TGA &minus; REVERSE_REPO. Proxy for money available to financial markets</td></tr>
+                    <tr><td><strong>HY_SPREAD</strong></td><td>High-Yield Credit Spread (US)</td><td>Yield premium of junk bonds over Treasuries. Rising = credit stress</td></tr>
+                    <tr><td><strong>HY_SPREAD_EU</strong></td><td>High-Yield Credit Spread (EU)</td><td>European high-yield spread. Complements US HY for global credit conditions</td></tr>
+                    <tr><td><strong>BREAKEVEN_10Y</strong></td><td>10Y Breakeven Inflation</td><td>Market-implied inflation expectations. Derived from TIPS vs nominal Treasury yields</td></tr>
+                    <tr><td><strong>FUNDING_BTC/ETH</strong></td><td>Perpetual Funding Rate</td><td>Cost of holding a long position in perpetual futures. High = overleveraged longs</td></tr>
+                    <tr><td><strong>RVOL_BTC/ETH</strong></td><td>Realized Volatility</td><td>Actual historical volatility over the past 30 days</td></tr>
+                    <tr><td><strong>OPTIONS_PC_BTC</strong></td><td>BTC Options Put/Call Ratio</td><td>Ratio of put (bearish) to call (bullish) option volume. &gt;1 = more puts</td></tr>
+                    <tr><td><strong>FEAR_GREED</strong></td><td>Crypto Fear &amp; Greed Index</td><td>0 = extreme fear, 100 = extreme greed. Based on volatility, volume, social media, surveys</td></tr>
+                    <tr><td><strong>COT_BTC_SPEC</strong></td><td>COT BTC Speculative Net</td><td>Net long/short positioning by speculators in CME BTC futures (CFTC weekly report)</td></tr>
+                    <tr><td><strong>ETF_BTC_FLOW</strong></td><td>BTC Spot ETF Net Flow</td><td>Daily net USD inflows/outflows across all US spot Bitcoin ETFs</td></tr>
+                    <tr><td><strong>STABLECOIN_SUPPLY</strong></td><td>USDT Market Cap</td><td>Total Tether supply &mdash; growth = new money entering crypto</td></tr>
+                    <tr><td><strong>STABLECOIN_DOM</strong></td><td>Stablecoin Dominance %</td><td>Stablecoin share of total crypto market cap. Rising = risk-off (money parked in stables)</td></tr>
+                    <tr><td><strong>ALTCOIN_SEASON</strong></td><td>Altcoin Season Index</td><td>% of top-9 altcoins outperforming BTC over 90 days. &gt;75% = altcoin season</td></tr>
+                    <tr><td><strong>GTREND_BUY_BTC</strong></td><td>Google Trends: "buy bitcoin"</td><td>Search interest as proxy for retail demand</td></tr>
+                    <tr><td><strong>CROSS_DISPERSION</strong></td><td>Cross-Sectional Dispersion</td><td>How differently assets are performing from each other. High = rotational, low = macro-driven</td></tr>
+                    <tr><td><strong>TGA</strong></td><td>Treasury General Account</td><td>US Treasury's checking account at the Fed. Drawdowns inject liquidity into markets</td></tr>
+                    <tr><td><strong>REVERSE_REPO</strong></td><td>Reverse Repo Facility</td><td>Cash parked at the Fed by money market funds. Drawdowns release liquidity</td></tr>
+                    <tr><td><strong>FED_BALANCE</strong></td><td>Federal Reserve Balance Sheet</td><td>Total assets held by the Fed. QE expands it (adds liquidity), QT shrinks it</td></tr>
+                    <tr><td colspan="3" style="text-align:center;font-weight:600;color:var(--text-muted);padding:8px">Composite Factors (PCA-derived)</td></tr>
+                    <tr><td><strong>RISK_APPETITE</strong></td><td>Risk Appetite Factor</td><td>PCA of VIX, HY spread, TLT, DXY. Positive = risk-on, negative = risk-off</td></tr>
+                    <tr><td><strong>LIQUIDITY</strong></td><td>Liquidity Factor</td><td>PCA of M2, Net Liquidity, Fed Balance. Positive = expanding liquidity, negative = tightening</td></tr>
+                    <tr><td><strong>CREDIT_STRESS</strong></td><td>Credit Stress Factor</td><td>PCA of HY spread (US + EU) and yield curve. Positive = stress rising, negative = calm</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="macro-card about-section">
+            <h3>Dashboard Info</h3>
+            <p><strong>Keyboard shortcuts:</strong> Press <code>1</code>-<code>9</code> to switch tabs. Click [?] buttons on section headers for detailed explanations of what each analysis shows and how to interpret it.</p>
+            <p><strong>Charts:</strong> Powered by <a href="https://echarts.apache.org" target="_blank">Apache ECharts</a>. All charts support zoom (drag/scroll), pan, tooltips, and image export (camera icon top-right).</p>
+            <p><strong>CSV export:</strong> Available on Overview (anomalies, z-scores), Correlations (full matrix), Regime (state history), and Data Lab (pivot results).</p>
+            <p><strong>Caching:</strong> Heavy queries cached for 5 minutes via Redis. Data refreshes nightly by ~07:00 UTC.</p>
+            <p><strong>Reliability:</strong> Collectors retry 3x with exponential backoff. Circuit breakers prevent hammering failing APIs. ntfy alerts on failures. Daily health checks at 07:30 UTC.</p>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous" defer nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/intelligence.js') }}?v={{ cache_version('js/intelligence.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+<script nonce="{{ csp_nonce | default('') }}">
+// CSP: delegated click handler for data-action export buttons (replaces inline onclick attributes)
+document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var fn = window[el.dataset.action];
+    if (typeof fn === 'function') fn();
+});
+</script>
+</body>
+</html>

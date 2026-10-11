@@ -1,0 +1,866 @@
+{#
+  _facts_modules.html — server-rendered editorial partial.
+
+  Inputs (all optional; absence is gracefully guarded):
+    facts_list    list of per-asset bundle dicts from get_asset_facts
+                  (legacy path — always [] on the morning route; still used by
+                  /assets/<symbol>, which renders exactly one bundle this way)
+    clusters      editorial v4 cluster spotlight (registry-driven, one pick per
+                  category): list of {category,label,name,ticker,lede,b,
+                  state_rows,flips,ladder,levels_summary,quant}
+    cards         legacy salience-ranked spotlight (superseded by clusters on the
+                  morning route, kept for back-compat): list of
+                  {name, ticker, lede, numbers:[{label,value}],
+                   flips:{daily:[{kind,text,dir}], weekly:[...]},
+                   confluence:[{side:'R'|'S', price, dist_pct, members}]}
+    board         cross-asset breadth: list of clusters
+                  {name, assets:[{name, ticker, note}]}
+    heat          list of groups [{label, rows:[{sym, pct}]}] for cross-asset heat strip
+    correlations  list of [{pair, was, now, delta, became_significant}]
+    cot           list of [{label, value}]
+    pulse         list of [{label, value}]
+    macro         string (pre-formatted macro facts text)
+
+  Uses editorial CSS classes from report-editorial.css.
+  Server-only — no client-side equivalent. Facts-only, no advice.
+#}
+
+{%- macro fmt_price(p) -%}
+  {%- if p is not none -%}
+    {%- if p < 1 -%}${{ "%.6f"|format(p) }}
+    {%- elif p < 10 -%}${{ "%.4f"|format(p) }}
+    {%- else -%}${{ "{:,.2f}".format(p) }}
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro ordinal_suffix(n) -%}
+  {%- set n = n | int -%}
+  {%- if n % 100 >= 11 and n % 100 <= 13 -%}th
+  {%- elif n % 10 == 1 -%}st
+  {%- elif n % 10 == 2 -%}nd
+  {%- elif n % 10 == 3 -%}rd
+  {%- else -%}th
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- ── Spatial confluence ladder (from carrac.facts.ladder.ladder) ── -#}
+{%- macro zone_row(z, side) -%}
+<div class="zone {{ z.tier }} {{ side }}">
+  <div class="zln"><span class="zp">{{ fmt_price(z.price) }}</span><span class="zd">
+    {%- if z.get('dist_pct') is not none -%}
+      {%- if z.dist_pct >= 0 -%}+{{ "%.1f"|format(z.dist_pct) }}%{%- else -%}−{{ "%.1f"|format(-z.dist_pct) }}%{%- endif -%}
+    {%- endif -%}
+  </span></div>
+  <div class="zbar"><span style="width:{{ z.bar_pct }}%"></span></div>
+  <div class="zmeta"><span class="ztier">{{ z.tier_word }}</span> · {{ z.signal_count }} signal{% if z.signal_count != 1 %}s{% endif %}</div>
+  {%- if z.refs %}<div class="zrefs">{{ z.refs[:3] | join(' · ') }}{% if z.refs|length > 3 %} <span class="zmore">+{{ z.refs|length - 3 }} more</span>{% endif %}</div>{% endif %}
+</div>
+{%- endmacro -%}
+
+{%- macro ladder_block(lad) -%}
+{%- if lad -%}
+<div class="lad">
+  {%- if lad.resistances %}<div class="lside res">▲ Resistance</div>{% endif %}
+  {%- for z in lad.resistances %}{{ zone_row(z, 'res') }}{% endfor %}
+  <div class="zprice"><span class="zp">{{ fmt_price(lad.price) }}</span><span class="zlbl">price now</span></div>
+  {%- if lad.supports %}<div class="lside sup">▼ Support</div>{% endif %}
+  {%- for z in lad.supports %}{{ zone_row(z, 'sup') }}{% endfor %}
+</div>
+{%- endif -%}
+{%- endmacro -%}
+
+{#- ── lockbox() — reusable paywall component. Wraps ARBITRARY
+   caller-block content in a frame; when invoked, always renders the overlay
+   CTA — callers only call lockbox() when the section IS locked (an unlocked
+   section is rendered plainly, without this wrapper). Visual language ported
+   from the classic .premium-gate/.gate-overlay (templates/morning_report.html):
+   blurred/dimmed body behind a centered translucent CTA card.
+
+   IMPORTANT — the no-leak rule: this macro's blur/dim is COSMETIC ONLY. It
+   must never be the thing hiding real data — the caller-block content must
+   already be server-redacted (real values replaced with None → "•••") before
+   it ever reaches here. lockbox() just frames whatever it's given. -#}
+{%- macro lockbox(title, subtitle, cta_href, cta_text) -%}
+<div class="lockbox">
+  <div class="lockbox-inner">{{ caller() }}</div>
+  <div class="lockbox-overlay">
+    <div class="lockbox-overlay-content">
+      {%- if title %}<div class="lbtitle">{{ title }}</div>{% endif %}
+      {%- if subtitle %}<div class="lbsub">{{ subtitle }}</div>{% endif %}
+      {%- if cta_href %}<a class="lbcta" href="{{ cta_href }}">{{ cta_text }}</a>{% endif %}
+    </div>
+  </div>
+</div>
+{%- endmacro -%}
+
+{#- ── Derivatives Desk row rendering — shared by the unlocked and locked
+   (lockbox-wrapped) branches below so the markup is defined exactly once.
+   row.value is None ⇢ render "•••" (already redacted server-side; this macro
+   never decides what's locked, it only renders what it's given). -#}
+{%- macro desk_rows(assets) -%}
+<div class="desk">
+  {%- for asset in assets %}
+  <div class="desk-asset">
+    <div class="desk-tk">{{ asset.ticker }}<small>{{ asset.get('name') or '' }}</small></div>
+    {%- for row in asset.get('rows') or [] %}
+    <div class="row">
+      <span class="l">{{ row.label }}{% if row.get('hint') %} <span class="hint">{{ row.hint }}</span>{% endif %}</span>
+      <span class="v">{%- if row.get('value') is not none %}{{ row.value }}{%- else %}<span class="redact">•••</span>{%- endif %}</span>
+    </div>
+    {%- endfor %}
+  </div>
+  {%- endfor %}
+</div>
+{%- endmacro -%}
+
+{% if regime %}
+<div class="eyebrow" style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+  Market regime
+  <span class="src" style="text-transform:none;letter-spacing:.02em;font-size:12px">
+    {{ regime.state | capitalize }}{% if regime.get('stay_prob') is not none %} · {{ (regime.stay_prob * 100) | round | int }}% daily persistence{% endif %}{% if regime.get('duration_days') %} · {{ regime.duration_days }}d in state{% endif %}{% if regime_clock is defined and regime_clock and regime_clock.get('day_in_state') is not none %} · day {{ regime_clock.day_in_state }}{% if regime_clock.get('median_run_days') is not none %} of a typical ~{{ regime_clock.median_run_days }}-day run{% endif %}{% if regime_clock.get('note') %} · {{ regime_clock.note }}{% endif %}{% endif %} — one market-wide state from the 2-state regime model
+  </span>
+</div>
+{% endif %}
+
+{# ── What's stretched — market-wide z-score anomalies (editorial v4: promoted
+   above the fold from a side module, first thing after the regime banner) ── #}
+{% if quant_anomalies %}
+<div class="mod" id="ed-stretched">
+  <div class="mh">What&rsquo;s stretched <span>market-wide z-scores · 90d</span></div>
+  {% for a in quant_anomalies %}
+  <div class="row">
+    <span class="l">{{ a.label }}</span>
+    <span class="v">{{ "%+.1f"|format(a.zscore) }}σ{% if a.percentile is not none %} · {{ a.percentile | int }}{{ ordinal_suffix(a.percentile) }} pct{% endif %}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── Today's docket — deterministic economic/earnings events, next 7 days +
+   yesterday. Actual-when-posted only: this band must never carry a column or
+   copy that estimates a print ahead of time (the upstream data for any such estimate
+   is either paywalled off or never populated). It shows
+   only what has actually printed, nothing ahead of the release. ── #}
+{% if docket is defined and docket %}
+<div class="mod" id="ed-docket">
+  <div class="mh">Today&rsquo;s docket <span>next 7 days · actual, once posted</span></div>
+  <div class="docket">
+    {%- for ev in docket %}
+    {%- if ev.get('when') and ev.get('title') %}
+    <div class="drow">
+      <span class="dwhen">{{ ev.when }}</span>
+      <span class="dttl">{{ ev.title }}{% if ev.get('impact') %} <span class="imp {{ ev.impact }}">{{ ev.impact }}</span>{% endif %}</span>
+      <span class="dact">{{ ev.actual if ev.get('actual') else '—' }}</span>
+      {%- if ev.get('history') %}
+      <span class="dhist">{{ ev.history }}</span>
+      {%- endif %}
+    </div>
+    {%- endif %}
+    {%- endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Liquidity & credit — curated FRED set, the what's-stretched row idiom
+   (label · value · ±zσ · meaning hint). The builder already skips series
+   missing from the snapshot; guarded again here defensively. ── #}
+{% if liquidity is defined and liquidity %}
+<div class="mod" id="ed-liquidity">
+  <div class="mh">Liquidity &amp; credit <span>curated FRED set</span></div>
+  {%- for row in liquidity %}
+  {%- if row.get('label') and row.get('value') is not none %}
+  <div class="row">
+    <span class="l">{{ row.label }}</span>
+    <span class="v">{{ row.value }}{% if row.get('zscore') is not none %} · {{ "%+.1f"|format(row.zscore) }}σ{% endif %}{% if row.get('percentile') is not none %} · {{ row.percentile | int }}{{ ordinal_suffix(row.percentile) }} pct{% endif %}{% if row.get('meaning') %} <span class="hint">{{ row.meaning }}</span>{% endif %}</span>
+  </div>
+  {%- endif %}
+  {%- endfor %}
+</div>
+{% endif %}
+
+{% if heat %}
+<div class="eyebrow" id="ed-heat">Cross-asset heat <span class="src">where each asset sits in its 90-day range · price percentile</span></div>
+<div class="heat">
+  {% for grp in heat %}
+  <div class="hgrp">
+    <div class="gl">{{ grp.label }}</div>
+    {% for row in grp.rows %}
+    {%- set _pct = row.pct | int %}
+    <div class="hrow">
+      <span class="sym">{{ row.sym }}</span>
+      <div class="track">
+        <span class="mk{% if _pct >= 80 %} hot{% elif _pct <= 20 %} cold{% endif %}" style="left:{{ _pct }}%"></span>
+      </div>
+      <span class="pv{% if _pct >= 80 %} hot{% elif _pct <= 20 %} cold{% endif %}">p{{ _pct }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <p class="cap">Price percentile within 90-day range. Hot ≥ p80, cold ≤ p20.</p>
+</div>
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════════════════════
+   Spotlight — one asset per registry cluster (editorial v4), full-width,
+   depth (ladder + flips) collapsed behind a <details>. Falls back to the
+   legacy per-asset facts_list loop (used verbatim by /assets/<symbol>),
+   then to the older salience-ranked "cards" spotlight for any caller that
+   still supplies it directly (kept for back-compat / test coverage).
+   ═══════════════════════════════════════════════════════════════════════ #}
+<div id="ed-spotlight">
+
+{% if clusters is defined and clusters %}
+<div class="eyebrow">Spotlight <span class="src">one asset per cluster · highest salience</span></div>
+<div class="spotlight">
+  {%- for card in clusters %}
+  {%- set b = card.b %}
+  <div class="cluster-card"{% if not loop.first %} style="margin-top:20px"{% endif %}>
+    <div class="clab">{{ card.label }}</div>
+    <div class="fcard">
+
+      {# ── Header ── #}
+      <div class="fhead">
+        <div class="nm">{{ b.symbol }}<small>{{ b.get('name') or '' }}</small></div>
+        <div class="pr">
+          {{ fmt_price(b.price) }}<small>as of {{ b.as_of[:16] if b.as_of else '—' }}</small>
+        </div>
+      </div>
+
+      {% if card.lede %}<p class="clede">{{ card.lede }}</p>{% endif %}
+
+      {# ── History says — base-rate context under the lede.
+         Deterministic, descriptive past tense ONLY — never predictive/
+         advisory (mirrors the Scenarios phrasing rules in
+         morning_engine/prompts.py). The builder
+         already gates on n ≥ 25 and requires every field below; guarded
+         again here defensively — any missing field omits the line. ── #}
+      {%- set _hs = card.get('history_says') %}
+      {%- if _hs and _hs.get('n') is not none and _hs.get('horizon_days') is not none and _hs.get('median_move_pct') is not none and _hs.get('condition_label') %}
+      <p class="histline">History says · In {{ _hs.n }} similar instances ({{ _hs.condition_label }}), the median {{ _hs.horizon_days }}-day move was {{ "%+.1f"|format(_hs.median_move_pct) }}%.</p>
+      {%- endif %}
+
+      {# ── Current state — label-first editorial state rows (the numeric
+         statgrid stays only in the legacy facts_list loop for /assets pages). Same
+         .srow idiom the legacy .spc spotlight block uses. The trend badge is
+         also dropped here: state_rows carries its own Trend row and the
+         no-double-render rule applies. ── #}
+      {% if card.get('state_rows') %}
+      <div class="lad-h">Current state</div>
+      {%- for r in card.state_rows %}
+      <div class="srow">
+        <span class="slab">{{ r.label }}</span>
+        <span class="sbody">
+          {%- if r.band and notable_bands is defined and r.band in notable_bands %}<span class="band hot">{{ r.band }}</span>{% endif %}
+          <span class="sval">{{ r.value }}</span>
+          {%- if r.meaning %}<span class="hint">{{ r.meaning }}</span>{% endif %}
+        </span>
+      </div>
+      {%- endfor %}
+      {% endif %}
+
+      {# ── Key levels — one-line summary, full ladder + flips one click away ── #}
+      {% if card.get('levels_summary') %}
+      {%- set _ls = card.levels_summary %}
+      <div class="lvlsum">
+        {%- if _ls.support %}<span class="s">Support {{ fmt_price(_ls.support.price) }}{% if _ls.support.tier_word %} · {{ _ls.support.tier_word|lower }}{% endif %}{% if _ls.support.signal_count %} · {{ _ls.support.signal_count }} signals{% endif %}</span>{% endif %}
+        {%- if _ls.support and _ls.resistance %} — {% endif %}
+        {%- if _ls.resistance %}<span class="r">Resistance {{ fmt_price(_ls.resistance.price) }}{% if _ls.resistance.tier_word %} · {{ _ls.resistance.tier_word|lower }}{% endif %}</span>{% endif %}
+      </div>
+      {% endif %}
+      <details class="depth"><summary>Key levels &amp; flips</summary>
+
+        {% if card.ladder %}
+        <div class="lad-h">Key levels <span class="submlab">strength of the wall, then why</span></div>
+        {{ ladder_block(card.ladder) }}
+        {% elif b.levels and b.levels.get('clusters') %}
+        {%- set _res = b.levels.clusters | selectattr('side', 'equalto', 'resistance') | list %}
+        {%- set _sup = b.levels.clusters | selectattr('side', 'equalto', 'support')    | list %}
+        <div class="lad-h">Key levels — nearest clusters</div>
+
+        {% for c in _res[:3] %}
+        <div class="rung res">
+          <div class="ar">▲</div>
+          <div class="px">{{ fmt_price(c.price) }}</div>
+          <div class="mem">{{ c.members | join(' + ') }} <span class="ct">{{ c.count }} member{% if c.count != 1 %}s{% endif %}</span></div>
+          <div class="ds">
+            {%- if c.dist_pct is not none -%}
+              {%- if c.dist_pct >= 0 -%}+{{ "%.1f"|format(c.dist_pct) }}%
+              {%- else -%}−{{ "%.1f"|format(c.dist_pct * -1) }}%{%- endif -%}
+            {%- endif -%}
+          </div>
+        </div>
+        {% endfor %}
+
+        {% if b.price is not none %}
+        <div class="priceline">
+          <div class="lab">Price now</div>
+          <div class="pxnow">{{ fmt_price(b.price) }}</div>
+        </div>
+        {% endif %}
+
+        {% for c in _sup[:3] %}
+        <div class="rung sup">
+          <div class="ar">▼</div>
+          <div class="px">{{ fmt_price(c.price) }}</div>
+          <div class="mem">{{ c.members | join(' + ') }} <span class="ct">{{ c.count }} member{% if c.count != 1 %}s{% endif %}</span></div>
+          <div class="ds">
+            {%- if c.dist_pct is not none -%}
+              {%- if c.dist_pct <= 0 -%}−{{ "%.1f"|format(c.dist_pct * -1) }}%
+              {%- else -%}+{{ "%.1f"|format(c.dist_pct) }}%{%- endif -%}
+            {%- endif -%}
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {%- set _flips = card.flips or {} %}
+        {% if _flips.get('daily') or _flips.get('weekly') %}
+        <div class="lad-h" style="margin-top:16px">Levels &amp; flips · daily / weekly</div>
+        <div class="flips">
+          {%- for f in _flips.get('daily') or [] %}
+          {%- set _cls = 'up' if f.dir == 'up' else ('dn' if f.dir == 'down' else '') %}
+          <div class="flip {{ _cls }}"><span class="tf">D</span><span class="ft">{{ f.text }}</span></div>
+          {%- endfor %}
+          {%- for f in _flips.get('weekly') or [] %}
+          {%- set _cls = 'up' if f.dir == 'up' else ('dn' if f.dir == 'down' else '') %}
+          <div class="flip {{ _cls }}"><span class="tf">W</span><span class="ft">{{ f.text }}</span></div>
+          {%- endfor %}
+        </div>
+        {% endif %}
+
+      {# ── Memory rows — level memory / confirmations / weekly: depth
+         content, so they live INSIDE the collapse (outside it they would
+         dangle unheaded below the closed toggle). ── #}
+      <div class="memrows">
+
+        {# Level memory (streaks) #}
+        {% if b.streaks %}
+        {% for s in b.streaks[:3] %}
+        <div class="memrow">
+          <span class="l">Level memory</span>
+          <span class="v">{{ s.type }} {{ s.level }} · {{ s.bars }} session{% if s.bars != 1 %}s{% endif %}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {# Decisive closes #}
+        {% if b.decisive_close %}
+        {% for d in b.decisive_close[:3] %}
+        <div class="memrow">
+          <span class="l">Confirmed</span>
+          <span class="v">closed {{ d.direction }} {{ d.level }}{% if d.bars_ago is not none %} · {{ d.bars_ago }} session{% if d.bars_ago != 1 %}s{% endif %} ago{% endif %}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {# Smart money bias — crypto-only. (No separate Funding memrow here:
+           the state rows above already carry the Funding sign + percentile —
+           coordinator-adjudicated to avoid double-rendering.) #}
+        {% if card.get('category') == 'Crypto' and b.on_chain and b.on_chain.get('smart_money_bias') is not none %}
+        <div class="memrow">
+          <span class="l">Smart money</span>
+          <span class="v">{{ "%+.1f"|format(b.on_chain.smart_money_bias) }} bias</span>
+        </div>
+        {% endif %}
+
+        {# Monthly CPR #}
+        {% if b.levels and b.levels.get('monthly_cpr') and b.levels.monthly_cpr.get('position') %}
+        <div class="memrow">
+          <span class="l">Monthly CPR</span>
+          <span class="v">{{ b.levels.monthly_cpr.position | replace('_', ' ') }}</span>
+        </div>
+        {% endif %}
+
+        {# Weekly timeframe summary #}
+        {% if b.weekly and b.weekly.get('ma_stack') %}
+        {%- set _wms = b.weekly.ma_stack %}
+        <div class="memrow">
+          <span class="l">Weekly</span>
+          <span class="v">
+            {%- if _wms.state == 'bullish' %}up stack
+            {%- elif _wms.state == 'bearish' %}down stack
+            {%- elif _wms.state == 'bullish_partial' %}mixed, leaning up
+            {%- elif _wms.state == 'bearish_partial' %}mixed, leaning down
+            {%- else %}mixed
+            {%- endif %}
+            {%- if _wms.bars_held %} · {{ _wms.bars_held }}w{% endif %}
+          </span>
+        </div>
+        {% endif %}
+
+      </div><!-- /.memrows -->
+      </details>
+
+      {# ── Quant signals (z-score extremes; quant-covered assets only) ── #}
+      {%- set _q = card.get('quant') %}
+      {% if _q %}
+      <div class="lad-h">Quant signals <span class="src">z-score extremes · 90d</span></div>
+      <div class="memrows">
+        {%- for ex in _q %}
+        <div class="memrow">
+          <span class="l">{{ ex.label }}</span>
+          <span class="v">{{ "%+.1f"|format(ex.zscore) }}σ{% if ex.percentile is not none %} · {{ ex.percentile | int }}{{ ordinal_suffix(ex.percentile) }} pct{% endif %}</span>
+        </div>
+        {%- endfor %}
+      </div>
+      {% endif %}
+
+    </div><!-- /.fcard -->
+  </div><!-- /.cluster-card -->
+  {%- endfor %}
+</div><!-- /.spotlight -->
+
+{% elif facts_list %}
+{%- for b in facts_list %}
+<div class="fcard"{% if not loop.first %} style="margin-top:20px"{% endif %}>
+
+  {# ── Header ── #}
+  <div class="fhead">
+    <div class="nm">{{ b.symbol }}<small>{{ b.get('name') or '' }}</small></div>
+    <div class="pr">
+      {{ fmt_price(b.price) }}<small>as of {{ b.as_of[:16] if b.as_of else '—' }}</small>
+    </div>
+  </div>
+
+  {# ── Trend badge ── #}
+  {% if b.ma_stack %}
+  {%- set _ms = b.ma_stack %}
+  {%- set _ms_state = _ms.get('state') or '' %}
+  <span class="badge {% if 'bullish' in _ms_state %}up{% else %}dn{% endif %}">
+    {%- if _ms_state == 'bullish' %}Up stack
+    {%- elif _ms_state == 'bearish' %}Down stack
+    {%- elif _ms_state == 'bullish_partial' %}Mixed, leaning up
+    {%- elif _ms_state == 'bearish_partial' %}Mixed, leaning down
+    {%- else %}Insufficient history
+    {%- endif %}
+    {%- if _ms.get('bars_held') %} · {{ _ms.bars_held }} session{% if _ms.bars_held != 1 %}s{% endif %}{% endif %}
+    {%- if _ms.get('cross') and _ms.cross != 'none' %} · {{ _ms.cross }}{% endif %}
+  </span>
+  {% endif %}
+
+  {# ── Stat grid ── #}
+  <div class="statgrid">
+
+    {# RSI #}
+    {% if b.rsi and b.rsi.value is not none %}
+    {%- set _rsi_div = b.rsi.get('divergence') %}
+    {%- set _rsi_ns = namespace(div_label='') %}
+    {%- if _rsi_div is mapping %}
+      {%- if _rsi_div.get('hidden_bullish_divergence') %}{%- set _rsi_ns.div_label = 'hidden bull div' %}
+      {%- elif _rsi_div.get('bullish_divergence') %}{%- set _rsi_ns.div_label = 'bull div' %}
+      {%- elif _rsi_div.get('hidden_bearish_divergence') %}{%- set _rsi_ns.div_label = 'hidden bear div' %}
+      {%- elif _rsi_div.get('bearish_divergence') %}{%- set _rsi_ns.div_label = 'bearish div' %}
+      {%- endif %}
+    {%- elif _rsi_div is string and _rsi_div and _rsi_div != 'none' %}
+      {%- set _rsi_ns.div_label = _rsi_div %}
+    {%- endif %}
+    <div class="st">
+      <div class="sk">RSI (14)</div>
+      <div class="sv{% if b.rsi.zone == 'overbought' %} hot{% elif b.rsi.zone == 'oversold' %} cold{% endif %}">
+        {{ "%.1f"|format(b.rsi.value) }}
+        <small>{{ b.rsi.zone | default('') }}{% if _rsi_ns.div_label %} · {{ _rsi_ns.div_label }}{% endif %}</small>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Relative volume #}
+    {% if b.volume and b.volume.get('reliable') %}
+    <div class="st">
+      <div class="sk">Rel. volume</div>
+      <div class="sv{% if b.volume.signal == 'high' %} cold{% endif %}">
+        {{ "%.2f"|format(b.volume.rvol) if b.volume.rvol is not none else '—' }}&times;
+        <small>{{ b.volume.get('signal') or '' }}</small>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Mayer stretch #}
+    {% if b.stretch %}
+    {%- set _mayer = b.stretch.get('mayer') %}
+    {%- set _mpct  = b.stretch.get('mayer_pct') %}
+    {% if _mayer is not none and _mpct is not none %}
+    <div class="st">
+      <div class="sk">Mayer stretch</div>
+      <div class="sv{% if _mayer > 2.4 %} hot{% elif _mayer < 0.8 %} cold{% endif %}">
+        {{ "%.2f"|format(_mayer) }}&times; 200-week avg
+        <small>{{ _mpct | int }}{{ ordinal_suffix(_mpct) }} pct{% if _mayer > 2.4 %} · elevated{% elif _mayer < 0.8 %} · cheap{% endif %}</small>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {# Candle pattern #}
+    {% if b.candle and b.candle.get('pattern_label') %}
+    <div class="st">
+      <div class="sk">Candle (1D)</div>
+      <div class="sv">{{ b.candle.pattern_label }}</div>
+    </div>
+    {% endif %}
+
+  </div><!-- /.statgrid -->
+
+  {# ── Key levels — rich spatial ladder if available, else the lossy cluster fallback ── #}
+  {% if b.ladder %}
+  <div class="lad-h">Key levels <span class="submlab">strength of the wall, then why</span></div>
+  {{ ladder_block(b.ladder) }}
+  {% elif b.levels and b.levels.get('clusters') %}
+  {%- set _res = b.levels.clusters | selectattr('side', 'equalto', 'resistance') | list %}
+  {%- set _sup = b.levels.clusters | selectattr('side', 'equalto', 'support')    | list %}
+  <div class="lad-h">Key levels — nearest clusters</div>
+
+  {% for c in _res[:3] %}
+  <div class="rung res">
+    <div class="ar">▲</div>
+    <div class="px">{{ fmt_price(c.price) }}</div>
+    <div class="mem">{{ c.members | join(' + ') }} <span class="ct">{{ c.count }} member{% if c.count != 1 %}s{% endif %}</span></div>
+    <div class="ds">
+      {%- if c.dist_pct is not none -%}
+        {%- if c.dist_pct >= 0 -%}+{{ "%.1f"|format(c.dist_pct) }}%
+        {%- else -%}−{{ "%.1f"|format(c.dist_pct * -1) }}%{%- endif -%}
+      {%- endif -%}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if b.price is not none %}
+  <div class="priceline">
+    <div class="lab">Price now</div>
+    <div class="pxnow">{{ fmt_price(b.price) }}</div>
+  </div>
+  {% endif %}
+
+  {% for c in _sup[:3] %}
+  <div class="rung sup">
+    <div class="ar">▼</div>
+    <div class="px">{{ fmt_price(c.price) }}</div>
+    <div class="mem">{{ c.members | join(' + ') }} <span class="ct">{{ c.count }} member{% if c.count != 1 %}s{% endif %}</span></div>
+    <div class="ds">
+      {%- if c.dist_pct is not none -%}
+        {%- if c.dist_pct <= 0 -%}−{{ "%.1f"|format(c.dist_pct * -1) }}%
+        {%- else -%}+{{ "%.1f"|format(c.dist_pct) }}%{%- endif -%}
+      {%- endif -%}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {# ── Memory rows ── #}
+  <div class="memrows">
+
+    {# Level memory (streaks) #}
+    {% if b.streaks %}
+    {% for s in b.streaks[:3] %}
+    <div class="memrow">
+      <span class="l">Level memory</span>
+      <span class="v">{{ s.type }} {{ s.level }} · {{ s.bars }} session{% if s.bars != 1 %}s{% endif %}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {# Decisive closes #}
+    {% if b.decisive_close %}
+    {% for d in b.decisive_close[:3] %}
+    <div class="memrow">
+      <span class="l">Confirmed</span>
+      <span class="v">closed {{ d.direction }} {{ d.level }}{% if d.bars_ago is not none %} · {{ d.bars_ago }} session{% if d.bars_ago != 1 %}s{% endif %} ago{% endif %}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {# Funding rate (crypto-only) #}
+    {% if b.funding %}
+    <div class="memrow">
+      <span class="l">Funding</span>
+      <span class="v">{{ b.funding.sign }} · {{ b.funding.streak_days }} session{% if b.funding.streak_days != 1 %}s{% endif %} · {{ b.funding.percentile | int }}{{ ordinal_suffix(b.funding.percentile) }} pct</span>
+    </div>
+    {% endif %}
+
+    {# Monthly CPR #}
+    {% if b.levels and b.levels.get('monthly_cpr') and b.levels.monthly_cpr.get('position') %}
+    <div class="memrow">
+      <span class="l">Monthly CPR</span>
+      <span class="v">{{ b.levels.monthly_cpr.position | replace('_', ' ') }}</span>
+    </div>
+    {% endif %}
+
+    {# Weekly timeframe summary #}
+    {% if b.weekly and b.weekly.get('ma_stack') %}
+    {%- set _wms = b.weekly.ma_stack %}
+    <div class="memrow">
+      <span class="l">Weekly</span>
+      <span class="v">
+        {%- if _wms.state == 'bullish' %}up stack
+        {%- elif _wms.state == 'bearish' %}down stack
+        {%- elif _wms.state == 'bullish_partial' %}mixed, leaning up
+        {%- elif _wms.state == 'bearish_partial' %}mixed, leaning down
+        {%- else %}mixed
+        {%- endif %}
+        {%- if _wms.bars_held %} · {{ _wms.bars_held }}w{% endif %}
+      </span>
+    </div>
+    {% endif %}
+
+  </div><!-- /.memrows -->
+
+  {# ── Quant signals (per-asset z-score extremes; quant-covered assets) ── #}
+  {%- set _q = quant_by_symbol.get(b.symbol) if quant_by_symbol else none %}
+  {% if _q %}
+  <div class="lad-h">Quant signals <span class="src">z-score extremes · 90d</span></div>
+  <div class="memrows">
+    {%- for ex in _q %}
+    <div class="memrow">
+      <span class="l">{{ ex.label }}</span>
+      <span class="v">{{ "%+.1f"|format(ex.zscore) }}σ{% if ex.percentile is not none %} · {{ ex.percentile | int }}{{ ordinal_suffix(ex.percentile) }} pct{% endif %}</span>
+    </div>
+    {%- endfor %}
+  </div>
+  {% endif %}
+
+</div><!-- /.fcard -->
+{%- endfor %}
+{% endif %}
+
+{# ── Legacy salience-ranked spotlight — kept for back-compat with callers that
+   still pass "cards" directly (not used by the morning route as of v4). ── #}
+{% if cards %}
+<div class="eyebrow">Spotlight <span class="src">salience-ranked · most notable facts first</span></div>
+<div class="spotlight">
+  {%- for c in cards %}
+  <div class="spc">
+    <h3>{{ c.name }} <span class="tk">{{ c.ticker }}</span></h3>
+    {% if c.lede %}<p class="lede">{{ c.lede }}</p>{% endif %}
+
+    <div class="spc-cols">
+      {% if c.state_rows %}
+      <div>
+        <div class="mlab">Current state</div>
+        {%- for r in c.state_rows %}
+        <div class="srow">
+          <span class="slab">{{ r.label }}</span>
+          <span class="sbody">
+            {%- if r.band and notable_bands is defined and r.band in notable_bands %}<span class="band hot">{{ r.band }}</span>{% endif %}
+            <span class="sval">{{ r.value }}</span>
+            {%- if r.meaning %}<span class="hint">{{ r.meaning }}</span>{% endif %}
+          </span>
+        </div>
+        {%- endfor %}
+      </div>
+      {% endif %}
+
+      {% if c.ladder %}
+      <div>
+        <div class="mlab">Key levels <span class="submlab">strength of the wall, then why</span></div>
+        {{ ladder_block(c.ladder) }}
+      </div>
+      {% endif %}
+    </div>
+
+    {%- set _flips = c.flips or {} %}
+    {% if _flips.get('daily') or _flips.get('weekly') %}
+    <div class="mlab">Levels &amp; flips · daily / weekly</div>
+    <div class="flips">
+      {%- for f in _flips.get('daily') or [] %}
+      {%- set _cls = 'up' if f.dir == 'up' else ('dn' if f.dir == 'down' else '') %}
+      <div class="flip {{ _cls }}"><span class="tf">D</span><span class="ft">{{ f.text }}</span></div>
+      {%- endfor %}
+      {%- for f in _flips.get('weekly') or [] %}
+      {%- set _cls = 'up' if f.dir == 'up' else ('dn' if f.dir == 'down' else '') %}
+      <div class="flip {{ _cls }}"><span class="tf">W</span><span class="ft">{{ f.text }}</span></div>
+      {%- endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {%- endfor %}
+</div>
+{% endif %}
+
+</div><!-- /#ed-spotlight -->
+
+{# ── Cross-asset board — one-line read per asset, grouped by cluster ── #}
+{% if board %}
+<div class="eyebrow" id="ed-board-section">Cross-asset board <span class="src">one-line read per asset · by cluster · row shaded by 90-day range percentile</span></div>
+<table class="board">
+  <thead>
+    <tr><th>Asset</th><th>Read <span class="th-sub">cool = near range low · warm = near range high</span></th></tr>
+  </thead>
+  <tbody>
+    {%- for cluster in board %}
+    <tr class="grp-row"><td class="grp" colspan="2">{{ cluster.name }}</td></tr>
+    {%- for asset in cluster.assets %}
+    {%- set _p = asset.get('pct') %}
+    {%- set _wash = '' %}
+    {%- if _p is not none %}
+      {%- if _p <= 20 %}{% set _wash = 'pl' %}
+      {%- elif _p <= 40 %}{% set _wash = 'plo' %}
+      {%- elif _p >= 80 %}{% set _wash = 'ph' %}
+      {%- elif _p >= 60 %}{% set _wash = 'phi' %}
+      {%- endif %}
+    {%- endif %}
+    {%- set _wall = asset.get('wall') %}
+    <tr class="{{ _wash }}">
+      <td>{{ asset.name }}<span class="sub">{{ asset.ticker }}</span></td>
+      <td class="note">{{ asset.note or '—' }}
+        {%- if _wall %} <span class="qwall {{ _wall.side }}">Strong wall {{ _wall.word }}
+          {%- if _wall.dist_pct >= 0 %} +{{ "%.1f"|format(_wall.dist_pct) }}%
+          {%- else %} −{{ "%.1f"|format(-_wall.dist_pct) }}%{% endif %}
+          · {{ _wall.signal_count }} signal{% if _wall.signal_count != 1 %}s{% endif %}</span>{% endif %}
+      </td>
+    </tr>
+    {%- endfor %}
+    {%- endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{# ── Rotation — RRG quadrant strip (editorial bands R2). One row per
+   quadrant in a fixed order (Leading/Improving/Weakening/Lagging); the
+   builder already omits empty quadrants, guarded again here defensively.
+   Leading is warm-accented, Lagging cold — reuses the hot/cold token
+   convention (see heat strip / What's-stretched). ── #}
+{% if rotation is defined and rotation %}
+<div class="eyebrow" id="ed-rotation">Rotation <span class="src">RRG quadrants · relative strength vs. benchmark</span></div>
+<div class="rot">
+  {%- for row in rotation %}
+  {%- if row.get('quadrant') and row.get('assets') %}
+  {%- set _qc = 'hot' if row.quadrant == 'Leading' else ('cold' if row.quadrant == 'Lagging' else '') %}
+  <div class="rot-row {{ _qc }}">
+    <div class="rot-quad">{{ row.quadrant }}</div>
+    <div class="rot-assets">
+      {%- for a in row.assets %}
+      {%- if a.get('ticker') or a.get('name') %}
+      <span class="rot-chip">{{ a.get('name') or a.get('ticker') }}{% if a.get('name') and a.get('ticker') %}<span class="tk">{{ a.ticker }}</span>{% endif %}</span>
+      {%- endif %}
+      {%- endfor %}
+    </div>
+  </div>
+  {%- endif %}
+  {%- endfor %}
+</div>
+{% endif %}
+
+{# ── Derivatives Desk — BTC + ETH options & positioning (Tier 2.2). `desk`
+   arrives already tier-resolved AND redacted by the builder: row.value is
+   None on every locked, non-free row — this template renders "•••" for None
+   and nothing else decides what's locked. Exactly one free row (DVOL) keeps
+   its real value when locked (the teaser hook); the lockbox() paywall macro
+   wraps the whole desk when `not desk.unlocked`. Placed after Rotation,
+   before the signals bands. ── #}
+{% if desk is defined and desk %}
+<div class="eyebrow" id="ed-desk">Derivatives Desk <span class="src">BTC &amp; ETH · options &amp; positioning · as of {{ desk.as_of }}</span></div>
+{%- if desk.unlocked %}
+{{ desk_rows(desk.assets) }}
+{%- else %}
+{% call lockbox("Derivatives Desk", "This needs a higher plan. An admin can change plans under Admin → Users.", desk.get('cta_href') or '', "") %}
+{{ desk_rows(desk.assets) }}
+{% endcall %}
+{%- endif %}
+{% endif %}
+
+{# Side modules (correlations/COT/pulse/macro/anomalies) are gathered
+   independently of facts_list in the route — an empty facts_list must not
+   hide them. #}
+{% if (clusters is defined and clusters) or facts_list or correlations or quant_anomalies or cot or pulse or macro or (docket is defined and docket) or (liquidity is defined and liquidity) or (breadth is defined and breadth) or (flows is defined and flows) %}
+
+<div id="ed-signals">
+
+  {% if cot %}
+  <div class="mod cot">
+    <div class="mh">COT positioning <span>CFTC</span></div>
+    {% for row in cot %}
+    <div class="row">
+      <span>{{ row.label }}</span>
+      <span class="v">{{ row.value }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if correlations %}
+  <div class="mod corr">
+    <div class="mh">Correlation shifts <span>60d · WoW</span></div>
+    {% for cr in correlations %}
+    {%- set _delta = cr.get('delta') %}
+    {%- if _delta is not none and cr.get('was') is not none and cr.get('now') is not none %}
+    <div class="crow">
+      <div class="top">
+        <span class="pair">{{ cr.pair }}</span>
+        <span class="delta {% if _delta > 0 %}bull{% else %}bear{% endif %}">
+          {% if _delta > 0 %}+{% endif %}{{ "%.2f"|format(_delta) }}
+          {% if cr.get('became_significant') %}<span class="sig">now significant</span>{% endif %}
+        </span>
+      </div>
+      <div class="vals">{{ "%.2f"|format(cr.was) }} → {{ "%.2f"|format(cr.now) }}</div>
+      {%- set _wp = (((cr.was + 1) / 2) * 100) | int %}
+      {%- set _np = (((cr.now + 1) / 2) * 100) | int %}
+      {%- set _lo = [_wp, _np] | min %}
+      {%- set _bw = (_wp - _np) | abs %}
+      <div class="cbar"><i class="{{ 'up' if _delta > 0 else 'dn' }}" style="left:{{ _lo }}%;width:{{ _bw }}%"></i></div>
+    </div>
+    {%- endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if pulse %}
+  <div class="mod pulse">
+    <div class="mh">Market pulse</div>
+    {% for row in pulse %}
+    <div class="row">
+      <span class="l">{{ row.label }}</span>
+      <span class="v">{{ row.value }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Breadth internals — small fixed row set (above 200D/50D %, adv/decl,
+     new highs/lows); joins the other side-module bands. tone: warm/cold
+     reuse the existing hot/cold color convention (see What's-stretched /
+     heat strip). ── #}
+  {% if breadth is defined and breadth %}
+  <div class="mod">
+    <div class="mh">Breadth internals</div>
+    {%- for row in breadth %}
+    {%- if row.get('label') and row.get('value') is not none %}
+    <div class="row">
+      <span class="l">{{ row.label }}</span>
+      <span class="v{% if row.get('tone') == 'warm' %} hot{% elif row.get('tone') == 'cold' %} cold{% endif %}">{{ row.value }}</span>
+    </div>
+    {%- endif %}
+    {%- endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Flows & attention — ETF net flow, stablecoin dominance/supply, top
+     search-trend mover (editorial bands R2). Same label/value/zscore/
+     percentile/meaning row idiom as Liquidity &amp; credit; the builder
+     already skips missing series, guarded again here defensively. ── #}
+  {% if flows is defined and flows %}
+  <div class="mod" id="ed-flows">
+    <div class="mh">Flows &amp; attention <span>ETF · stablecoins · search trends</span></div>
+    {%- for row in flows %}
+    {%- if row.get('label') and row.get('value') is not none %}
+    <div class="row">
+      <span class="l">{{ row.label }}</span>
+      <span class="v">{{ row.value }}{% if row.get('zscore') is not none %} · {{ "%+.1f"|format(row.zscore) }}σ{% endif %}{% if row.get('percentile') is not none %} · {{ row.percentile | int }}{{ ordinal_suffix(row.percentile) }} pct{% endif %}{% if row.get('meaning') %} <span class="hint">{{ row.meaning }}</span>{% endif %}</span>
+    </div>
+    {%- endif %}
+    {%- endfor %}
+  </div>
+  {% endif %}
+
+</div><!-- /#ed-signals -->
+
+{% if macro %}
+<div class="mod" id="ed-macro-mini">
+  <div class="mh">Macro facts</div>
+  <div class="macro">{{ macro }}</div>
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center;padding:80px 24px;color:var(--faint,#6c685f);font-size:14px">
+  No data available right now — check back shortly.
+</div>
+{% endif %}

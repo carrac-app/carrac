@@ -1,0 +1,37 @@
+# Carrac — tool configuration.
+#
+# There is deliberately no [project] table here: Carrac is a deployed
+# application, not a distributed package, and adding one would imply an
+# installable artifact that does not exist. This file exists so the lint
+# contract lives in the repo rather than in a Makefile string.
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".venv", "alembic/versions"]
+
+[tool.ruff.lint]
+# Every rule listed here is at ZERO across the tree, so the gate
+# can only go red on a NEW violation — which is the whole point. Widening this
+# list is cheap once a rule's existing violations are cleared; the current counts
+# for the ones deliberately NOT yet included:
+#
+#   E701 multiple-statements    173
+#   E741 ambiguous-var-name      97
+#   E402 import-not-at-top       90   (mostly deliberate: sys.path shims)
+#   E401 multiple-imports        13
+#
+# A guard nobody can keep green becomes noise, and then it trains you to ignore
+# guards — so rules join this list only once they are actually clean.
+#
+# F401 (unused imports), F841 (unused variables) and F811 (redefinitions) are
+# in the gate. An import kept only for its side effect or as a re-export is
+# marked `# noqa: F401` with the reason, or listed in `__all__`.
+select = ["E9", "F63", "F7", "F82", "F541", "F401", "F841", "F811"]
+
+[tool.ruff.format]
+# Records the convention the codebase already follows. `ruff format` is NOT run
+# over the tree: it would rewrite 881 of 953 files, and the churn is line
+# wrapping rather than genuine inconsistency (forcing double quotes accounts
+# for only 7 of those files). That trade — every line's git blame for ruff's
+# wrapping opinions — has not been made.
+quote-style = "single"

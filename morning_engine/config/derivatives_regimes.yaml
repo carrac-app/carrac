@@ -1,0 +1,401 @@
+# =============================================================================
+# Derivatives Regime Playbook
+# =============================================================================
+# 12 canonical market regimes identified by derivatives metric fingerprints.
+# Used by the regime classifier and injected into the morning report prompt
+# for the LLM to pattern-match and narrate.
+#
+# Metric reference:
+#   basis_apr       - Futures annualized premium vs spot (% above/below risk-free)
+#   skew_25d        - 25-delta put IV minus call IV (positive = puts expensive)
+#   dvol            - Deribit Volatility Index (annualized implied vol)
+#   iv_rv_premium   - DVOL minus realized vol (positive = options overpriced)
+#   put_call_ratio  - Put OI / Call OI (high = bearish positioning)
+#   term_slope      - (IV_90d - IV_7d) / IV_7d (positive = contango, negative = backwardation)
+#   gex_sign        - "positive" (dealers dampen), "negative" (dealers amplify)
+#   gex_flip_vs_spot - "above" (spot below flip = short gamma), "below" (spot above flip = long gamma)
+# =============================================================================
+
+regimes:
+
+  euphoric_meltup:
+    name: "Euphoric Melt-Up"
+    description: "Aggressive leveraged long positioning, reflexive rally amplified by dealer hedging"
+    fingerprint:
+      basis_apr: { min: 15 }
+      skew_25d: { max: 2 }
+      dvol: { min: 55, max: 80 }
+      iv_rv_premium: { min: -10, max: 5 }
+      put_call_ratio: { max: 0.6 }
+      term_slope: { min: -0.05, max: 0.1 }
+      gex_sign: "negative"
+    weight: 1.0
+    narrative_seed: >
+      The derivatives market is in full euphoria. Futures basis at {basis_apr}% annualized
+      dwarfs the risk-free rate — traders are paying steep premiums for leveraged long exposure.
+      Calls dominate the options market (P/C ratio {put_call_ratio}), and realized vol is
+      outrunning implied vol, meaning the rally is faster than anyone priced.
+    implications:
+      - "Upside amplified by dealer short gamma hedging — but extremely fragile"
+      - "Any reversal triggers cascading liquidations ($1B+ can unwind in hours)"
+      - "Carry traders are fully extended — basis compression is the first crack"
+    transitions:
+      - "Basis compressing toward risk-free rate → Distribution"
+      - "Skew flipping positive (puts getting expensive) → smart money hedging"
+      - "Funding rate spike above 0.10% per 8h → imminent liquidation risk"
+    historical_analog: "Nov-Dec 2024 post-election rally, Mar 2024 pre-halving run"
+    crypto_notes: "BTC melt-ups end faster than equities — no circuit breakers, 24/7 markets"
+
+  complacent_bull:
+    name: "Complacent Bull"
+    description: "Orderly uptrend with low volatility, dealers long gamma pinning the market"
+    fingerprint:
+      basis_apr: { min: 8, max: 15 }
+      skew_25d: { min: -3, max: 6 }
+      dvol: { min: 35, max: 50 }
+      iv_rv_premium: { min: 10, max: 25 }
+      put_call_ratio: { max: 0.65 }
+      term_slope: { min: 0.02 }
+      gex_sign: "positive"
+    weight: 1.0
+    narrative_seed: >
+      The market is grinding higher in an orderly fashion. Dealers are long gamma and
+      stabilizing price — dips get bought, rallies get faded, creating a controlled trend.
+      IV is overpricing realized moves (premium {iv_rv_premium}%), so option sellers are
+      profitable. The market feels "easy" and nobody is hedging (P/C {put_call_ratio}).
+    implications:
+      - "Volatility suppressed by positive gamma — breakouts fail, range tightens"
+      - "The longer this persists, the larger the eventual move when gamma flips"
+      - "Vol is cheap here, but long-vol positions bleed while dealers pin the market"
+    transitions:
+      - "Basis declining + skew shifting positive → Distribution phase beginning"
+      - "GEX flip point approaching spot → gamma regime change imminent"
+      - "IV-RV premium collapsing → options no longer overpriced, VRP trade dying"
+    historical_analog: "Q1-Q2 2024 pre-ETF anticipation grind, extended consolidation ranges"
+    crypto_notes: "ETF inflows can extend this regime longer than historical norms"
+
+  healthy_trend:
+    name: "Healthy Trend"
+    description: "Sustainable directional move with balanced positioning and fair option pricing"
+    fingerprint:
+      basis_apr: { min: 5, max: 12 }
+      skew_25d: { min: -4, max: 5 }
+      dvol: { min: 45, max: 65 }
+      iv_rv_premium: { min: -5, max: 10 }
+      put_call_ratio: { min: 0.55, max: 0.85 }
+      term_slope: { min: 0.0, max: 0.15 }
+    weight: 0.8
+    narrative_seed: >
+      The derivatives market reflects a sustainable trend. Leverage is present but not
+      excessive (basis {basis_apr}%), options are fairly priced (IV-RV premium {iv_rv_premium}%),
+      and positioning is balanced (P/C {put_call_ratio}). No extreme signals in any direction.
+    implications:
+      - "Goldilocks regime — trend can continue without mechanical fragility"
+      - "Both option sellers and directional traders can operate here"
+      - "Monitor basis and skew for early signs of regime transition"
+    transitions:
+      - "Basis accelerating above 15% → transitioning to Euphoric Melt-Up"
+      - "Skew shifting + basis compressing → Distribution"
+      - "Vol compressing below 45 → Complacent Bull or Vol Compression"
+    historical_analog: "Early-mid 2024 grind, steady trend phases between extremes"
+    crypto_notes: "This is the most 'normal' regime for BTC, but it rarely lasts more than 4-8 weeks"
+
+  pre_event_tension:
+    name: "Pre-Event Tension"
+    description: "Market pricing in a known catalyst — IV elevated, term structure inverting"
+    fingerprint:
+      dvol: { min: 60, max: 85 }
+      iv_rv_premium: { min: 10 }
+      term_slope: { max: -0.03 }
+      put_call_ratio: { min: 0.7 }
+    weight: 1.2
+    narrative_seed: >
+      The derivatives market is bracing for a catalyst. DVOL at {dvol} is elevated while
+      realized vol is much lower (premium {iv_rv_premium}%) — traders are buying protection
+      ahead of an event. The term structure is inverted (slope {term_slope}), meaning near-term
+      IV exceeds longer-term IV — the market expects the move to happen soon.
+    implications:
+      - "Options are expensive relative to realized moves — sellers may benefit after the event"
+      - "Vol crush post-event is the most likely outcome (event < priced expectation)"
+      - "If event exceeds expectations, accumulated positioning amplifies the move"
+    transitions:
+      - "Event passes + vol crush → Post-Crash Stabilization or Healthy Trend"
+      - "Event triggers panic → Sudden Correction"
+      - "Event is a non-event → Vol Compression"
+    historical_analog: "Pre-FOMC positioning, pre-halving vol builds, regulatory decision dates"
+    crypto_notes: "BTC term structure inversion is genuinely rare — when it happens, respect it"
+
+  distribution_topping:
+    name: "Distribution / Topping"
+    description: "Price near highs but derivatives quietly de-risking — smart money exiting"
+    fingerprint:
+      basis_apr: { min: 3, max: 10 }
+      skew_25d: { min: 2, max: 12 }
+      dvol: { max: 55 }
+      put_call_ratio: { min: 0.65, max: 1.0 }
+      term_slope: { min: -0.02, max: 0.05 }
+    weight: 0.9
+    narrative_seed: >
+      The derivatives market is quietly de-risking while price holds near highs. Basis has
+      compressed from recent peaks to {basis_apr}% — leverage demand is fading. Skew is
+      shifting positive ({skew_25d}%) as institutions buy downside protection. The put/call
+      ratio is rising from lows. Smart money is hedging while retail remains bullish.
+    implications:
+      - "Classic distribution pattern — price can hold for weeks before the break"
+      - "The gamma flip (where GEX turns negative) is the mechanical trigger"
+      - "Rising put/call ratio from extreme lows is an early warning"
+    transitions:
+      - "GEX flips negative → Sudden Correction (the break)"
+      - "Sustained, no break → re-accumulation into Complacent Bull"
+      - "Skew reverting negative → false alarm, trend continuation"
+    historical_analog: "Jan 2025 pre-correction, Oct 2024 consolidation before breakout"
+    crypto_notes: "Distribution in crypto is compressed — weeks, not months like equities"
+
+  sudden_correction:
+    name: "Sudden Correction / Leveraged Flush"
+    description: "Violent selloff with cascading liquidations, dealers amplifying the move"
+    fingerprint:
+      dvol: { min: 70 }
+      skew_25d: { min: 5, max: 20 }
+      iv_rv_premium: { max: -3 }
+      put_call_ratio: { min: 0.85 }
+      term_slope: { max: -0.05 }
+      gex_sign: "negative"
+    weight: 1.3
+    narrative_seed: >
+      The derivatives market is in crisis mode. DVOL has spiked to {dvol} and realized vol
+      is exceeding implied (premium {iv_rv_premium}%) — the selloff is faster than anyone
+      priced. Dealers are short gamma and their hedging is amplifying the move. Liquidation
+      cascades are active. The term structure has inverted sharply (slope {term_slope}).
+    implications:
+      - "Moves overshoot in short gamma regimes — don't try to catch the falling knife"
+      - "Short-term bottoms form when liquidations exhaust and funding flips deeply negative"
+      - "Distinguishing a flush (V-bottom) from a sustained downtrend: watch term structure"
+    transitions:
+      - "Liquidations exhaust + funding deeply negative → V-bottom recovery"
+      - "Selling persists + backwardation deepens → Full Capitulation"
+      - "Term structure re-normalizes → Post-Crash Stabilization"
+    historical_analog: "Nov 2025 $2B liquidation cascade, Apr 2025 tariff crash, May 2021 crash"
+    crypto_notes: "$1-2B+ can liquidate in hours. Short gamma + thin liquidity = extreme overshoot"
+
+  full_capitulation:
+    name: "Full Capitulation"
+    description: "Sustained panic with futures backwardated — historically marks major bottoms"
+    fingerprint:
+      basis_apr: { max: 0 }
+      skew_25d: { min: 10 }
+      dvol: { min: 90 }
+      put_call_ratio: { min: 1.1 }
+      term_slope: { max: -0.1 }
+      gex_sign: "negative"
+    weight: 1.5
+    narrative_seed: >
+      The derivatives market is pricing in existential risk. Futures are in backwardation
+      (basis {basis_apr}%) — traders are pricing BTC lower in the future, which is extremely
+      unusual and has historically marked major bottoms. DVOL at {dvol} is at extreme levels.
+      Puts are astronomically expensive (skew {skew_25d}%, P/C {put_call_ratio}).
+    implications:
+      - "Historically associated with major cycle lows — the most extreme fear reading in crypto derivatives"
+      - "Deep backwardation + extreme skew + collapsing OI has marked every major bottom"
+      - "The bottom is a PROCESS, not a point — derivatives signal before price stabilizes"
+    transitions:
+      - "Always → Post-Crash Stabilization (capitulation is self-limiting)"
+      - "OI collapsing + funding deeply negative = liquidation exhaustion approaching"
+    historical_analog: "FTX collapse Nov 2022 (deepest backwardation), COVID Mar 2020, Nov 2018"
+    crypto_notes: "BTC futures backwardation is structurally rare — it has signaled every major bottom"
+
+  post_crash_stabilization:
+    name: "Post-Crash Stabilization"
+    description: "Worst is over, vol declining, term structure normalizing — vol sellers thrive"
+    fingerprint:
+      dvol: { min: 55, max: 85 }
+      skew_25d: { min: -2, max: 8 }
+      iv_rv_premium: { min: 5 }
+      term_slope: { min: -0.03, max: 0.08 }
+    weight: 0.9
+    narrative_seed: >
+      The worst appears to be over. DVOL is still elevated at {dvol} but declining. The term
+      structure is de-inverting as near-term fear subsides. IV exceeds RV by {iv_rv_premium}%
+      as the vol crush plays out — option sellers are in their element. Gamma is transitioning
+      from negative back to positive, stabilizing price action.
+    implications:
+      - "Historically favourable conditions for option sellers — VRP is large and reliable"
+      - "Price is range-bound or slowly recovering"
+      - "This regime can last weeks to months"
+    transitions:
+      - "Breakout with normalized derivatives → Healthy Trend"
+      - "Re-test of lows with vol spike → back to Sudden Correction"
+      - "Extended base building → Vol Compression"
+    historical_analog: "Post-FTX Jan 2023 recovery, post-COVID Apr 2020 stabilization"
+    crypto_notes: "Vol crush is the dominant feature — DVOL drops faster than price recovers"
+
+  vol_compression:
+    name: "Vol Compression / Coiling"
+    description: "Maximum compression — breakout imminent but direction unknown"
+    fingerprint:
+      dvol: { max: 45 }
+      skew_25d: { min: -3, max: 3 }
+      basis_apr: { min: -1, max: 6 }
+      iv_rv_premium: { min: -3, max: 8 }
+      put_call_ratio: { min: 0.6, max: 0.9 }
+      term_slope: { min: -0.02, max: 0.08 }
+      gex_sign: "positive"
+    weight: 1.1
+    narrative_seed: >
+      The derivatives market is at maximum compression. DVOL at {dvol} is at cycle lows.
+      Skew is flat ({skew_25d}%) — no directional conviction. Basis is near risk-free
+      ({basis_apr}%). Dealers are strongly long gamma, pinning the market. Option premiums
+      are cheap. This is the "boring" regime — but vol compression ALWAYS precedes expansion.
+    implications:
+      - "Breakout direction unknown, but magnitude will be large relative to recent history"
+      - "Long-volatility structures (straddles/strangles) are historically cheapest here — vol is cheap"
+      - "The longer compression lasts, the larger the eventual move (2-8 weeks typical)"
+    transitions:
+      - "Bullish breakout → Euphoric Melt-Up or Healthy Trend"
+      - "Bearish breakdown → Sudden Correction"
+      - "Continued compression → increasingly unstable, breakout probability rising"
+    historical_analog: "Late 2015 pre-2016 rally, late 2018 pre-capitulation, Oct 2023 pre-ETF"
+    crypto_notes: "BTC vol compression phases are shorter than equities — 2-8 weeks vs months"
+
+  bear_grind:
+    name: "Bear Grind / Slow Bleed"
+    description: "Sustained downtrend without panic — the regime where dip-buying has historically fared worst"
+    fingerprint:
+      basis_apr: { min: -1, max: 6 }
+      skew_25d: { min: 3, max: 12 }
+      dvol: { min: 45, max: 65 }
+      iv_rv_premium: { min: -5, max: 12 }
+      put_call_ratio: { min: 0.65, max: 1.1 }
+      term_slope: { min: -0.02, max: 0.1 }
+    weight: 1.0
+    narrative_seed: >
+      The derivatives market confirms a persistent bearish grind. Basis at {basis_apr}% is
+      below risk-free — no carry trade incentive, capital prefers T-bills. Skew is persistently
+      positive ({skew_25d}%) as put demand remains steady. DVOL at {dvol} is moderate — not
+      panicking, but not complacent. No liquidation cascades because positioning has already
+      been reduced.
+    implications:
+      - "Historically the worst regime for dip-buying — no clear contrarian signals"
+      - "Unlike capitulation, the slow bleed gives no obvious bottom"
+      - "Vol is moderate — neither historically cheap nor historically rich"
+    transitions:
+      - "Vol spike + skew extreme → Full Capitulation (the final flush)"
+      - "Boredom/apathy + vol declining → Vol Compression (base building)"
+      - "Shorts accumulate aggressively → Short Squeeze Setup"
+    historical_analog: "Q2-Q3 2022 post-Luna grind, Q4 2018 before final capitulation, Q1 2025"
+    crypto_notes: "Bear grinds in crypto are shorter but sharper than equities — months, not years"
+
+  short_squeeze_setup:
+    name: "Short Squeeze Setup"
+    description: "Crowded shorts with squeeze risk — historically resolves upward if resistance breaks"
+    fingerprint:
+      basis_apr: { max: 3 }
+      skew_25d: { min: 3, max: 10 }
+      dvol: { min: 40, max: 60 }
+      put_call_ratio: { min: 0.85 }
+      gex_sign: "negative"
+    weight: 1.0
+    narrative_seed: >
+      Bears are dominant in positioning. Basis at {basis_apr}% shows no long demand. Skew is
+      negative ({skew_25d}%) and the put/call ratio is elevated at {put_call_ratio}. However,
+      this crowded short positioning creates squeeze risk. If price breaks above the GEX flip
+      point at {gex_flip_price}, forced covering creates a reflexive loop upward.
+    implications:
+      - "Classic contrarian configuration — historically the asymmetry has been to the upside when a catalyst appears"
+      - "The trigger is usually a fundamental catalyst or break above a gamma wall"
+      - "Once squeeze begins, transitions rapidly to Euphoric Melt-Up dynamics"
+    transitions:
+      - "Price breaks resistance + funding flips positive → squeeze triggers"
+      - "Shorts unwind without rally → Bear Grind continues"
+      - "Additional selling pressure → Sudden Correction (longs trapped)"
+    historical_analog: "Jan 2023 post-FTX short squeeze, Oct 2023 pre-ETF squeeze"
+    crypto_notes: "Crypto squeezes are violent — $500M+ shorts can unwind in hours"
+
+  structural_carry:
+    name: "Structural Carry / Basis Trade Dominant"
+    description: "Institutional basis trade pinning the market — stable but vulnerable to unwind"
+    fingerprint:
+      basis_apr: { min: 8, max: 15 }
+      skew_25d: { min: -3, max: 3 }
+      dvol: { min: 35, max: 55 }
+      iv_rv_premium: { min: 8 }
+      put_call_ratio: { min: 0.55, max: 0.8 }
+      term_slope: { min: 0.03 }
+      gex_sign: "positive"
+    weight: 0.9
+    narrative_seed: >
+      The dominant strategy is cash-and-carry basis arbitrage. Institutions buy spot and sell
+      futures to capture the {basis_apr}% annualized premium — well above risk-free. This pins
+      the market, compresses volatility (DVOL {dvol}), and creates self-reinforcing stability.
+      Skew is neutral ({skew_25d}%) because positioning is hedged, not directional.
+    implications:
+      - "Stable regime driven by structural demand (ETF flows, institutional allocation)"
+      - "Vol is low and option sellers profit from the pinning effect"
+      - "Risk: sudden reversal in flows collapses basis and releases the pin simultaneously"
+    transitions:
+      - "Spot momentum joins basis carry → Complacent Bull"
+      - "ETF outflows + basis collapse → Sudden Correction (unwind cascade)"
+      - "Basis narrowing toward risk-free → carry trade dying, regime ending"
+    historical_analog: "Q1 2024 ETF launch stabilization, Q3 2024 institutional accumulation"
+    crypto_notes: "ETF-era phenomenon — this regime didn't exist pre-2024 in BTC"
+
+# =============================================================================
+# Crypto-Specific Interpretive Notes (included in LLM context)
+# =============================================================================
+crypto_context:
+  skew_polarity: >
+    BTC options naturally exhibit POSITIVE skew (call premium) during bull runs,
+    behaving like a commodity. Equities have persistent negative skew. Therefore,
+    NEGATIVE skew in BTC (puts expensive) is a MORE extreme bearish signal than
+    in equities.
+  term_structure_resilience: >
+    BTC maintains contango in IV term structure even at 65-80% DVOL levels. In
+    equities, VIX > 30 almost always produces inversion. A genuinely inverted BTC
+    term structure signals extreme stress — respect it.
+  backwardation_rarity: >
+    BTC futures are almost always in contango. Backwardation is structurally unusual
+    and has historically marked every major bottom (FTX, COVID, 2018).
+  funding_as_lever: >
+    Perpetual futures funding rates create direct P&L pressure on leveraged positions.
+    Extreme positive funding (> 0.05% per 8h) signals overheated longs. Negative
+    funding signals shorts dominant. Both extremes tend to be self-correcting.
+  dealer_gamma_magnitude: >
+    Dealer hedging flows in crypto are proportionally larger relative to market depth
+    than in equities. GEX can be approximately 13x stronger than ETF flows.
+
+# =============================================================================
+# Interpretive Heuristics (quick-reference for narrative generation —
+# descriptive readings of what each configuration has historically meant,
+# never instructions to act)
+# =============================================================================
+heuristics:
+  - signal: "DVOL < 40 + flat skew + flat basis"
+    meaning: "Coiled spring, breakout imminent"
+    historical_read: "Long-volatility structures (straddles/strangles) have historically been cheapest here"
+  - signal: "DVOL declining + price rising + skew shifting positive"
+    meaning: "Complacency building, fragility increasing"
+    historical_read: "Downside protection is cheap while fragility rises — a mismatch that has preceded sharp drops"
+  - signal: "Basis > 20% + funding > 0.10% + P/C < 0.5"
+    meaning: "Maximum leverage, squeeze risk"
+    historical_read: "Crowded longs; this configuration has preceded long liquidation cascades"
+  - signal: "Skew > 10% + basis backwardated + DVOL > 90"
+    meaning: "Capitulation, potential bottom"
+    historical_read: "Historically associated with cycle lows; puts are at their richest"
+  - signal: "Term structure inverting + DVOL rising fast"
+    meaning: "Event/crisis pricing"
+    historical_read: "Near-term vol priced above longer-dated vol; it has usually normalised after the event"
+  - signal: "Positive GEX + low DVOL + stable basis"
+    meaning: "Pinned market, low vol regime"
+    historical_read: "Dealer hedging dampens moves; option premium sellers have historically been favoured"
+  - signal: "Negative GEX + rising DVOL + OI rising"
+    meaning: "Amplification regime, trend continuation"
+    historical_read: "Dealer hedging amplifies moves; trends have tended to extend and ranges widen"
+  - signal: "Skew flipping positive-to-negative + basis compressing"
+    meaning: "Distribution / topping"
+    historical_read: "Derivatives de-risking while price holds — a pattern seen near tops"
+  - signal: "Deeply negative funding + rising OI near resistance"
+    meaning: "Short squeeze setup"
+    historical_read: "Crowded shorts near resistance; a break above it has historically triggered squeezes"
+  - signal: "VRP < 0 (RV > IV) sustained"
+    meaning: "Market underpricing risk"
+    historical_read: "Options priced below realised movement — the market is underpricing risk"

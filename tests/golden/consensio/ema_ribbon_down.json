@@ -1,0 +1,12 @@
+{
+  "convergence_days": 0,
+  "ema_gap_pct": 3.451,
+  "fast_ema": 63.13,
+  "is_converging": false,
+  "is_squeeze": false,
+  "last_change": null,
+  "position": "below",
+  "price_position": "below_both",
+  "slow_ema": 65.24,
+  "trend": "bear"
+}

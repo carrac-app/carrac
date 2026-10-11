@@ -1,0 +1,260 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Workflow — Carrac{% endblock %}
+{% block description %}The trading loop, from scan to post-mortem: Scanner, Filter, Plays, Positions, Journal, Alerts. Each tool feeds the next.{% endblock %}
+{% block canonical %}{{ site_url }}/workflow{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Workflow — Carrac","url":"{{ site_url }}/workflow","description":"Scanner, Plays, Positions, Journal, and Alerts — the full trading loop."}</script>{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/workflow.css') }}?v={{ cache_version('css/workflow.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="wf" data-tone="orange">
+
+    <section class="page-hero">
+        <span class="hero-eyebrow">Workflow &middot; Discover &rarr; Frame &rarr; Execute &rarr; Learn</span>
+        <h1>The loop, from scan to post-mortem.</h1>
+        <p class="hero-lede">Scanner surfaces candidates. Plays capture the thesis. Positions track live risk. Journal remembers the lessons. <strong style="color: var(--text);">Each tool feeds the next.</strong></p>
+        <div class="hero-visual">
+            <div class="flow-loop">
+                <div class="flow-step"><span class="fs-num">01</span><span class="fs-name">Discover</span><span class="fs-hint">Scanner &middot; Filter &middot; Ticker</span></div>
+                <div class="flow-step"><span class="fs-num">02</span><span class="fs-name">Frame</span><span class="fs-hint">Plays &middot; Scenarios &middot; Drawings</span></div>
+                <div class="flow-step"><span class="fs-num">03</span><span class="fs-name">Execute</span><span class="fs-hint">Positions &middot; Alerts &middot; Details</span></div>
+                <div class="flow-step"><span class="fs-num">04</span><span class="fs-name">Learn</span><span class="fs-hint">Journal &middot; Analytics &middot; AI Review</span></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-alt" id="scanner">
+        <section class="section">
+            <span class="section-label cyan">Discover &middot; Scanner</span>
+            <h2 class="mega-head">Confluence, scored &mdash; <em style="color: var(--cyan);">not eyeballed.</em></h2>
+            <div class="layout-sidevis" style="margin-top: 32px;">
+                <div class="sv-copy">
+                    <p>Every asset scored 0&ndash;12 on six explicit criteria. No black-box ML. Every verdict hoverable for the full breakdown.</p>
+                    <ul class="feature-list" style="margin-top: 16px;">
+                        <li><span class="marker cyan"></span> Trend, Momentum, RSI, Structure, Levels, Macro &mdash; each 0&ndash;2</li>
+                        <li><span class="marker cyan"></span> Bidirectional: same asset can be GOOD long AND WEAK short</li>
+                        <li><span class="marker cyan"></span> Extension penalty near S2/S3 or R2/R3</li>
+                        <li><span class="marker cyan"></span> Volatility-aware SL floor caps R:R at realistic 8.0</li>
+                    </ul>
+                </div>
+                <div class="sv-visual">
+                    <div class="answer-callout" style="margin: 0; border-left-color: var(--cyan); width: 100%;">
+                        <span class="q" style="color: var(--cyan);">BTC &middot; Long verdict</span>
+                        <strong style="color: var(--green); font-size: 1.05rem;">STRONG (11/12)</strong><br>
+                        Trend 2/2 &middot; Momentum 2/2 &middot; RSI 2/2<br>
+                        Structure 2/2 &middot; Levels 2/2 &middot; Macro 1/2<br>
+                        <span style="color: var(--text-muted); font-size: 0.7rem;">Consensio 1D=+2, 3D=+1, 1W=+1</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="section" id="filter">
+        <span class="section-label pink">Discover &middot; Filter</span>
+        <h2 class="mega-head">See what <em style="color: var(--pink);">actually changed.</em></h2>
+        <div class="layout-sidevis reverse" style="margin-top: 32px;">
+            <div class="sv-copy">
+                <p>Three-tab drawer for real-time watchlist triage. Reads cached data only &mdash; instant after first load.</p>
+                <ul class="feature-list" style="margin-top: 16px;">
+                    <li><span class="marker pink"></span> <strong>Active Signals</strong> &mdash; engulfings, divergences, squeezes, crossovers just fired</li>
+                    <li><span class="marker pink"></span> <strong>Transitions</strong> &mdash; indicators that just flipped state, ranked 1&ndash;3&starf;</li>
+                    <li><span class="marker pink"></span> <strong>Nearby Zones</strong> &mdash; CPR, pivots, swings + EMA 21/50/200 + SMA 200</li>
+                </ul>
+            </div>
+            <div class="sv-visual">
+                <div style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--orange); border-radius: 4px; font-size: 0.78rem;"><span style="color: var(--orange);">&#9889; Just fired</span> &middot; SOL 4H &middot; bullish engulfing</div>
+                    <div style="padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--purple); border-radius: 4px; font-size: 0.78rem;"><span style="color: var(--purple);">&starf;&starf;&starf; Changed</span> &middot; ETH 1D &middot; Consensio 5&rarr;6</div>
+                    <div style="padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--yellow); border-radius: 4px; font-size: 0.78rem;"><span style="color: var(--yellow);">Resistance &middot; Approaching</span> &middot; BTC &middot; 0.3% &uarr;</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-alt" id="watchlists">
+        <section class="section section-compact">
+            <span class="section-label cyan">Discover &middot; Watchlists &middot; Ticker &middot; Multi-Chart</span>
+            <ul class="feature-list">
+                <li><span class="marker cyan"></span> <strong>Watchlists</strong> <span id="watchlists">&nbsp;</span>&mdash; server-synced, per-user groupings with hover-preview charts</li>
+                <li><span class="marker cyan"></span> <strong>Ticker Bar</strong> <span id="ticker">&nbsp;</span>&mdash; Bloomberg-style scrolling header, custom RSS feeds, sentiment modules</li>
+                <li><span class="marker cyan"></span> <strong>Quad-Screen</strong> <span id="quad-screen">&nbsp;</span>&mdash; four charts auto-stepping through (symbol &times; timeframe); macro sweep in 60 seconds</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="section" id="plays">
+        <span class="section-label purple">Frame &middot; Plays</span>
+        <h2 class="mega-head">Stop trading ideas you <em style="color: var(--purple);">never defined.</em></h2>
+        <p class="section-desc">A Play is a structured thesis with conditions and invalidation &mdash; not a sticky note you rewrite later. Conditions auto-evaluate in the background.</p>
+
+        <div class="layout-sidevis" style="margin-top: 32px;">
+            <div class="sv-copy">
+                <ul class="feature-list">
+                    <li><span class="marker purple"></span> <strong>Thesis</strong> &mdash; your actual reasoning, long-form</li>
+                    <li><span class="marker purple"></span> <strong>Conditions</strong> &mdash; formula-driven, auto-evaluated, all / any / custom logic</li>
+                    <li><span class="marker purple"></span> <strong>Invalidation</strong> &mdash; set at creation, captured forever</li>
+                    <li><span class="marker purple"></span> <strong>Status machine</strong> &mdash; watching &rarr; acting &rarr; completed / expired / invalidated</li>
+                    <li><span class="marker purple"></span> Warning when a condition reverses post-entry</li>
+                </ul>
+            </div>
+            <div class="sv-visual elevated">
+                <div style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                        <div style="font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted);">Play #42</div>
+                        <div style="font-size: 0.62rem; padding: 2px 8px; background: rgba(216,181,106,0.12); color: var(--green); border-radius: 3px; letter-spacing: 0.08em;">ACTING</div>
+                    </div>
+                    <div style="color: var(--text); font-size: 0.88rem; font-weight: 600; margin-bottom: 14px;">BTC long on pullback to CPR</div>
+
+                    <div style="font-size: 0.66rem; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between;"><span>CONDITIONS</span><span style="color: var(--green);">3 of 5 met</span></div>
+                    <div style="height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-bottom: 14px;"><div style="width: 60%; height: 100%; background: var(--green);"></div></div>
+
+                    <div style="display: flex; flex-direction: column; gap: 7px; font-size: 0.74rem;">
+                        <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--green); width: 14px; flex-shrink: 0;">&#10003;</span><span style="color: var(--text-dim);">Price tagged monthly CPR ($84,250)</span></div>
+                        <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--green); width: 14px; flex-shrink: 0;">&#10003;</span><span style="color: var(--text-dim);">Consensio 1D &ge; 5</span></div>
+                        <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--green); width: 14px; flex-shrink: 0;">&#10003;</span><span style="color: var(--text-dim);">Funding rate &lt; 0.01%</span></div>
+                        <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--red); width: 14px; flex-shrink: 0;">&#10007;</span><span style="color: var(--text-dim);">DXY below 105</span></div>
+                        <div style="display: flex; gap: 10px; align-items: flex-start;"><span style="color: var(--text-muted); width: 14px; flex-shrink: 0;">&middot;</span><span style="color: var(--text-muted);">Volume confirmation (pending)</span></div>
+                    </div>
+
+                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 0.68rem; color: var(--text-muted); line-height: 1.5;">
+                        <span style="color: var(--red);">Invalidation:</span> 4H close below $83.5k <strong>OR</strong> regime flips to Distribution.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="layout-quote">
+        <blockquote>You don&rsquo;t lose because the market changed. <em style="color: var(--purple);">You lose because you didn&rsquo;t notice it in time.</em></blockquote>
+    </section>
+
+    <div class="section-alt">
+        <section class="section section-compact">
+            <span class="section-label purple">Frame &middot; Drawings &middot; Scenarios</span>
+            <ul class="feature-list">
+                <li><span class="marker purple"></span> <span id="drawings">&nbsp;</span><strong>Drawings</strong> &mdash; trendlines, channels, fib, rectangles, positions, spot buys &mdash; per-symbol, server-synced, copy/paste, full undo</li>
+                <li><span class="marker purple"></span> <span id="scenarios">&nbsp;</span><strong>Scenarios</strong> &mdash; multi-outcome hypotheses extending the Plays model</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="section" id="positions">
+        <span class="section-label green">Execute &middot; Positions</span>
+        <h2 class="mega-head">See your risk in context, <em>not in isolation.</em></h2>
+        <div class="layout-sidevis" style="margin-top: 32px;">
+            <div class="sv-copy">
+                <p>Spot and perps in one system. Longs and shorts together. Each position carries its own live scanner verdict.</p>
+                <ul class="feature-list" style="margin-top: 16px;">
+                    <li><span class="marker green"></span> Live P&amp;L and R-multiple</li>
+                    <li><span class="marker green"></span> Distance to invalidation</li>
+                    <li><span class="marker green"></span> Scanner verdict &mdash; is the setup that got you in still valid?</li>
+                    <li><span class="marker green"></span> Linked Play &mdash; the thesis travels with the trade</li>
+                    <li><span class="marker green"></span> Portfolio heat map: total exposure, long/short distribution</li>
+                </ul>
+            </div>
+            <div class="sv-visual">
+                <div class="answer-callout" style="margin: 0; border-left-color: var(--green); width: 100%;">
+                    <span class="q" style="color: var(--green);">BTC &middot; LONG &middot; 0.8 size</span>
+                    Entry <strong style="color: var(--text);">$84,250</strong> &middot; Now <strong style="color: var(--green);">$86,900</strong><br>
+                    P&amp;L <strong style="color: var(--green);">+3.2%</strong> &middot; R <strong style="color: var(--text);">1.8</strong><br>
+                    <span style="color: var(--text-muted); font-size: 0.72rem;">Scanner: STRONG (11/12) &middot; Linked play #42</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-alt" id="details">
+        <section class="section">
+            <span class="section-label red">Execute &middot; Details Panel</span>
+            <h2 class="mega-head">One asset. <em style="color: var(--red);">Seven views.</em> Zero context loss.</h2>
+            <div class="layout-sidevis reverse" style="margin-top: 32px;">
+                <div class="sv-copy">
+                    <p>The right-side drawer follows whichever asset you&rsquo;re looking at. Switch chart symbol and the details follow instantly &mdash; no manual re-selection.</p>
+                    <ul class="feature-list" style="margin-top: 16px;">
+                        <li><span class="marker red"></span> <span id="alerts">&nbsp;</span><strong>Alerts</strong> &mdash; 19 indicator types + formula-based conditions, Telegram / ntfy / email</li>
+                    </ul>
+                </div>
+                <div class="sv-visual elevated">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                            <div style="font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted);">Details &middot; BTC</div>
+                            <div style="font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.1em;">7 VIEW MODES</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 16px;">
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: rgba(239,83,80,0.12); border: 1px solid var(--red); border-radius: 3px; color: var(--red); font-weight: 600;">Consensio</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">Full</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">Journal</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">Matrix</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">Report</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">Plays</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">News</div>
+                            <div style="padding: 7px 4px; text-align: center; font-size: 0.62rem; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);">&hellip;</div>
+                        </div>
+                        <div style="font-size: 0.72rem; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Consensio 1D</span><span style="color: var(--green);">+6 / +9</span></div>
+                            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Consensio 3D</span><span style="color: var(--green);">+5 / +9</span></div>
+                            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Consensio 1W</span><span style="color: var(--green);">+4 / +9</span></div>
+                            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">RSI 14 (1D)</span><span style="color: var(--text);">54.2</span></div>
+                            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Trend class</span><span style="color: var(--green);">Bullish</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="section" id="journal">
+        <span class="section-label orange">Learn &middot; Journal</span>
+        <h2 class="mega-head">You don&rsquo;t remember your mistakes. <em style="color: var(--orange);">The system does.</em></h2>
+        <div class="layout-sidevis reverse" style="margin-top: 32px;">
+            <div class="sv-copy">
+                <p>Every trade captures market context <strong style="color: var(--text);">at entry</strong>, not from memory. Then Carrac shows you the patterns you&rsquo;d rather ignore.</p>
+                <ul class="feature-list" style="margin-top: 16px;">
+                    <li><span class="marker orange"></span> Regime, funding, VIX, Fear &amp; Greed captured automatically</li>
+                    <li><span class="marker orange"></span> Scanner verdict at entry time</li>
+                    <li><span class="marker orange"></span> Screenshots (up to 10), checklist items, mistake tags</li>
+                    <li><span class="marker orange"></span> Auto-populated from Plays and chart position drawings</li>
+                    <li><span class="marker orange"></span> Exit reasons: manual, tp_hit, sl_hit, trailing, time_based, breakeven</li>
+                </ul>
+            </div>
+            <div class="sv-visual">
+                <div style="width: 100%;">
+                    <div class="stat-row" style="flex-direction: column; gap: 10px; margin: 0;">
+                        <div class="stat-chip green" style="justify-content: space-between; width: 100%;"><span>Your win rate &middot; Healthy Trend</span><span class="stat-val">&mdash;</span></div>
+                        <div class="stat-chip red" style="justify-content: space-between; width: 100%;"><span>Your win rate &middot; Euphoric Melt-Up</span><span class="stat-val">&mdash;</span></div>
+                        <div class="stat-chip orange" style="justify-content: space-between; width: 100%;"><span>Last 6 losses</span><span class="stat-val" style="font-size: 0.8rem;">early_entry &middot; chasing</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="layout-quote">
+        <blockquote>Your edge isn&rsquo;t just the setup. <em style="color: var(--orange);">It&rsquo;s knowing when you break it.</em></blockquote>
+    </section>
+
+    <div class="section-alt">
+        <section class="section section-compact">
+            <span class="section-label orange">Learn &middot; Analytics &middot; AI Review</span>
+            <ul class="feature-list">
+                <li><span class="marker orange"></span> <span id="analytics">&nbsp;</span><strong>Analytics</strong> &mdash; win rate, avg R:R, Sharpe, drawdown &mdash; by asset, setup type, and regime</li>
+                <li><span class="marker orange"></span> <span id="ai-review">&nbsp;</span><strong>AI Review</strong> &mdash; weekly grade on entry quality, risk management, mistake-tag patterns, regime correlation</li>
+                <li><span class="marker orange"></span> Post-mortems on closed trades with market context attached</li>
+            </ul>
+        </section>
+    </div>
+
+    <section class="section cta-section section-tall">
+        <h2 class="section-title">Discover. Frame. Execute. Learn. <em style="color: var(--orange); font-style: normal;">Repeat.</em></h2>
+        <p class="section-desc">Information &amp; analysis, never advice.</p>
+        <div class="hero-ctas" style="justify-content: center;">
+            <a href="/register" class="btn-primary">Create account</a>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

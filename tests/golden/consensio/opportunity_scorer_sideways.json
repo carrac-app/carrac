@@ -1,0 +1,17 @@
+{
+  "classification": "ignore",
+  "components": {
+    "momentum": 10,
+    "trend_alignment": 10,
+    "volume": 10
+  },
+  "direction": "bullish",
+  "patterns": [
+    "ema_ribbon_aligned",
+    "adx_rising",
+    "volume_confirmed",
+    "ranging_penalty"
+  ],
+  "regime": "ranging",
+  "score": 15
+}

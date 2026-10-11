@@ -1,0 +1,12 @@
+{
+  "bars_since_pivot": 10,
+  "last_high_price": 63.564389,
+  "last_high_type": "LH",
+  "last_low_price": 61.470501,
+  "last_low_type": "HL",
+  "last_pivot_type": "HL",
+  "pivot_count": 19,
+  "prev_high_price": 66.656421,
+  "prev_low_price": 61.354801,
+  "structure_trend": "neutral"
+}

@@ -1,0 +1,418 @@
+{% set admin_page = 'users' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User: {{ detail_user.email }} — Admin</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .user-header {
+            margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #30363d;
+        }
+        .user-header h1 { font-size: 22px; font-weight: 600; }
+        .user-header-sub { font-size: 13px; color: #8b949e; margin-top: 4px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 2px; margin-bottom: 20px;
+            background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 4px;
+        }
+        .tab {
+            padding: 8px 16px; font-size: 13px; font-weight: 500;
+            color: #8b949e; background: none; border: none; border-radius: 6px;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .tab:hover { color: #c9d1d9; background: #21262d; }
+        .tab.active { color: #c9d1d9; background: #30363d; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+        .card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+            padding: 18px; margin-bottom: 16px;
+        }
+        .card-full { grid-column: 1 / -1; }
+        .card h2 {
+            font-size: 14px; font-weight: 600; text-transform: uppercase;
+            color: #8b949e; letter-spacing: 0.5px; margin-bottom: 14px;
+            padding-bottom: 8px; border-bottom: 1px solid #21262d;
+        }
+        .kv { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+        .kv .label { color: #8b949e; }
+        .kv .value { color: #c9d1d9; font-weight: 500; text-align: right; max-width: 60%; word-break: break-all; }
+
+        .badge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 500; border-radius: 10px; }
+        .badge-green { background: rgba(35,134,54,0.2); color: #3fb950; }
+        .badge-red { background: rgba(248,81,73,0.2); color: #f85149; }
+        .badge-blue { background: rgba(88,166,255,0.2); color: #58a6ff; }
+        .badge-yellow { background: rgba(210,153,34,0.2); color: #d29922; }
+        .badge-teal { background: rgba(38,166,154,0.2); color: #26a69a; }
+        .badge-gray { background: rgba(139,148,158,0.2); color: #8b949e; }
+
+        .mini-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .mini-table th { text-align: left; color: #8b949e; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #21262d; }
+        .mini-table td { padding: 5px 8px; border-bottom: 1px solid rgba(33,38,45,0.5); }
+        .mini-table tr:last-child td { border-bottom: none; }
+        .mini-table tr:hover { background: rgba(33,38,45,0.5); }
+
+        .tag { display: inline-block; padding: 2px 8px; font-size: 11px; background: #21262d; color: #c9d1d9; border-radius: 4px; margin: 2px; }
+        .empty { color: #484f58; font-size: 13px; font-style: italic; padding: 12px 0; }
+        .watchlist-group { margin-bottom: 10px; }
+        .watchlist-group-name { font-size: 12px; color: #8b949e; font-weight: 600; margin-bottom: 4px; }
+        .scenario-item { padding: 8px; border: 1px solid #21262d; border-radius: 6px; margin-bottom: 6px; font-size: 12px; }
+        .scenario-item:hover { border-color: #30363d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% include 'admin_nav.html' %}
+
+        <div class="user-header">
+            <h1>{{ detail_user.display_name or detail_user.email }}</h1>
+            <div class="user-header-sub">{{ detail_user.email }} &middot; ID #{{ detail_user.id }}</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="profile">Profile</button>
+            <button class="tab" data-tab="activity">Activity</button>
+            <button class="tab" data-tab="content">Content</button>
+            <button class="tab" data-tab="access">Access</button>
+        </div>
+
+        <!-- ═══ PROFILE TAB ═══ -->
+        <div class="tab-content active" id="tab-profile">
+            <div class="grid">
+                <div class="card">
+                    <h2>Profile & Account</h2>
+                    <div class="kv"><span class="label">Email</span><span class="value">{{ detail_user.email }}</span></div>
+                    <div class="kv"><span class="label">Display Name</span><span class="value">{{ detail_user.display_name or '-' }}</span></div>
+                    <div class="kv"><span class="label">Status</span><span class="value">
+                        {% if detail_user.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Inactive</span>{% endif %}
+                    </span></div>
+                    <div class="kv"><span class="label">Role</span><span class="value">
+                        {% if detail_user.is_admin %}<span class="badge badge-yellow">Admin</span>{% else %}<span class="badge badge-blue">User</span>{% endif %}
+                    </span></div>
+                    <div class="kv"><span class="label">Tier</span><span class="value">
+                        {% if detail_user.is_admin %}<span class="badge badge-yellow">Admin</span>
+                        {% elif detail_user.tier == 'premium' %}<span class="badge badge-green">Premium</span>
+                        {% elif detail_user.tier == 'member' %}<span class="badge" style="background:rgba(163,113,247,0.2);color:#a371f7;">Member</span>
+                        {% elif detail_user.tier == 'tester' %}<span class="badge badge-teal">Tester</span>
+                        {% else %}<span class="badge badge-blue">Free</span>{% endif %}
+                    </span></div>
+                    {% if detail_user.subscription_expires_at %}
+                    <div class="kv"><span class="label">Sub Expires</span><span class="value">{{ detail_user.subscription_expires_at|fmtdt }}</span></div>
+                    {% endif %}
+                    <div class="kv"><span class="label">Created</span><span class="value">{{ detail_user.created_at|fmtdt('-') }}</span></div>
+                    <div class="kv"><span class="label">Last Login</span><span class="value">{{ detail_user.last_login|fmtdt('Never') }}</span></div>
+                    <div class="kv"><span class="label">Onboarding</span><span class="value">
+                        {% if preferences.get('onboarding_completed') %}<span class="badge badge-green">Done</span>{% else %}<span class="badge badge-gray">Pending</span>{% endif %}
+                    </span></div>
+                </div>
+
+                <div class="card">
+                    <h2>AI Credits</h2>
+                    <div class="kv"><span class="label">Balance</span><span class="value">${{ '%.2f' | format(ai_balance / 100) }}</span></div>
+                    <div class="kv"><span class="label">Total Queries</span><span class="value">{{ ai_stats.get('total_queries', 0) }}</span></div>
+                    <div class="kv"><span class="label">Total Charged</span><span class="value">${{ '%.2f' | format(ai_stats.get('total_charged', 0) / 100) }}</span></div>
+                    <div class="kv"><span class="label">Total Tokens</span><span class="value">{{ '{:,}'.format(ai_stats.get('total_input', 0) + ai_stats.get('total_output', 0)) }}</span></div>
+                    <div class="kv"><span class="label">Conversations</span><span class="value">{{ conversations|length }}</span></div>
+                    <form method="post" action="/admin/user/{{ detail_user.id }}/adjust-credits" style="margin-top:12px; display:flex; gap:6px; align-items:center;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="number" name="amount_cents" placeholder="cents (+/-)" style="width:100px; padding:4px 6px; background:#0d1117; border:1px solid #30363d; border-radius:3px; color:#d1d4dc; font-family:inherit; font-size:11px;">
+                        <input type="text" name="reason" placeholder="reason" style="flex:1; padding:4px 6px; background:#0d1117; border:1px solid #30363d; border-radius:3px; color:#d1d4dc; font-family:inherit; font-size:11px;">
+                        <button type="submit" style="padding:4px 10px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#d1d4dc; cursor:pointer; font-family:inherit; font-size:11px;">Adjust</button>
+                    </form>
+                    {% if ai_deposits %}
+                    <h2 style="margin-top:14px;">Deposits</h2>
+                    <table class="mini-table">
+                        <tr><th>Amount</th><th>Source</th><th>Status</th><th>Date</th></tr>
+                        {% for d in ai_deposits %}
+                        <tr>
+                            <td>${{ '%.2f' | format(d.amount_cents / 100) }}</td>
+                            <td>{{ d.crypto_amount or 'admin' }}</td>
+                            <td><span class="badge badge-green">{{ d.status }}</span></td>
+                            <td>{{ d.created_at|fmtdt }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% endif %}
+                </div>
+
+                <div class="card card-full">
+                    <h2>User Economics <span style="font-size:10px;font-weight:400;color:#484f58;text-transform:none;">(incl. {{ '%d' | format((user_economics.tax_multiplier - 1) * 100) }}% tax)</span></h2>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div>
+                            <div class="kv"><span class="label">Revenue (Top-ups)</span><span class="value" style="color:#58a6ff;">${{ '%.2f' | format(user_economics.topup_revenue_cents / 100) }}</span></div>
+                            <div class="kv"><span class="label">Gross Cost (30d)</span><span class="value" style="color:#f0883e;">${{ '%.2f' | format(user_economics.gross_cost_cents_30d / 100) }}</span></div>
+                            <div style="padding:2px 0 6px 12px;font-size:11px;color:#484f58;">
+                                Reports: ${{ '%.2f' | format(user_economics.report_cost_cents_30d / 100) }}
+                                &middot; Copilot: ${{ '%.2f' | format(user_economics.copilot_cost_cents_30d / 100) }}
+                            </div>
+                            <div class="kv"><span class="label">Gross Cost (Lifetime)</span><span class="value" style="color:#f0883e;">${{ '%.2f' | format(user_economics.gross_cost_cents_lifetime / 100) }}</span></div>
+                        </div>
+                        <div>
+                            <div class="kv"><span class="label">Queries (30d / Total)</span><span class="value">{{ user_economics.queries_30d }} / {{ user_economics.queries_lifetime }}</span></div>
+                            <div class="kv"><span class="label">Margin (Lifetime)</span><span class="value">
+                                <span class="badge {% if user_economics.margin_cents_lifetime >= 0 %}badge-green{% else %}badge-red{% endif %}">
+                                    ${{ '%.2f' | format(user_economics.margin_cents_lifetime / 100) }}
+                                </span>
+                            </span></div>
+                            <div class="kv"><span class="label">Margin %</span><span class="value">
+                                {% if user_economics.margin_pct is not none %}
+                                <span class="badge {% if user_economics.margin_pct >= 0 %}badge-green{% else %}badge-red{% endif %}">{{ '%.1f' | format(user_economics.margin_pct) }}%</span>
+                                {% else %}<span style="color:#484f58;">N/A</span>{% endif %}
+                            </span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ACTIVITY TAB ═══ -->
+        <div class="tab-content" id="tab-activity">
+            <div class="grid">
+                <div class="card card-full">
+                    <h2>Recent AI Usage</h2>
+                    {% if ai_log %}
+                    <table class="mini-table">
+                        <tr><th>Feature</th><th>Asset</th><th>Model</th><th>Tokens (in/out)</th><th>Cost</th><th>Charged</th><th>Date</th></tr>
+                        {% for l in ai_log %}
+                        <tr>
+                            <td>{{ l.feature }}</td>
+                            <td>{{ l.asset or '-' }}</td>
+                            <td style="font-size:11px;">{{ l.model or '-' }}</td>
+                            <td>{{ '{:,}'.format(l.input_tokens) }} / {{ '{:,}'.format(l.output_tokens) }}</td>
+                            <td>${{ '%.3f' | format(l.cost_cents / 100) }}</td>
+                            <td>${{ '%.3f' | format(l.charged_cents / 100) }}</td>
+                            <td>{{ l.created_at|fmtdt }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <div class="empty">No AI usage recorded</div>
+                    {% endif %}
+                </div>
+
+                <div class="card card-full">
+                    <h2>Recent AI Conversations</h2>
+                    {% if conversations %}
+                    <table class="mini-table">
+                        <tr><th>Title</th><th>Created</th><th>Last Message</th></tr>
+                        {% for c in conversations %}
+                        <tr>
+                            <td>{{ c.title }}</td>
+                            <td>{{ c.created_at|fmtdt }}</td>
+                            <td>{{ c.updated_at|fmtdt }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <div class="empty">No AI conversations</div>
+                    {% endif %}
+                </div>
+
+                <div class="card card-full">
+                    <h2>Scenarios ({{ scenarios|length }})</h2>
+                    {% if scenarios %}
+                        {% for s in scenarios %}
+                        <div class="scenario-item">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div>
+                                    <strong>{{ s.label or 'Untitled' }}</strong>
+                                    <span style="color:#8b949e;margin-left:8px;">{{ s.asset }} &middot; {{ s.timeframe }}</span>
+                                </div>
+                                <span style="font-size:11px;color:#484f58;">{{ s.updated_at|fmtdt }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty">No scenarios</div>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Trade Journal (90d)</h2>
+                    {% if journal_stats and journal_stats.get('trades', 0) > 0 %}
+                        <div class="kv"><span class="label">Total Trades</span><span class="value">{{ journal_stats.trades }}</span></div>
+                        <div class="kv"><span class="label">Win Rate</span><span class="value">{{ journal_stats.win_rate }}%</span></div>
+                        <div class="kv"><span class="label">Wins / Losses</span><span class="value">{{ journal_stats.wins }} / {{ journal_stats.losses }}</span></div>
+                        <div class="kv"><span class="label">Avg R:R</span><span class="value">{{ '%.2f' | format(journal_stats.avg_rr) }}</span></div>
+                    {% else %}
+                    <div class="empty">No closed trades in 90 days</div>
+                    {% endif %}
+                    {% if open_trades %}
+                    <h2 style="margin-top:14px;">Open Positions ({{ open_trades|length }})</h2>
+                    <table class="mini-table">
+                        <tr><th>Asset</th><th>Dir</th><th>Entry</th><th>TP</th><th>SL</th><th>Opened</th></tr>
+                        {% for t in open_trades %}
+                        <tr>
+                            <td>{{ t.asset }}</td>
+                            <td><span class="badge {% if t.direction == 'long' %}badge-green{% else %}badge-red{% endif %}">{{ t.direction }}</span></td>
+                            <td>{{ t.entry_price }}</td>
+                            <td>{{ t.target_price or '-' }}</td>
+                            <td>{{ t.stop_price or '-' }}</td>
+                            <td>{{ t.opened_at|fmtdt }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Active Alerts ({{ alerts|length }})</h2>
+                    {% if alerts %}
+                    <table class="mini-table">
+                        <tr><th>Symbol</th><th>Condition</th><th>Price</th><th>Note</th></tr>
+                        {% for a in alerts %}
+                        <tr>
+                            <td>{{ a.symbol }}</td>
+                            <td><span class="badge {% if a.condition == 'above' %}badge-green{% else %}badge-red{% endif %}">{{ a.condition }}</span></td>
+                            <td>{{ a.price }}</td>
+                            <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.get('note', '') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <div class="empty">No active alerts</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ CONTENT TAB ═══ -->
+        <div class="tab-content" id="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Watchlist</h2>
+                    {% set groups = watchlist.get('groups', []) %}
+                    {% if groups %}
+                        {% for group in groups %}
+                        <div class="watchlist-group">
+                            <div class="watchlist-group-name">{{ group.get('name', 'Unnamed') }} ({{ group.get('symbols', [])|length }})</div>
+                            <div>
+                                {% for sym in group.get('symbols', []) %}
+                                <span class="tag">{{ sym }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty">No watchlist configured</div>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Drawings & Content</h2>
+                    {% if drawing_stats %}
+                        {% for dtype, cnt in drawing_stats.items() %}
+                        <div class="kv"><span class="label">{{ dtype.replace('_', ' ').title() }}</span><span class="value">{{ cnt }}</span></div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty">No drawings</div>
+                    {% endif %}
+                </div>
+
+                <div class="card card-full">
+                    <h2>Preferences & Onboarding</h2>
+                    {% if preferences %}
+                        {% for key, val in preferences.items() %}
+                        <div class="kv">
+                            <span class="label">{{ key.replace('_', ' ').title() }}</span>
+                            <span class="value">{% if val is sameas true %}Yes{% elif val is sameas false %}No{% elif val is iterable and val is not string %}{{ val|join(', ') }}{% else %}{{ val }}{% endif %}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty">No preferences saved</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ACCESS TAB ═══ -->
+        <div class="tab-content" id="tab-access">
+            <div class="grid">
+                <div class="card">
+                    <h2>Widget Tokens ({{ widget_tokens|length }})</h2>
+                    {% if widget_tokens %}
+                    <table class="mini-table">
+                        <tr><th>Name</th><th>Suffix</th><th>Created</th><th>Last Used</th><th>Status</th></tr>
+                        {% for t in widget_tokens %}
+                        <tr>
+                            <td>{{ t.name or '-' }}</td>
+                            <td style="font-family:monospace;">...{{ t.token_suffix }}</td>
+                            <td>{{ t.created_at|fmtdate }}</td>
+                            <td>{{ t.last_used_at|fmtdt('Never') }}</td>
+                            <td>{% if t.revoked %}<span class="badge badge-red">Revoked</span>{% else %}<span class="badge badge-green">Active</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <div class="empty">No widget tokens</div>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>API Keys ({{ api_keys|length }})</h2>
+                    {% if api_keys %}
+                    <table class="mini-table">
+                        <tr><th>Name</th><th>Suffix</th><th>Scope</th><th>Created</th><th>Last Used</th><th>Status</th></tr>
+                        {% for k in api_keys %}
+                        <tr>
+                            <td>{{ k.name or '-' }}</td>
+                            <td style="font-family:monospace;">cvx_k_...{{ k.token_suffix }}</td>
+                            <td>{{ k.scope or 'full' }}</td>
+                            <td>{{ k.created_at|fmtdt('-') }}</td>
+                            <td>{{ k.last_used_at|fmtdt('Never') }}</td>
+                            <td>{% if k.revoked %}<span class="badge badge-red">Revoked</span>{% else %}<span class="badge badge-green">Active</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <div class="empty">No API keys</div>
+                    {% endif %}
+                </div>
+
+                <div class="card card-full">
+                    <h2>Feedback ({{ user_feedback|length }})</h2>
+                    {% if user_feedback %}
+                        {% for fb in user_feedback %}
+                        <div style="padding:6px 0;border-bottom:1px solid #21262d;font-size:12px;">
+                            <span class="badge {% if fb.type == 'bug' %}badge-red{% else %}badge-blue{% endif %}">{{ fb.type }}</span>
+                            <span class="badge badge-{{ fb.status }}">{{ fb.status }}</span>
+                            {% if fb.area %}<span style="color:#8b949e;">{{ fb.area }}</span>{% endif %}
+                            <div style="margin-top:4px;color:#c9d1d9;">{{ fb.description[:120] }}{% if fb.description|length > 120 %}...{% endif %}</div>
+                            <div style="color:#484f58;font-size:11px;margin-top:2px;">{{ fb.created_at|fmtdt }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty">No feedback submitted</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script nonce="{{ csp_nonce }}">
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carrac">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <title>Verify Your Email — Carrac</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .skip-link{position:absolute;left:-9999px;top:0;padding:8px 12px;background:#000;color:#3fb950;z-index:9999}
+        .skip-link:focus{left:8px;top:8px;outline:2px solid #3fb950;outline-offset:2px}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000; color: #d1d4dc;
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .container {
+            background: #0a0a0f; border: 1px solid #1a1a2e;
+            border-radius: 6px; padding: 40px;
+            width: 100%; max-width: 440px; text-align: center;
+        }
+        .logo { font-size: 1.1rem; font-weight: 700; color: #3fb950; letter-spacing: 0.02em; margin-bottom: 24px; }
+        h1 { font-size: 0.95rem; font-weight: 600; color: #d1d4dc; margin-bottom: 12px; }
+        .desc { color: #787b86; font-size: 0.78rem; line-height: 1.6; margin-bottom: 24px; }
+        .email-highlight { color: #d1d4dc; font-weight: 500; }
+        .resend-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid #1a1a2e; }
+        .resend-btn {
+            padding: 8px 20px; font-size: 0.75rem; font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            background: transparent; color: #787b86;
+            border: 1px solid #1a1a2e; border-radius: 4px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .resend-btn:hover { color: #d1d4dc; border-color: #787b86; }
+        .back-link {
+            margin-top: 16px; font-size: 0.72rem;
+        }
+        .back-link a { color: #787b86; text-decoration: none; transition: color 0.2s; }
+        .back-link a:hover { color: #787b86; }
+        .error-message {
+            background: rgba(239, 83, 80, 0.08); border: 1px solid rgba(239, 83, 80, 0.25);
+            color: #ef5350; padding: 10px 14px; border-radius: 4px;
+            margin-bottom: 18px; font-size: 0.78rem;
+        }
+        .success-message {
+            background: rgba(63, 185, 80, 0.08); border: 1px solid rgba(63, 185, 80, 0.25);
+            color: #3fb950; padding: 10px 14px; border-radius: 4px;
+            margin-bottom: 18px; font-size: 0.78rem;
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <main id="main-content">
+    <div class="container">
+        <div class="logo">[Carrac]</div>
+        <h1>Check your email</h1>
+
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="success-message">{{ success }}</div>
+        {% endif %}
+
+        <p class="desc">
+            We've sent a verification link to
+            {% if email %}<span class="email-highlight">{{ email }}</span>{% else %}your email{% endif %}.
+            Click the link to activate your account.
+        </p>
+        <p class="desc" style="font-size:0.72rem;">
+            Your link expires in 24 hours — check your spam folder if you don't see it.
+        </p>
+
+        {% if email %}
+        <div class="resend-form">
+            <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="email" value="{{ email }}">
+                <button type="submit" class="resend-btn">Resend verification email</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="back-link">
+            <a href="{{ url_for('auth.login') }}">&larr; Back to sign in</a>
+        </div>
+    </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} — Carrac</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/favicon.svg">
+<style>
+  body{margin:0;background:#0d1117;color:#c9d1d9;
+    font-family:"JetBrains Mono","Ubuntu Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:15px}
+  .box{max-width:430px;text-align:center;padding:24px}
+  .mark{color:#3fb950;border:1px solid #3fb950;border-radius:5px;padding:1px 6px;
+    font-size:13px;font-weight:700}
+  .code{font-size:42px;font-weight:700;color:#e6edf3;margin:18px 0 4px}
+  h1{font-size:17px;color:#e6edf3;margin:0 0 8px}
+  p{color:#8b949e;margin:0 0 22px;line-height:1.5}
+  a.btn{display:inline-block;border:1px solid #3fb950;border-radius:7px;padding:8px 16px;
+    color:#04120a;background:#3fb950;font-size:13px;font-weight:700;text-decoration:none}
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body>
+  <div class="box">
+    <span class="mark">C⁴</span>
+    <div class="code">{{ status }}</div>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <a class="btn" href="/?utm_source=share&utm_medium=share_error">Open Carrac →</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}404 — Page not found · Carrac{% endblock %}
+{% block description %}The page you were looking for does not exist. Return to Carrac or open the user guide.{% endblock %}
+
+{% block content %}
+<style>
+    .error-page {
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 140px 20px 80px;
+    }
+    .error-code {
+        font-size: 6rem;
+        font-weight: 700;
+        color: var(--accent, #d8b56a);
+        line-height: 1;
+        margin-bottom: 16px;
+        letter-spacing: -2px;
+    }
+    .error-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text, #d1d4dc);
+        margin-bottom: 12px;
+    }
+    .error-body {
+        font-size: 0.9rem;
+        color: var(--text-muted, #787b86);
+        max-width: 420px;
+        line-height: 1.7;
+        margin-bottom: 36px;
+    }
+    .error-ctas {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .btn-primary {
+        background: var(--accent, #d8b56a);
+        color: #0e121b;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 22px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-dim, #9598a1);
+        border: 1px solid var(--border, #2a2d35);
+        border-radius: 6px;
+        padding: 10px 22px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--text-dim, #9598a1); color: var(--text, #d1d4dc); }
+</style>
+
+<div class="error-page">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Page not found</h1>
+    <p class="error-body">
+        The page you were looking for does not exist or may have moved.
+        Head back to the homepage or check the user guide for help.
+    </p>
+    <div class="error-ctas">
+        <a href="/" class="btn-primary">Back to homepage</a>
+        <a href="/guide" class="btn-secondary">Open the guide</a>
+    </div>
+</div>
+{% endblock %}

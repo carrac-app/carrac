@@ -1,0 +1,460 @@
+/*
+ * pulse.css — /report/pulse market cockpit
+ *
+ * Token vocabulary: mirrors carrac-overhaul.css
+ * --bg --s1 --s2 --s3 --s4
+ * --hairline --border --border-2
+ * --fg1 --fg2 --fg3 --fg4
+ * --green --red --blue --amber
+ * --green-soft --red-soft --blue-soft --amber-soft
+ * --r --r-sm --r-lg --pill
+ *
+ * IMPORTANT: these tokens are defined in carrac-overhaul.css which the
+ * main app loads globally. pulse.css does NOT redeclare :root — it uses
+ * the tokens only. If viewing pulse in isolation the tokens fall back to
+ * browser defaults (mostly fine for dev; prod always has carrac-overhaul).
+ */
+
+/* ── Reset + Base ────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.pulse-body {
+    background: var(--bg, #0d1117);
+    color: var(--fg2, #b4bdc8);
+    font-family: 'JetBrains Mono', 'Ubuntu Mono', ui-monospace, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 80px;
+}
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    padding: 8px 12px;
+    background: var(--bg, #0d1117);
+    color: var(--green, #3fb950);
+    z-index: 9999;
+}
+.skip-link:focus { left: 8px; top: 8px; outline: 2px solid var(--green, #3fb950); }
+
+/* ── Header ─────────────────────────────────────────────────────── */
+
+.pulse-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--s1, #141a22);
+    border-bottom: 1px solid var(--hairline, #1b222b);
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    flex-wrap: wrap;
+}
+
+.pulse-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.pulse-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg1, #e9edf2);
+    letter-spacing: 0.02em;
+}
+
+.pulse-beta-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    background: var(--blue-soft, rgba(88,166,255,.13));
+    color: var(--blue, #58a6ff);
+    border: 1px solid var(--blue, #58a6ff);
+    border-radius: var(--pill, 999px);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pulse-header-divider {
+    color: var(--fg4, #67707b);
+}
+
+.pulse-date {
+    color: var(--fg3, #89929e);
+    font-size: 12px;
+}
+
+.pulse-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pulse-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: var(--r-sm, 6px);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.pulse-btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border, #29323d);
+    color: var(--fg2, #b4bdc8);
+}
+.pulse-btn-ghost:hover {
+    background: var(--s2, #1a212b);
+    color: var(--fg1, #e9edf2);
+}
+
+.pulse-disclaimer {
+    font-size: 10px;
+    color: var(--fg4, #67707b);
+}
+.pulse-disclaimer a {
+    color: inherit;
+}
+
+/* ── Container ───────────────────────────────────────────────────── */
+
+.pulse-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* ── Section ─────────────────────────────────────────────────────── */
+
+.pulse-section {
+    background: var(--s1, #141a22);
+    border: 1px solid var(--hairline, #1b222b);
+    border-radius: var(--r-lg, 10px);
+    padding: 18px 20px;
+}
+
+.pulse-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fg1, #e9edf2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pulse-section-subtitle {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--fg4, #67707b);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ── Loading / Empty states ──────────────────────────────────────── */
+
+.pulse-weather-loading,
+.pulse-board-loading,
+.pulse-calendar-loading,
+.pulse-narrative-loading {
+    color: var(--fg4, #67707b);
+    font-size: 11px;
+    padding: 8px 0;
+}
+
+.pulse-empty {
+    color: var(--fg4, #67707b);
+    font-size: 12px;
+    padding: 8px 0;
+}
+.pulse-empty a {
+    color: var(--blue, #58a6ff);
+    text-decoration: underline;
+}
+
+/* ── Weather Strip ───────────────────────────────────────────────── */
+
+.pulse-weather-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.pulse-weather-cell {
+    background: var(--s2, #1a212b);
+    border: 1px solid var(--border, #29323d);
+    border-radius: var(--r, 8px);
+    padding: 12px 14px;
+    cursor: default;
+    transition: border-color 0.15s;
+}
+.pulse-weather-cell:hover {
+    border-color: var(--border-2, #3a4552);
+}
+
+.pulse-weather-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg4, #67707b);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+
+.pulse-weather-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fg1, #e9edf2);
+    line-height: 1.3;
+}
+
+.pulse-weather-gloss {
+    font-size: 10px;
+    color: var(--fg3, #89929e);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+/* ── Board ───────────────────────────────────────────────────────── */
+
+.pulse-board-group {
+    margin-bottom: 20px;
+}
+.pulse-board-group:last-child {
+    margin-bottom: 0;
+}
+
+.pulse-board-group-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fg4, #67707b);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--hairline, #1b222b);
+    margin-bottom: 8px;
+}
+
+.pulse-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pulse-board-table,
+.pulse-calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.pulse-board-table th,
+.pulse-calendar-table th {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg3, #89929e);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 10px;
+    text-align: left;
+    background: var(--s2, #1a212b);
+    border-bottom: 1px solid var(--border, #29323d);
+    white-space: nowrap;
+    cursor: default;
+}
+.pulse-board-table th:hover,
+.pulse-calendar-table th:hover {
+    color: var(--fg1, #e9edf2);
+}
+
+.pulse-board-table td,
+.pulse-calendar-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--hairline, #1b222b);
+    color: var(--fg2, #b4bdc8);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.pulse-board-table tr:last-child td,
+.pulse-calendar-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pulse-board-table tbody tr:hover td,
+.pulse-calendar-table tbody tr:hover td {
+    background: var(--s2, #1a212b);
+}
+
+/* Column-specific */
+.pulse-symbol-cell {
+    font-weight: 700;
+    color: var(--fg1, #e9edf2) !important;
+    min-width: 70px;
+}
+
+.pulse-price-cell {
+    font-variant-numeric: tabular-nums;
+    min-width: 80px;
+}
+
+.pulse-trend-cell {
+    text-align: center;
+    min-width: 52px;
+}
+
+.pulse-cpr-cell {
+    font-size: 11px;
+    color: var(--fg3, #89929e) !important;
+}
+
+.pulse-rs-cell {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Trend chips */
+.pulse-trend-chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: var(--r-sm, 6px);
+    cursor: default;
+    letter-spacing: -0.02em;
+}
+.pulse-trend-bull {
+    color: var(--green, #3fb950);
+    background: var(--green-soft, rgba(63,185,80,.14));
+}
+.pulse-trend-bear {
+    color: var(--red, #f85149);
+    background: var(--red-soft, rgba(248,81,73,.13));
+}
+.pulse-trend-flat {
+    color: var(--fg3, #89929e);
+    background: transparent;
+}
+.pulse-trend-unknown {
+    color: var(--fg4, #67707b);
+}
+
+/* Positive / negative values */
+.pulse-pos { color: var(--green, #3fb950); }
+.pulse-neg { color: var(--red, #f85149); }
+
+/* ── Calendar ────────────────────────────────────────────────────── */
+
+.pulse-cal-date {
+    color: var(--fg3, #89929e) !important;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.pulse-cal-title {
+    color: var(--fg1, #e9edf2) !important;
+    max-width: 280px;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+.pulse-impact-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border: 1px solid;
+    border-radius: var(--pill, 999px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pulse-cal-expected {
+    color: var(--amber, #d6a72b);
+    font-variant-numeric: tabular-nums;
+}
+
+.pulse-cal-actual { font-variant-numeric: tabular-nums; }
+.pulse-cal-printed { color: var(--green, #3fb950); }
+
+/* ── Narrative sections ──────────────────────────────────────────── */
+
+.pulse-narrative-body {
+    color: var(--fg2, #b4bdc8);
+    line-height: 1.7;
+    font-size: 13px;
+}
+
+.pulse-narrative-body p { margin-bottom: 0.8em; }
+.pulse-narrative-body p:last-child { margin-bottom: 0; }
+
+.pulse-narrative-body h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fg1, #e9edf2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 1em 0 0.4em;
+}
+
+.pulse-narrative-body strong { color: var(--fg1, #e9edf2); }
+
+.pulse-narrative-body ul,
+.pulse-narrative-body ol {
+    padding-left: 1.4em;
+    margin-bottom: 0.8em;
+}
+
+.pulse-narrative-body li { margin-bottom: 0.3em; }
+
+.pulse-narrative-body table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.6em 0 1em;
+    font-size: 12px;
+}
+.pulse-narrative-body table th {
+    background: var(--s2, #1a212b);
+    color: var(--fg3, #89929e);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--border, #29323d);
+    text-align: left;
+}
+.pulse-narrative-body table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--hairline, #1b222b);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+    .pulse-header { padding: 8px 14px; }
+    .pulse-container { padding: 14px 10px; gap: 20px; }
+    .pulse-section { padding: 14px 12px; }
+    .pulse-weather-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .pulse-header-right .pulse-disclaimer { display: none; }
+    .pulse-board-table th,
+    .pulse-board-table td { padding: 5px 7px; font-size: 11px; }
+}

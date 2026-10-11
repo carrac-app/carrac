@@ -1,0 +1,86 @@
+/* ============================================================================
+   CARRAC DESIGN SYSTEM — Colors & Type
+   ----------------------------------------------------------------------------
+   Single source of truth for color + typographic tokens.
+   Aesthetic: clean, technical "developer-tool" indie-SaaS. Dark, high-contrast,
+   generous negative space, monospace accents, transparency-forward voice.
+
+   Fonts: Geist (sans — UI & headings), JetBrains Mono (data, code, numbers,
+   brand mark). Loaded via Google Fonts CDN in each HTML <head>.
+   ============================================================================ */
+
+:root {
+  /* ---- BACKGROUNDS (darkest → lighter) -------------------------------- */
+  --bg-page:      #05060a;  /* page / body — deepest */
+  --bg-raised:    #0a0c12;  /* raised sections, alt bands */
+  --panel:        #0d0f16;  /* panel / card surface */
+  --panel-2:      #11131c;  /* nested panel, hover surface, inputs */
+  --panel-3:      #161925;  /* highest surface — popover, active row */
+
+  /* ---- TEXT ----------------------------------------------------------- */
+  --fg1: #e8eaef;  /* primary — headings, key values */
+  --fg2: #b6bcc6;  /* secondary — body copy */
+  --fg3: #8b919c;  /* dim — labels, captions, metadata */
+  --fg4: #5b616d;  /* faint — disabled, placeholder, axis ticks */
+
+  /* ---- ACCENT: GREEN (brand / positive / primary action) -------------- */
+  --green:        #3fb950;
+  --green-strong: #2ea043;
+  --green-dim:    #238636;
+  --green-soft:   rgba(63, 185, 80, 0.12);
+  --green-line:   rgba(63, 185, 80, 0.28);
+
+  /* ---- ACCENT: ORANGE (warning / watch / approaching) ----------------- */
+  --orange:       #f59e0b;
+  --orange-soft:  rgba(245, 158, 11, 0.12);
+  --orange-line:  rgba(245, 158, 11, 0.28);
+
+  /* ---- ACCENT: RED (negative / alert / destructive) ------------------- */
+  --red:          #f0556a;
+  --red-strong:   #d83a50;
+  --red-soft:     rgba(240, 85, 106, 0.12);
+  --red-line:     rgba(240, 85, 106, 0.28);
+
+  /* ---- ACCENT: BLUE (info / links / neutral data series) -------------- */
+  --blue:         #4493f8;
+  --blue-soft:    rgba(68, 147, 248, 0.12);
+
+  /* ---- BORDERS / LINES ------------------------------------------------ */
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-faint:  rgba(255, 255, 255, 0.04);
+
+  /* ---- RADII (sharp / minimal) ---------------------------------------- */
+  --r-sm: 2px;
+  --r:    3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-full: 999px;
+
+  /* ---- ELEVATION (low, crisp — dev-tool, not floaty) ------------------ */
+  --shadow-1: 0 1px 0 rgba(0,0,0,0.4);
+  --shadow-2: 0 4px 16px rgba(0,0,0,0.45);
+  --shadow-3: 0 12px 40px rgba(0,0,0,0.55);
+  --glow-green: 0 0 0 1px var(--green-line), 0 0 24px rgba(63,185,80,0.18);
+
+  /* ---- SPACING (4px base grid) ---------------------------------------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px; --sp-10: 128px;
+
+  /* ---- LAYOUT --------------------------------------------------------- */
+  --maxw: 1120px;
+  --maxw-prose: 720px;
+  --gutter: 24px;
+
+  /* ---- TYPE FAMILIES -------------------------------------------------- */
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* ---- TYPE SCALE ----------------------------------------------------- */
+  --t-display: 64px; --t-h1: 44px; --t-h2: 32px; --t-h3: 24px; --t-h4: 19px;
+  --t-lg: 18px; --t-body: 16px; --t-sm: 14px; --t-xs: 13px; --t-2xs: 11px;
+
+  /* ---- WEIGHTS / LINE HEIGHTS ----------------------------------------- */
+  --w-regular: 400; --w-medium: 500; --w-semibold: 600; --w-bold: 700;
+  --lh-tight: 1.05; --lh-snug: 1.2; --lh-normal: 1.5; --lh-relaxed: 1.65;
+}

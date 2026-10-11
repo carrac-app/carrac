@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <color android:color="#0d1117" />
+    </background>
+    <foreground>
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+            <!-- Simple chart line icon -->
+            <path
+                android:fillColor="#3fb950"
+                android:pathData="M30,70 L44,50 L58,60 L72,35 L78,35 L78,38 L72,38 L58,63 L44,53 L30,73 Z" />
+        </vector>
+    </foreground>
+</adaptive-icon>

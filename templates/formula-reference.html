@@ -1,0 +1,746 @@
+{% extends "_marketing_base_v5.html" %}
+
+{% block title %}Custom Indicator Formula Engine — Carrac{% endblock %}
+{% block description %}Build custom indicators on Carrac with 65+ TA functions. Compound formulas, 16 display styles, strategy backtesting — no coding required.{% endblock %}
+{% block canonical %}{{ site_url }}/formulas{% endblock %}
+{% block jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce | default('') }}">{"@context":"https://schema.org","@type":"WebPage","name":"Custom Indicator Formula Engine — Carrac","url":"{{ site_url }}/formulas","description":"Build custom indicators and backtest strategies on Carrac."}</script>{% endblock %}
+
+{% block extra_head %}
+<style nonce="{{ csp_nonce | default('') }}">
+/* ---- formula reference page-specific styles ---- */
+.fn-table { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+.fn-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-faint); vertical-align: middle; }
+.fn-table tr:last-child td { border-bottom: none; }
+.fn-table tr:hover { background: var(--panel-2); }
+.fn-sig {
+  font-family: var(--font-mono); font-weight: 600; color: var(--accent);
+  font-size: var(--t-xs); white-space: nowrap;
+}
+.fn-desc { color: var(--fg3); font-size: var(--t-sm); }
+.fn-copy-btn {
+  font-family: var(--font-mono); font-size: 11px; padding: 4px 9px;
+  background: var(--panel-3); border: 1px solid var(--border-strong); border-radius: var(--r-sm);
+  color: var(--fg3); cursor: pointer; white-space: nowrap; transition: border-color .15s ease, color .15s ease;
+}
+.fn-copy-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+/* var/info tables */
+.ref-table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; }
+.ref-table td { padding: 8px 12px; font-size: var(--t-sm); border-bottom: 1px solid var(--border-faint); color: var(--fg2); }
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table td:first-child {
+  font-family: var(--font-mono); color: var(--accent);
+  background: var(--accent-soft); border-radius: var(--r-sm) 0 0 var(--r-sm);
+  white-space: nowrap; width: 1%;
+}
+/* recipe / example code block */
+.recipe-block { margin-bottom: 14px; }
+.recipe-block .recipe-title { font-weight: 600; color: var(--fg1); font-size: var(--t-sm); margin-bottom: 4px; }
+.recipe-block .recipe-desc { color: var(--fg3); font-size: var(--t-sm); margin-bottom: 8px; line-height: 1.55; }
+.recipe-block .code { cursor: pointer; position: relative; }
+.recipe-block .code::after {
+  content: 'click to copy'; position: absolute; right: 10px; top: 10px;
+  font-size: 10px; color: var(--fg4); font-family: var(--font-mono);
+}
+.recipe-block .code:hover { background: var(--panel-2); }
+/* tip callout */
+.tip-box {
+  padding: 10px 14px; background: var(--panel); border-left: 3px solid var(--blue);
+  border-radius: 0 var(--r) var(--r) 0; margin: 10px 0; font-size: var(--t-sm); color: var(--fg2);
+  line-height: 1.6;
+}
+.tip-box code { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: var(--r-sm); }
+/* backtest models table */
+.bt-table { width: 100%; font-size: var(--t-sm); margin-top: 14px; border-collapse: collapse; }
+.bt-table thead th {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg3); font-weight: 500; text-align: left; padding: 10px 12px;
+  border-bottom: 1px solid var(--border); background: var(--panel-2);
+}
+.bt-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border-faint); color: var(--fg2); vertical-align: top; }
+.bt-table tbody tr:last-child td { border-bottom: none; }
+.bt-table tbody tr:hover td { background: var(--panel-2); }
+.bt-table code { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent); background: var(--accent-soft); padding: 1px 5px; border-radius: var(--r-sm); }
+/* copied toast */
+.copied-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--accent-strong); color: #1a1407;
+  padding: 8px 18px; border-radius: var(--r); font-size: var(--t-sm); font-weight: 600;
+  opacity: 0; transition: opacity .3s ease; pointer-events: none; z-index: 9999;
+}
+.copied-toast.show { opacity: 1; }
+/* section anchors */
+.ref-section { padding-top: 16px; }
+/* inline code chips in prose */
+.ref-section code {
+  font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent);
+  background: var(--accent-soft); padding: 1px 6px; border-radius: var(--r-sm);
+}
+/* list inside ref sections */
+.ref-list { font-size: var(--t-sm); color: var(--fg2); padding-left: 22px; margin: 12px 0; line-height: 1.7; }
+.ref-list li { margin-bottom: 6px; }
+.ref-list code { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent); background: var(--accent-soft); padding: 1px 5px; border-radius: var(--r-sm); }
+.ref-list strong { color: var(--fg1); }
+
+/* TOC link hover (was inline onmouseover/onmouseout) */
+.toc-link {
+  display: block; padding: 5px 8px;
+  font-size: var(--t-sm); color: var(--fg3);
+  border-radius: var(--r-sm);
+  transition: color .15s, background .15s;
+}
+.toc-link:hover { color: var(--fg1); background: var(--panel-2); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================ HERO ============================ -->
+<section class="page-hero">
+  <div class="wrap">
+    <span class="eyebrow">Formula reference</span>
+    <h1>Custom Indicators &mdash;<br><span class="accent">Formula Reference</span></h1>
+    <p class="lede">Create your own indicators with simple expressions. 65+ TA functions, 16 display styles, compound formulas, and a strategy backtester &mdash; <strong>no coding required.</strong></p>
+  </div>
+</section>
+
+<!-- ============================ MAIN CONTENT ============================ -->
+<section class="section tight">
+  <div class="wrap">
+    <div class="split" style="gap:56px;align-items:start">
+
+      <!-- ===== LEFT COLUMN: TOC ===== -->
+      <div class="col" style="max-width:210px;flex:0 0 210px">
+        <nav aria-label="Sections" style="position:sticky;top:80px">
+          <span class="eyebrow" style="margin-bottom:16px;display:block">Contents</span>
+          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px">
+            <li><a href="#getting-started" class="toc-link">Getting Started</a></li>
+            <li><a href="#display-styles" class="toc-link">Display Styles</a></li>
+            <li><a href="#compound" class="toc-link">Compound Indicators</a></li>
+            <li><a href="#bar-offset" class="toc-link">Bar Offset [n]</a></li>
+            <li><a href="#let-bindings" class="toc-link">Let Bindings</a></li>
+            <li><a href="#variables" class="toc-link">Variables</a></li>
+            <li><a href="#moving-averages" class="toc-link">Moving Averages</a></li>
+            <li><a href="#oscillators" class="toc-link">Oscillators</a></li>
+            <li><a href="#volatility" class="toc-link">Volatility</a></li>
+            <li><a href="#trend" class="toc-link">Trend</a></li>
+            <li><a href="#volume" class="toc-link">Volume</a></li>
+            <li><a href="#bar-reference" class="toc-link">Bar Reference</a></li>
+            <li><a href="#logic" class="toc-link">Logic &amp; Signals</a></li>
+            <li><a href="#structure" class="toc-link">Structure</a></li>
+            <li><a href="#math" class="toc-link">Math</a></li>
+            <li><a href="#ichimoku" class="toc-link">Ichimoku</a></li>
+            <li><a href="#alligator" class="toc-link">Alligator</a></li>
+            <li><a href="#detection" class="toc-link">Detection</a></li>
+            <li><a href="#price-action" class="toc-link">Price Action</a></li>
+            <li><a href="#cpr" class="toc-link">CPR Levels</a></li>
+            <li><a href="#composite" class="toc-link">Composite</a></li>
+            <li><a href="#recipes" class="toc-link">Recipes</a></li>
+            <li><a href="#backtest-models" class="toc-link">Backtest Models</a></li>
+            <li><a href="#tips" class="toc-link">Tips</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- ===== RIGHT COLUMN: CONTENT ===== -->
+      <div class="col" style="min-width:0">
+
+        <!-- ============ GETTING STARTED ============ -->
+        <div class="ref-section panel" id="getting-started" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Getting Started</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">Custom indicators let you build any calculation from price data and display it on your chart.</p>
+          <ol class="ref-list">
+            <li>Press <code>U</code> or click "Custom" in the indicator menu</li>
+            <li>Enter a name and formula, e.g. <code>SMA(close, 20)</code></li>
+            <li>Choose a display style: line, step line, area, histogram, dots, circles, ref. line, band upper/lower, or signal markers (&#9650;&#9660; triangles, &#8593;&#8595; arrows, &#9670; diamond, &#10005; cross, &#9632; square)</li>
+            <li>Pick a pane: Overlay (on price chart), Shared (grouped with other rows), or Own pane</li>
+            <li>Save &mdash; your indicator appears on the chart immediately</li>
+          </ol>
+          <div class="tip-box">Formulas are case-insensitive: <code>SMA</code>, <code>sma</code>, and <code>Sma</code> all work. Use <code>//</code> or <code>#</code> for comments.</div>
+        </div>
+
+        <!-- ============ DISPLAY STYLES ============ -->
+        <div class="ref-section panel" id="display-styles" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Display Styles</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:16px">Each formula row has a display style that controls how values are rendered on the chart.</p>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">Continuous Styles</h3>
+          <table class="ref-table" style="margin-bottom:18px">
+            <tr><td>Line</td><td>Standard line connecting each bar's value. The default.</td></tr>
+            <tr><td>Step Line</td><td>Staircase pattern &mdash; horizontal then vertical between points. Good for discrete-level indicators.</td></tr>
+            <tr><td>Area</td><td>Line with a filled region below it to the bottom of the pane (15% opacity). Great for RSI, volume ratios.</td></tr>
+            <tr><td>Histogram</td><td>Vertical bars from zero baseline. Green when positive, red when negative.</td></tr>
+            <tr><td>Dots</td><td>Small filled circles at each bar's value.</td></tr>
+            <tr><td>Circles</td><td>Larger hollow circles (stroke only). Good for highlighting sparse data points.</td></tr>
+            <tr><td>Ref. Line</td><td>Dashed line &mdash; use for constant reference levels like RSI 30/70.</td></tr>
+          </table>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">Band Styles</h3>
+          <table class="ref-table" style="margin-bottom:10px">
+            <tr><td>Band Upper</td><td>Line that pairs with a Band Lower row. The area between them fills automatically (12% opacity).</td></tr>
+            <tr><td>Band Lower</td><td>The lower boundary of the band pair. Must be in the same compound indicator as a Band Upper row.</td></tr>
+          </table>
+          <div class="tip-box">Both band rows should use the same pane setting (e.g. both on Overlay). The fill color comes from the Band Upper row.</div>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:18px 0 8px">Signal Styles &mdash; Candle-Relative</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg3);margin-bottom:8px">Placed at the candle's high or low when the formula value is non-zero. The value is a boolean trigger (0 = no marker, anything else = draw marker). Always placed on the price chart.</p>
+          <table class="ref-table" style="margin-bottom:18px">
+            <tr><td>&#9650; Triangle Up</td><td>Solid triangle below the candle low, pointing up. Conventionally marks a bullish condition.</td></tr>
+            <tr><td>&#9660; Triangle Down</td><td>Solid triangle above the candle high, pointing down. Conventionally marks a bearish condition.</td></tr>
+            <tr><td>&#8593; Arrow Up</td><td>Arrowhead with stem below the candle low. Alternative bullish marker.</td></tr>
+            <tr><td>&#8595; Arrow Down</td><td>Arrowhead with stem above the candle high. Alternative bearish marker.</td></tr>
+          </table>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 8px">Signal Styles &mdash; Value-Relative</h3>
+          <p style="font-size:var(--t-sm);color:var(--fg3);margin-bottom:8px">Placed at the formula's output value (the value IS the Y position). Use <code>IF(condition, price, 0)</code> to place markers at specific price levels. Skipped when value is 0 or NaN.</p>
+          <table class="ref-table">
+            <tr><td>&#9670; Diamond</td><td>Filled diamond at the formula's price level. Neutral signal marker.</td></tr>
+            <tr><td>&#10005; Cross</td><td>Stroked X at the formula's price level. Exit or invalidation marker.</td></tr>
+            <tr><td>&#9632; Square</td><td>Filled square at the formula's price level. Alternative marker.</td></tr>
+          </table>
+        </div>
+
+        <!-- ============ COMPOUND INDICATORS ============ -->
+        <div class="ref-section panel" id="compound" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Compound Indicators</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">Combine up to 6 formulas in a single custom indicator. Each row evaluates independently and can have its own style, color, and pane placement.</p>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">How to Create</h3>
+          <ol class="ref-list" style="margin-bottom:16px">
+            <li>Open the custom indicator editor (press <code>U</code>)</li>
+            <li>Enter your first formula with a style and color</li>
+            <li>Click <strong>+ Add row</strong> to add more formulas</li>
+            <li>Each row gets its own style dropdown, color picker, and pane selector</li>
+            <li>Save &mdash; all rows appear as a single togglable indicator</li>
+          </ol>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">Pane Options (per row)</h3>
+          <table class="ref-table" style="margin-bottom:18px">
+            <tr><td>Overlay</td><td>Draw on the price chart. Best for MAs, bands, signal markers.</td></tr>
+            <tr><td>Shared pane</td><td>All rows set to "Shared" go on the same separate pane. Good for RSI + reference lines together.</td></tr>
+            <tr><td>Own pane</td><td>This row gets its own separate pane below the chart.</td></tr>
+          </table>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">Example: EMA Cross System</h3>
+          <div class="recipe-block">
+            <div class="recipe-title">4-row compound indicator</div>
+            <div class="recipe-desc">Two EMAs as lines + crossover/crossunder signal markers. All on overlay.</div>
+            <div class="code" data-formula="EMA(9)">Row 1: EMA(9)                     &rarr; Line, green, overlay
+Row 2: EMA(21)                    &rarr; Line, red, overlay
+Row 3: CROSSOVER(EMA(9), EMA(21)) &rarr; &#9650; Triangle Up, green, overlay
+Row 4: CROSSUNDER(EMA(9),EMA(21)) &rarr; &#9660; Triangle Down, red, overlay</div>
+          </div>
+
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:16px 0 10px">Example: RSI with Zones</h3>
+          <div class="recipe-block">
+            <div class="recipe-title">3-row compound indicator</div>
+            <div class="recipe-desc">RSI as area fill + overbought/oversold reference lines, all on a shared pane.</div>
+            <div class="code" data-formula="RSI(14)">Row 1: RSI(14) &rarr; Area, blue, shared pane
+Row 2: 70      &rarr; Ref. Line, red, shared pane
+Row 3: 30      &rarr; Ref. Line, green, shared pane</div>
+          </div>
+        </div>
+
+        <!-- ============ BAR OFFSET ============ -->
+        <div class="ref-section panel" id="bar-offset" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Bar Offset Syntax</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:12px">Access previous bar values with <code>[n]</code> after any expression. Syntactic sugar for <code>OFFSET()</code>.</p>
+          <table class="ref-table">
+            <tr><td>close[1]</td><td>Previous bar's close (= <code>OFFSET(close, 1)</code>)</td></tr>
+            <tr><td>close[2]</td><td>Close from 2 bars ago</td></tr>
+            <tr><td>RSI(14)[1]</td><td>Previous bar's RSI value</td></tr>
+            <tr><td>SMA(20)[5]</td><td>SMA value from 5 bars ago</td></tr>
+            <tr><td>close[-1]</td><td>Forward-looking (next bar) &mdash; causes lookahead bias in backtests</td></tr>
+          </table>
+          <div class="tip-box">Offset must be an integer. Works on identifiers, function calls, and parenthesized expressions: <code>(close + open)[1]</code></div>
+        </div>
+
+        <!-- ============ LET BINDINGS ============ -->
+        <div class="ref-section panel" id="let-bindings" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Let Bindings</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:14px">Name intermediate values to keep complex formulas readable. Up to 10 bindings per formula.</p>
+          <div class="recipe-block">
+            <div class="recipe-title">Basic let</div>
+            <div class="code" data-formula="let mid = EMA(close, 20)
+let band = ATR(14) * 1.5
+CROSSOVER(close, mid + band)">let mid = EMA(close, 20)
+let band = ATR(14) * 1.5
+CROSSOVER(close, mid + band)</div>
+          </div>
+          <div class="recipe-block" style="margin-top:12px">
+            <div class="recipe-title">Let with bar offset</div>
+            <div class="code" data-formula="let rsi = RSI(14)
+let prev_rsi = rsi[1]
+rsi > 30 AND prev_rsi <= 30">let rsi = RSI(14)
+let prev_rsi = rsi[1]
+rsi &gt; 30 AND prev_rsi &lt;= 30</div>
+          </div>
+          <table class="ref-table" style="margin-top:14px">
+            <tr><td>Syntax</td><td><code>let name = expression</code> &mdash; no separator needed between lets</td></tr>
+            <tr><td>Scope</td><td>Sequential: each let sees all previous bindings</td></tr>
+            <tr><td>Shadowing</td><td>Allowed: <code>let x = 5 let x = x + 1</code> &rarr; x is 6</td></tr>
+            <tr><td>Output</td><td>The last expression (after all lets) is the formula's result</td></tr>
+          </table>
+        </div>
+
+        <!-- ============ VARIABLES ============ -->
+        <div class="ref-section panel" id="variables" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Price Variables</span>
+          <table class="ref-table">
+            <tr><td>open</td><td>Opening price</td></tr>
+            <tr><td>high</td><td>Highest price in the bar</td></tr>
+            <tr><td>low</td><td>Lowest price in the bar</td></tr>
+            <tr><td>close</td><td>Closing price (most common source)</td></tr>
+            <tr><td>volume</td><td>Trading volume</td></tr>
+            <tr><td>ohlc4</td><td>(open + high + low + close) / 4</td></tr>
+            <tr><td>hlc3</td><td>(high + low + close) / 3 &mdash; typical price</td></tr>
+            <tr><td>hl2</td><td>(high + low) / 2 &mdash; midpoint</td></tr>
+            <tr><td>tr</td><td>True Range: max(H-L, |H-prevC|, |L-prevC|)</td></tr>
+          </table>
+          <div class="tip-box">Most functions default to <code>close</code> if you omit the source: <code>SMA(20)</code> = <code>SMA(close, 20)</code>.</div>
+        </div>
+
+        <!-- ============ MOVING AVERAGES ============ -->
+        <div class="ref-section panel" id="moving-averages" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Moving Averages</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">SMA(source, length)</td><td class="fn-desc">Simple Moving Average</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SMA(close, 20)">SMA(close, 20)</button></td></tr>
+            <tr><td class="fn-sig">EMA(source, length)</td><td class="fn-desc">Exponential Moving Average (SMA seed)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="EMA(close, 21)">EMA(close, 21)</button></td></tr>
+            <tr><td class="fn-sig">WMA(source, length)</td><td class="fn-desc">Weighted Moving Average (linear weights)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="WMA(close, 14)">WMA(close, 14)</button></td></tr>
+            <tr><td class="fn-sig">HMA(source, length)</td><td class="fn-desc">Hull Moving Average &mdash; fast, smooth, low lag</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="HMA(close, 20)">HMA(close, 20)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ OSCILLATORS ============ -->
+        <div class="ref-section panel" id="oscillators" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Oscillators</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">RSI(source, length)</td><td class="fn-desc">Relative Strength Index (0&ndash;100, Wilder's smoothing)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="RSI(close, 14)">RSI(close, 14)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ VOLATILITY ============ -->
+        <div class="ref-section panel" id="volatility" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Volatility</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">ATR(length)</td><td class="fn-desc">Average True Range (Wilder's smoothing)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ATR(14)">ATR(14)</button></td></tr>
+            <tr><td class="fn-sig">TR</td><td class="fn-desc">True Range (single bar)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="TR">TR</button></td></tr>
+            <tr><td class="fn-sig">STDEV(source, length)</td><td class="fn-desc">Standard deviation (population)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="STDEV(close, 20)">STDEV(close, 20)</button></td></tr>
+            <tr><td class="fn-sig">BB_UPPER(source, len, mult)</td><td class="fn-desc">Bollinger Band upper = SMA + mult * stdev</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="BB_UPPER(close, 20, 2)">BB_UPPER(close, 20, 2)</button></td></tr>
+            <tr><td class="fn-sig">BB_LOWER(source, len, mult)</td><td class="fn-desc">Bollinger Band lower = SMA - mult * stdev</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="BB_LOWER(close, 20, 2)">BB_LOWER(close, 20, 2)</button></td></tr>
+            <tr><td class="fn-sig">BB_MID(source, length)</td><td class="fn-desc">Bollinger Band middle = SMA</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="BB_MID(close, 20)">BB_MID(close, 20)</button></td></tr>
+            <tr><td class="fn-sig">KELTNER_UPPER(len, mult)</td><td class="fn-desc">Keltner Channel upper = EMA + mult * ATR</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="KELTNER_UPPER(20, 1.5)">KELTNER_UPPER(20, 1.5)</button></td></tr>
+            <tr><td class="fn-sig">KELTNER_LOWER(len, mult)</td><td class="fn-desc">Keltner Channel lower = EMA - mult * ATR</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="KELTNER_LOWER(20, 1.5)">KELTNER_LOWER(20, 1.5)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ TREND ============ -->
+        <div class="ref-section panel" id="trend" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Trend</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">SUPERTREND(atr_len, mult)</td><td class="fn-desc">SuperTrend indicator &mdash; trend-following stop level</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SUPERTREND(10, 3)">SUPERTREND(10, 3)</button></td></tr>
+            <tr><td class="fn-sig">MACD_LINE(fast?, slow?, signal?)</td><td class="fn-desc">MACD line = EMA(fast) - EMA(slow). Defaults: 12, 26, 9</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MACD_LINE()">MACD_LINE()</button></td></tr>
+            <tr><td class="fn-sig">MACD_SIGNAL(fast?, slow?, signal?)</td><td class="fn-desc">MACD signal line = EMA of MACD line</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MACD_SIGNAL()">MACD_SIGNAL()</button></td></tr>
+            <tr><td class="fn-sig">MACD_HIST(fast?, slow?, signal?)</td><td class="fn-desc">MACD histogram = line - signal</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MACD_HIST()">MACD_HIST()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ VOLUME ============ -->
+        <div class="ref-section panel" id="volume" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Volume</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">OBV()</td><td class="fn-desc">On Balance Volume &mdash; cumulative volume by price direction</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="OBV()">OBV()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ BAR REFERENCE ============ -->
+        <div class="ref-section panel" id="bar-reference" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Bar Reference</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">HIGHEST(source, length)</td><td class="fn-desc">Rolling maximum. Default source: high</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="HIGHEST(high, 20)">HIGHEST(high, 20)</button></td></tr>
+            <tr><td class="fn-sig">LOWEST(source, length)</td><td class="fn-desc">Rolling minimum. Default source: low</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="LOWEST(low, 20)">LOWEST(low, 20)</button></td></tr>
+            <tr><td class="fn-sig">SUM(source, length)</td><td class="fn-desc">Rolling sum</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SUM(volume, 20)">SUM(volume, 20)</button></td></tr>
+            <tr><td class="fn-sig">CHANGE(source?, length?)</td><td class="fn-desc">Price change: src[i] - src[i-len]. Default len=1</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CHANGE(close, 1)">CHANGE(close, 1)</button></td></tr>
+            <tr><td class="fn-sig">ROC(source, length)</td><td class="fn-desc">Rate of Change (% change)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ROC(close, 14)">ROC(close, 14)</button></td></tr>
+            <tr><td class="fn-sig">MOM(source?, length?)</td><td class="fn-desc">Momentum (= CHANGE)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MOM(close, 10)">MOM(close, 10)</button></td></tr>
+            <tr><td class="fn-sig">OFFSET(source, n)</td><td class="fn-desc">Shift array by n bars (positive = look back)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="OFFSET(close, 5)">OFFSET(close, 5)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ LOGIC & SIGNALS ============ -->
+        <div class="ref-section panel" id="logic" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Logic &amp; Signals</span>
+          <table class="fn-table" style="margin-bottom:16px">
+            <tr><td class="fn-sig">CROSSOVER(a, b)</td><td class="fn-desc">1 where a crosses above b, else 0</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CROSSOVER(EMA(9), EMA(21))">CROSSOVER(EMA(9), EMA(21))</button></td></tr>
+            <tr><td class="fn-sig">CROSSUNDER(a, b)</td><td class="fn-desc">1 where a crosses below b, else 0</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CROSSUNDER(EMA(9), EMA(21))">CROSSUNDER(EMA(9), EMA(21))</button></td></tr>
+            <tr><td class="fn-sig">VALUEWHEN(condition, source)</td><td class="fn-desc">Last source value where condition was true</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="VALUEWHEN(CROSSOVER(EMA(9), EMA(21)), close)">copy</button></td></tr>
+            <tr><td class="fn-sig">BARSSINCE(condition)</td><td class="fn-desc">Bars since condition was last true</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="BARSSINCE(RSI(14) < 30)">BARSSINCE(RSI(14) &lt; 30)</button></td></tr>
+            <tr><td class="fn-sig">COUNT(condition, length)</td><td class="fn-desc">Count of true values in rolling window</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="COUNT(close > SMA(20), 10)">COUNT(close > SMA(20), 10)</button></td></tr>
+            <tr><td class="fn-sig">IF(cond, then, else)</td><td class="fn-desc">Element-wise conditional (ternary)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="IF(close > SMA(50), 1, 0)">IF(close > SMA(50), 1, 0)</button></td></tr>
+            <tr><td class="fn-sig">AND(a, b) &nbsp; OR(a, b) &nbsp; NOT(a)</td><td class="fn-desc">Boolean logic. Also usable as operators: <code>a AND b</code></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="AND(close > SMA(50), RSI(14) > 50)">copy</button></td></tr>
+          </table>
+          <h3 style="font-size:var(--t-sm);font-weight:600;color:var(--fg1);margin:0 0 10px">Operators</h3>
+          <table class="ref-table">
+            <tr><td>+ - * / %</td><td>Arithmetic (standard precedence)</td></tr>
+            <tr><td>&gt; &lt; &gt;= &lt;= == !=</td><td>Comparison &mdash; returns 0 or 1</td></tr>
+            <tr><td>AND &nbsp; OR</td><td>Logical operators (lowest precedence)</td></tr>
+            <tr><td>NOT &nbsp; -</td><td>Unary operators (highest precedence)</td></tr>
+          </table>
+        </div>
+
+        <!-- ============ STRUCTURE ============ -->
+        <div class="ref-section panel" id="structure" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Structure</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">CUM(source)</td><td class="fn-desc">Cumulative (running) sum of source values</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CUM(volume)">CUM(volume)</button></td></tr>
+            <tr><td class="fn-sig">STREAK(condition)</td><td class="fn-desc">Consecutive true count &mdash; resets to 0 when condition is false</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="STREAK(close > close[1])">STREAK(close > close[1])</button></td></tr>
+            <tr><td class="fn-sig">HIGHEST_BARS(source, period)</td><td class="fn-desc">Bars since the highest value in the lookback window (0 = this bar)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="HIGHEST_BARS(high, 50)">HIGHEST_BARS(high, 50)</button></td></tr>
+            <tr><td class="fn-sig">LOWEST_BARS(source, period)</td><td class="fn-desc">Bars since the lowest value in the lookback window (0 = this bar)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="LOWEST_BARS(low, 50)">LOWEST_BARS(low, 50)</button></td></tr>
+            <tr><td class="fn-sig">PIVOTHIGH(left=5, right=5)</td><td class="fn-desc">Swing high detection &mdash; returns pivot price (confirmed after right bars), NaN otherwise</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="PIVOTHIGH(5, 5)">PIVOTHIGH(5, 5)</button></td></tr>
+            <tr><td class="fn-sig">PIVOTLOW(left=5, right=5)</td><td class="fn-desc">Swing low detection &mdash; returns pivot price (confirmed after right bars), NaN otherwise</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="PIVOTLOW(5, 5)">PIVOTLOW(5, 5)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ MATH ============ -->
+        <div class="ref-section panel" id="math" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Math</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">ABS(source)</td><td class="fn-desc">Absolute value</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ABS(close - open)">ABS(close - open)</button></td></tr>
+            <tr><td class="fn-sig">SQRT(source)</td><td class="fn-desc">Square root (negative &rarr; NaN)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SQRT(close)">SQRT(close)</button></td></tr>
+            <tr><td class="fn-sig">LOG(source)</td><td class="fn-desc">Natural logarithm</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="LOG(close)">LOG(close)</button></td></tr>
+            <tr><td class="fn-sig">EXP(source)</td><td class="fn-desc">e raised to the power</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="EXP(1)">EXP(1)</button></td></tr>
+            <tr><td class="fn-sig">MAX_VAL(a, b)</td><td class="fn-desc">Element-wise maximum</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MAX_VAL(close, open)">MAX_VAL(close, open)</button></td></tr>
+            <tr><td class="fn-sig">MIN_VAL(a, b)</td><td class="fn-desc">Element-wise minimum</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="MIN_VAL(close, open)">MIN_VAL(close, open)</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ ICHIMOKU ============ -->
+        <div class="ref-section panel" id="ichimoku" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Ichimoku</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">TENKAN(period=9)</td><td class="fn-desc">Tenkan-sen: (highest high + lowest low) / 2 over period</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="TENKAN()">TENKAN()</button></td></tr>
+            <tr><td class="fn-sig">KIJUN(period=26)</td><td class="fn-desc">Kijun-sen: same formula, longer period</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="KIJUN()">KIJUN()</button></td></tr>
+            <tr><td class="fn-sig">SENKOU_A()</td><td class="fn-desc">Senkou Span A: (Tenkan + Kijun) / 2 (unshifted)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SENKOU_A()">SENKOU_A()</button></td></tr>
+            <tr><td class="fn-sig">SENKOU_B(period=52)</td><td class="fn-desc">Senkou Span B: midpoint of 52-period range (unshifted)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SENKOU_B()">SENKOU_B()</button></td></tr>
+            <tr><td class="fn-sig">CHIKOU()</td><td class="fn-desc">Chikou Span: close shifted back 26 bars</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CHIKOU()">CHIKOU()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ ALLIGATOR ============ -->
+        <div class="ref-section panel" id="alligator" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Alligator &amp; More</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">ALLIGATOR_JAW(period=13, shift=8)</td><td class="fn-desc">Jaw: Smoothed MA of HL/2, shifted forward</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ALLIGATOR_JAW()">ALLIGATOR_JAW()</button></td></tr>
+            <tr><td class="fn-sig">ALLIGATOR_TEETH(period=8, shift=5)</td><td class="fn-desc">Teeth: faster smoothed MA</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ALLIGATOR_TEETH()">ALLIGATOR_TEETH()</button></td></tr>
+            <tr><td class="fn-sig">ALLIGATOR_LIPS(period=5, shift=3)</td><td class="fn-desc">Lips: fastest smoothed MA</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ALLIGATOR_LIPS()">ALLIGATOR_LIPS()</button></td></tr>
+            <tr><td class="fn-sig">STOCH_RSI_K(period=14, k=3)</td><td class="fn-desc">Stochastic RSI %K line</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="STOCH_RSI_K()">STOCH_RSI_K()</button></td></tr>
+            <tr><td class="fn-sig">STOCH_RSI_D(period=14, k=3, d=3)</td><td class="fn-desc">Stochastic RSI %D line (smoothed K)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="STOCH_RSI_D()">STOCH_RSI_D()</button></td></tr>
+            <tr><td class="fn-sig">DONCHIAN_HIGH(period=20)</td><td class="fn-desc">Donchian Channel upper (highest high)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="DONCHIAN_HIGH()">DONCHIAN_HIGH()</button></td></tr>
+            <tr><td class="fn-sig">DONCHIAN_LOW(period=20)</td><td class="fn-desc">Donchian Channel lower (lowest low)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="DONCHIAN_LOW()">DONCHIAN_LOW()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ DETECTION ============ -->
+        <div class="ref-section panel" id="detection" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Detection</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">NR7()</td><td class="fn-desc">Narrow Range 7 &mdash; 1 if today&rsquo;s range is smallest in 7 bars</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="NR7()">NR7()</button></td></tr>
+            <tr><td class="fn-sig">ATR_PERCENTILE(period=14, lookback=90)</td><td class="fn-desc">ATR percentile rank (0-100) over lookback</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="ATR_PERCENTILE()">ATR_PERCENTILE()</button></td></tr>
+            <tr><td class="fn-sig">BBW_PERCENTILE(period=20, mult=2, lookback=90)</td><td class="fn-desc">Bollinger Width percentile rank (0-100)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="BBW_PERCENTILE()">BBW_PERCENTILE()</button></td></tr>
+            <tr><td class="fn-sig">SQUEEZE_ON()</td><td class="fn-desc">TTM Squeeze &mdash; 1 if Bollinger Bands inside Keltner Channels</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SQUEEZE_ON()">SQUEEZE_ON()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ Price Action ============ -->
+        <div class="ref-section panel" id="price-action" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Price Action</span>
+          <p style="color:var(--fg2);font-size:var(--t-sm);margin:0 0 14px;line-height:1.6">
+            Building blocks for the price-action patterns many traders trade around. Each returns 1 on
+            bars where the pattern completes, 0 elsewhere &mdash; combine them with any other function.
+            The names in brackets are the same patterns under their Smart Money Concepts labels; both spellings work.
+          </p>
+          <p style="color:var(--fg2);font-size:var(--t-sm);margin:0 0 14px;line-height:1.6">
+            <strong>These describe daily and hourly behaviour.</strong> The techniques they come from were built for
+            5- and 15-minute charts, which Carrac does not store data for &mdash; so treat the results as
+            what the pattern did on the bars you actually have, not as a verdict on the original method.
+          </p>
+          <table class="fn-table">
+            <tr><td class="fn-sig">GAP_UP(atr_mult=0.25)</td><td class="fn-desc">Bullish 3-bar imbalance &mdash; the low sits above the high two bars back. Gaps smaller than <code>atr_mult</code> &times; ATR(14) are ignored, matching the Fair Value Gap indicator on the chart. Pass 0 for every gap. <em>Also: FVG_UP()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="GAP_UP()">GAP_UP()</button></td></tr>
+            <tr><td class="fn-sig">GAP_DOWN(atr_mult=0.25)</td><td class="fn-desc">Bearish 3-bar imbalance &mdash; the high sits below the low two bars back. <em>Also: FVG_DOWN()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="GAP_DOWN()">GAP_DOWN()</button></td></tr>
+            <tr><td class="fn-sig">SWEPT_LOW(period=20)</td><td class="fn-desc">Breaks the lowest low of the last <code>period</code> bars, then closes back above it &mdash; a failed breakdown. <em>Also: LIQUIDITY_SWEEP_LOW()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SWEPT_LOW(20)">SWEPT_LOW(20)</button></td></tr>
+            <tr><td class="fn-sig">SWEPT_HIGH(period=20)</td><td class="fn-desc">Breaks the highest high of the last <code>period</code> bars, then closes back below it. <em>Also: LIQUIDITY_SWEEP_HIGH()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="SWEPT_HIGH(20)">SWEPT_HIGH(20)</button></td></tr>
+            <tr><td class="fn-sig">DISPLACEMENT(mult=2.0)</td><td class="fn-desc">An outsized bar &mdash; its range beats <code>mult</code> &times; the previous bar&rsquo;s ATR(14). Measured against the previous bar so a big candle cannot raise its own bar.</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="DISPLACEMENT(2)">DISPLACEMENT(2)</button></td></tr>
+            <tr><td class="fn-sig">REVERSAL_CLOSE_UP(count=2)</td><td class="fn-desc"><code>count</code> red bars in a row, then a close above all their highs. Red means the bar closed below its own open. <em>Also: CSD_UP()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="REVERSAL_CLOSE_UP(2)">REVERSAL_CLOSE_UP(2)</button></td></tr>
+            <tr><td class="fn-sig">REVERSAL_CLOSE_DOWN(count=2)</td><td class="fn-desc"><code>count</code> green bars in a row, then a close below all their lows. <em>Also: CSD_DOWN()</em></td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="REVERSAL_CLOSE_DOWN(2)">REVERSAL_CLOSE_DOWN(2)</button></td></tr>
+          </table>
+          <p style="color:var(--fg2);font-size:var(--t-sm);margin:14px 0 0;line-height:1.6">
+            <strong>Order blocks are not here.</strong> The chart draws them as zones anchored to a break in
+            market structure, and tracks whether price has since traded back through them. That is a richer
+            thing than any single-bar test, so it stays on the chart rather than being approximated into a
+            formula that would mean something different under the same name.
+          </p>
+        </div>
+
+        <!-- ============ CPR ============ -->
+        <div class="ref-section panel" id="cpr" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">CPR Levels</span>
+          <table class="fn-table">
+            <tr><td class="fn-sig">CPR_PIVOT()</td><td class="fn-desc">Central Pivot: (prev high + prev low + prev close) / 3</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CPR_PIVOT()">CPR_PIVOT()</button></td></tr>
+            <tr><td class="fn-sig">CPR_R1() / CPR_R2() / CPR_R3()</td><td class="fn-desc">Resistance levels 1-3</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CPR_R1()">CPR_R1()</button></td></tr>
+            <tr><td class="fn-sig">CPR_S1() / CPR_S2() / CPR_S3()</td><td class="fn-desc">Support levels 1-3</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CPR_S1()">CPR_S1()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ COMPOSITE ============ -->
+        <div class="ref-section panel" id="composite" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Composite Indicators</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2);margin-bottom:12px">These return numeric state values, usable in conditions: <code>EMA_RIBBON_TREND() &gt; 0</code> means bullish.</p>
+          <table class="fn-table">
+            <tr><td class="fn-sig">EMA_RIBBON_TREND()</td><td class="fn-desc">EMA Ribbon state: 1=bullish, -1=bearish, 0=neutral (uses EMA 30/60 + ATR margin)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="EMA_RIBBON_TREND()">EMA_RIBBON_TREND()</button></td></tr>
+            <tr><td class="fn-sig">CONSENSIO()</td><td class="fn-desc">Consensio count: 0-3 (how many of SMA 3/7/30 price is above)</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="CONSENSIO()">CONSENSIO()</button></td></tr>
+            <tr><td class="fn-sig">STRUCTURE_TREND()</td><td class="fn-desc">Market structure: 1=uptrend (HH+HL), -1=downtrend (LH+LL), 0=range</td><td style="text-align:right;white-space:nowrap"><button class="fn-copy-btn" data-formula="STRUCTURE_TREND()">STRUCTURE_TREND()</button></td></tr>
+          </table>
+        </div>
+
+        <!-- ============ RECIPES ============ -->
+        <div class="ref-section panel" id="recipes" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:6px;display:block">Example Recipes</span>
+          <p style="font-size:var(--t-sm);color:var(--fg3);margin-bottom:18px">Click any formula to copy it. Paste into the editor and adjust parameters to taste.</p>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Bollinger Band Width %</div>
+            <div class="recipe-desc">How wide are the bands relative to price? Low values signal a squeeze incoming.</div>
+            <div class="code" data-formula="(BB_UPPER(close, 20, 2) - BB_LOWER(close, 20, 2)) / SMA(close, 20) * 100">(BB_UPPER(close, 20, 2) - BB_LOWER(close, 20, 2)) / SMA(close, 20) * 100</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">EMA Ribbon Spread</div>
+            <div class="recipe-desc">Distance between fast and slow EMA. Positive = bullish, negative = bearish.</div>
+            <div class="code" data-formula="EMA(close, 8) - EMA(close, 34)">EMA(close, 8) - EMA(close, 34)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Volume Spike Detector</div>
+            <div class="recipe-desc">Highlights bars with 2x average volume. Use histogram style.</div>
+            <div class="code" data-formula="IF(volume > SMA(volume, 20) * 2, volume, 0)">IF(volume > SMA(volume, 20) * 2, volume, 0)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">RSI Oversold Bounce</div>
+            <div class="recipe-desc">Marks bars where RSI crosses back above 30 (potential reversal). Use &#9650; Signal Up style.</div>
+            <div class="code" data-formula="CROSSOVER(RSI(close, 14), 30)">CROSSOVER(RSI(close, 14), 30)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">EMA Crossover Signals</div>
+            <div class="recipe-desc">Green triangle below bar when fast EMA crosses above slow. Use &#9650; Signal Up style on overlay.</div>
+            <div class="code" data-formula="CROSSOVER(EMA(9), EMA(21))">CROSSOVER(EMA(9), EMA(21))</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">EMA Crossunder Signals</div>
+            <div class="recipe-desc">Red triangle above bar when fast EMA crosses below slow. Use &#9660; Signal Down style.</div>
+            <div class="code" data-formula="CROSSUNDER(EMA(9), EMA(21))">CROSSUNDER(EMA(9), EMA(21))</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">RSI Area</div>
+            <div class="recipe-desc">RSI as filled area &mdash; easier to spot overbought/oversold zones. Use Area style in own pane.</div>
+            <div class="code" data-formula="RSI(14)">RSI(14)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">RSI Reference Levels</div>
+            <div class="recipe-desc">Constant at 70 (overbought) or 30 (oversold). Use Ref. Line style, place on same pane as RSI.</div>
+            <div class="code" data-formula="70">70</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Support Touch Markers</div>
+            <div class="recipe-desc">Diamond at the 200-SMA when price touches it. Use &#9670; Diamond style &mdash; the value is the Y position.</div>
+            <div class="code" data-formula="let sma = SMA(close, 200)
+IF(ABS(low - sma) / sma < 0.005, sma, 0)">let sma = SMA(close, 200)
+IF(ABS(low - sma) / sma &lt; 0.005, sma, 0)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Exit Crosses</div>
+            <div class="recipe-desc">&#10005; at close when RSI exits overbought. Use Cross style &mdash; marks invalidation points.</div>
+            <div class="code" data-formula="IF(CROSSUNDER(RSI(14), 70), close, 0)">IF(CROSSUNDER(RSI(14), 70), close, 0)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Bollinger Band Fill</div>
+            <div class="recipe-desc">Two-row compound indicator: Row 1 = Band Upper style, Row 2 = Band Lower style. Automatically fills between them.</div>
+            <div class="code" data-formula="BB_UPPER(close, 20, 2)">Row 1: BB_UPPER(close, 20, 2)  &rarr; Band Upper
+Row 2: BB_LOWER(close, 20, 2)  &rarr; Band Lower</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Keltner Channel Band</div>
+            <div class="recipe-desc">EMA &plusmn; ATR channel with shaded fill. Use Band Upper/Lower styles in a compound indicator.</div>
+            <div class="code" data-formula="EMA(20) + ATR(14) * 1.5">Row 1: EMA(20) + ATR(14) * 1.5  &rarr; Band Upper
+Row 2: EMA(20) - ATR(14) * 1.5  &rarr; Band Lower</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Squeeze Detector</div>
+            <div class="recipe-desc">1 when Bollinger Bands are inside Keltner Channels (volatility compression). Use histogram.</div>
+            <div class="code" data-formula="IF(AND(BB_UPPER(close,20,2) < KELTNER_UPPER(20,1.5), BB_LOWER(close,20,2) > KELTNER_LOWER(20,1.5)), 1, 0)">IF(AND(BB_UPPER(close,20,2) &lt; KELTNER_UPPER(20,1.5),
+    BB_LOWER(close,20,2) &gt; KELTNER_LOWER(20,1.5)), 1, 0)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Relative Volume</div>
+            <div class="recipe-desc">Volume as multiple of its 20-bar average. 2.0 = double normal.</div>
+            <div class="code" data-formula="volume / SMA(volume, 20)">volume / SMA(volume, 20)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">MACD Histogram</div>
+            <div class="recipe-desc">Classic MACD histogram &mdash; look for shrinking bars for divergence signals.</div>
+            <div class="code" data-formula="MACD_HIST()">MACD_HIST()</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Multi-Timeframe Trend Filter</div>
+            <div class="recipe-desc">1 when price is above both 50 and 200 SMA = confirmed uptrend. Use histogram.</div>
+            <div class="code" data-formula="IF(AND(close > SMA(close, 50), close > SMA(close, 200)), 1, 0)">IF(AND(close &gt; SMA(close, 50), close &gt; SMA(close, 200)), 1, 0)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Volatility-Adjusted Momentum</div>
+            <div class="recipe-desc">ROC normalized by ATR &mdash; compare momentum across different volatility regimes.</div>
+            <div class="code" data-formula="ROC(close, 14) / ATR(14)">ROC(close, 14) / ATR(14)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Mean Reversion Signal (Z-Score)</div>
+            <div class="recipe-desc">Z-score of close relative to 50-bar SMA. Beyond &plusmn;2 = stretched.</div>
+            <div class="code" data-formula="(close - SMA(close, 50)) / STDEV(close, 50)">(close - SMA(close, 50)) / STDEV(close, 50)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Donchian Channel Width</div>
+            <div class="recipe-desc">Width of the 20-bar high-low channel as % of price. Compression = breakout setup.</div>
+            <div class="code" data-formula="(HIGHEST(high, 20) - LOWEST(low, 20)) / close * 100">(HIGHEST(high, 20) - LOWEST(low, 20)) / close * 100</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Cumulative Delta Proxy</div>
+            <div class="recipe-desc">Running sum of directional volume. Poor man's CVD.</div>
+            <div class="code" data-formula="SUM(IF(close > open, volume, -volume), 50)">SUM(IF(close &gt; open, volume, -volume), 50)</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">RSI Oversold Bounce (with let)</div>
+            <div class="recipe-desc">Signal where RSI crosses back above 30. Uses let + bar offset for clarity.</div>
+            <div class="code" data-formula="let rsi = RSI(14)
+let prev = rsi[1]
+rsi > 30 AND prev <= 30">let rsi = RSI(14)
+let prev = rsi[1]
+rsi &gt; 30 AND prev &lt;= 30</div>
+          </div>
+
+          <div class="recipe-block">
+            <div class="recipe-title">Keltner Squeeze with Momentum</div>
+            <div class="recipe-desc">Squeeze detection with MACD direction. Uses let to avoid repeating calculations.</div>
+            <div class="code" data-formula="let squeeze = AND(BB_UPPER(close,20,2) < KELTNER_UPPER(20,1.5), BB_LOWER(close,20,2) > KELTNER_LOWER(20,1.5))
+let mom = MACD_HIST()
+IF(squeeze, mom, 0)">let squeeze = AND(BB_UPPER(close,20,2) &lt; KELTNER_UPPER(20,1.5),
+    BB_LOWER(close,20,2) &gt; KELTNER_LOWER(20,1.5))
+let mom = MACD_HIST()
+IF(squeeze, mom, 0)</div>
+          </div>
+        </div>
+
+        <!-- ============ BACKTEST MODELS ============ -->
+        <div class="ref-section panel" id="backtest-models" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Backtest Models</span>
+          <p style="font-size:var(--t-sm);color:var(--fg2)">Carrac exposes <strong>three</strong> different backtest models. They answer different questions and will usually produce different numbers on the same formula &mdash; always check which model you&rsquo;re reading.</p>
+          <table class="bt-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Where</th>
+                <th>What it does</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Full Simulation</strong></td>
+                <td>Backtester UI (Run button)</td>
+                <td>Trade-by-trade simulation with separate entry + exit formulas, position sizing, commission, slippage, intrabar stops/take-profit. Reports win rate, Sharpe, Sortino, Calmar, Ulcer, profit factor, drawdown. This is what you use to evaluate an actual trading strategy.</td>
+              </tr>
+              <tr>
+                <td><strong>Hold-N Signal Test</strong></td>
+                <td>Hold-N card in results &middot; AI Copilot &middot; MCP <code>backtest_indicator_formula</code></td>
+                <td>Directional setup test: on each False&rarr;True flip of a single boolean expression, hold <em>N</em> bars and record the forward return. Reports hit rate, mean/median return. Cheap and quick &mdash; use to compare setup ideas. Not a full strategy sim.</td>
+              </tr>
+              <tr>
+                <td><strong>Historical Analog</strong></td>
+                <td>Historical Analog panel (below stats) &middot; MCP <code>backtest_get_historical_analog</code></td>
+                <td>Quant DB conditional engine: &ldquo;when these macro / indicator conditions held in the past, how did the target asset move over the next N days?&rdquo; Returns a distribution (median, p25, p75) of forward returns. Macro-regime context, not a trade sim.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size:var(--t-sm);color:var(--fg3);margin-top:12px">A Hold-N <em>hit rate</em> and a Full Sim <em>win rate</em> measure different things &mdash; don&rsquo;t compare them directly. A Hold-N flip does not use your exit formula, sizing, or fees.</p>
+        </div>
+
+        <!-- ============ TIPS ============ -->
+        <div class="ref-section panel" id="tips" style="padding:24px 28px;margin-bottom:20px">
+          <span class="eyebrow" style="margin-bottom:14px;display:block">Tips &amp; Limitations</span>
+          <div class="tip-box">Formulas evaluate in under 1ms per indicator on 2500 bars. You won't notice any lag.</div>
+          <ul class="ref-list" style="margin-top:14px">
+            <li><strong>No loops</strong> &mdash; use <code>let</code> bindings to name intermediate values (up to 10 per formula).</li>
+            <li><strong>Max length:</strong> 2000 characters per formula.</li>
+            <li><strong>Max nesting:</strong> 20 levels deep, 50 function calls per formula.</li>
+            <li><strong>NaN gaps:</strong> The first N bars (lookback period) produce NaN and render as gaps in the line. This is normal.</li>
+            <li><strong>Division by zero</strong> produces NaN (gap), not an error.</li>
+            <li><strong>Signal outputs</strong> (0/1 values) auto-detect: the editor suggests a signal style like &#9650; Up or &#9660; Down.</li>
+            <li><strong>Compound indicators:</strong> Click "+ Add row" to combine multiple formulas (e.g. EMA ribbon + crossover signals) in a single custom indicator. Max 6 rows.</li>
+            <li><strong>Pane options:</strong> Overlay (on price chart), Shared (all rows share one pane), Own (separate pane per row).</li>
+            <li><strong>Band fill:</strong> Set one row to Band Upper and another to Band Lower &mdash; the area between them fills automatically. Both rows should be on the same pane.</li>
+            <li><strong>Limits:</strong> Free accounts: 3 custom indicators. Premium: 10. Admin: 20.</li>
+            <li><strong>Sharing:</strong> Copy the formula text and paste it in Discord/chat. The recipient pastes it into their own editor.</li>
+          </ul>
+        </div>
+
+      </div><!-- /right col -->
+    </div><!-- /split -->
+  </div><!-- /wrap -->
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-center" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Start building</span>
+    <h2 class="mega-head" style="margin-top:14px">65+ functions. 16 display styles. <span class="accent">Zero code.</span></h2>
+    <p class="section-desc">Build your first custom indicator in under a minute — information &amp; analysis, never advice.</p>
+    <div class="cta-row">
+      <a href="/register" class="btn btn-primary btn-lg">Create account <i data-lucide="arrow-right"></i></a>
+      <a href="/guide" class="btn btn-secondary btn-lg">Read the guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- Copied toast -->
+<div class="copied-toast" id="copied-toast">Copied!</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce | default('') }}">
+// Click-to-copy for function buttons and recipe code blocks
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.fn-copy-btn');
+    var code = e.target.closest('.recipe-block .code');
+    var formula = btn ? btn.getAttribute('data-formula') : code ? code.getAttribute('data-formula') : null;
+    if (!formula) return;
+    navigator.clipboard.writeText(formula).then(function() {
+        var toast = document.getElementById('copied-toast');
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, 1200);
+    });
+});
+</script>
+{% endblock %}

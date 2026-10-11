@@ -1,0 +1,582 @@
+# =============================================================================
+# REPORT ANALYSIS STEERING — NEUTRAL DEFAULT / TEMPLATE
+# =============================================================================
+# This file is pasted verbatim into the report model's system prompt as its
+# "Analysis Framework". It ships NEUTRAL: methodology only, no market view,
+# no positions, no watchlist bias. Operators supply their own steering by
+# editing this file; the `thesis:` block below is where a house view would
+# go, and it is empty on purpose. Leave it empty and the model derives the
+# regime from the data alone.
+#
+# The file must parse as a YAML mapping — the loader refuses a malformed one
+# rather than feed the model a half-read framework.
+# Changes take effect on the next report run.
+# =============================================================================
+
+global:
+  style: "factual"
+
+  # Macro news: explain what events mean for asset prices in accessible language.
+  # Assume the reader has a basic understanding of macro economics but appreciates
+  # clear cause-and-effect chains.
+  # E.g., "CPI came in hot at 3.2% → stickier inflation → Fed less likely to cut → USD up, risk down"
+  macro_explanation: "accessible_with_impact_chains"
+
+  # Bias counterbalancing: whatever case the data seems to make, actively look
+  # for evidence that CONTRADICTS it. Call it out in a dedicated "Devil's
+  # Advocate" or "Counter-thesis" note. This prevents confirmation bias.
+  counterbalance_bias: true
+
+  # Analysis order: start big picture, zoom in
+  analysis_order:
+    - high_timeframe_context    # Monthly/Weekly first — set the stage
+    - macro_and_ratios          # DXY, ratios, intermarket
+    - individual_assets         # Per-asset: daily then 4H
+    - correlations_and_confluences
+    - levels_to_watch
+
+  timeframe_priority:
+    - 1W    # Primary timeframe
+    - 1D    # Secondary
+    - 4H    # Lowest — detail only
+
+  # Date awareness: you are given today's exact date. Use it to:
+  # - Verify that news/data you reference has actually been released (don't cite
+  #   "expected CPI" if it already came out yesterday — search for the actual result)
+  # - Detect first trading day of the month → triggers mandatory CPR review
+  # - If you notice a discrepancy (e.g., referencing future data as upcoming when
+  #   it's already past), self-correct by searching for the actual data
+  date_awareness: true
+
+  always_report:
+    - current_price
+    - trend_direction
+    - distance_from_user_levels
+    - rsi_value
+    - ema_positions
+    - cpr_position              # Where price is relative to CPR lines
+    - ema_ribbon_state           # Momentum color/direction
+
+  emphasize:
+    - cpr_confluences           # when CPR lines align with other S/R
+    - vcpr_setups               # Price outside all 3 CPR lines at month open
+    - breakouts_from_user_channels
+    - tests_of_user_support_resistance
+    - rsi_divergences            # all 4 types (regular/hidden, bullish/bearish) — see indicators.rsi.divergences
+    - ema_crossovers
+    - confluence_zones          # Multiple indicators/lines clustering at same price
+    - sentiment_extremes        # Fear & Greed at either extreme, funding at either extreme
+    - sector_rotation_signals   # Ratio trends (e.g. QQQ_SPX, GOLD_QQQ) in either direction
+    - commodity_trend_correlation # grain trio moving together, metals moving together
+
+  ignore:
+    - minor_wicks
+    - intraday_noise_on_daily
+    - volume_on_crypto
+    - sub_4h_patterns           # Never analyze below 4H
+
+  alert_conditions:
+    - "price within 2% of user support/resistance"
+    - "RSI below 30 or above 70"
+    - "price touching channel boundary"
+    - "CPR line confluence with EMA or user drawing"
+    - "Fear & Greed below 15 or above 85"
+    - "funding rate at an extreme, either sign, persisting >24h"
+
+# =============================================================================
+# HOUSE VIEW — OPERATOR-SUPPLIED, EMPTY BY DEFAULT
+# =============================================================================
+# Every field is empty on purpose. An empty field means "no house view":
+# describe what the data shows and do not assume a direction. If an operator
+# fills these in, the model treats them as a hypothesis to test against the
+# data (see global.counterbalance_bias), never as a conclusion.
+thesis:
+  updated: ""
+  macro_view: ""
+  current_regime: ""      # one of: bull_market | bear_market | ranging | transition — or empty
+  sector_rotation: ""
+  short_term: ""
+  medium_term: ""
+  long_term: ""
+
+# =============================================================================
+# CPR RULES (Central Pivot Range)
+# =============================================================================
+# CPR History indicator shows previous months' CPR lines on the chart.
+# Numerical CPR values are provided in cpr_data.txt (fetched from API).
+# Use these exact numbers for month-over-month comparison — don't estimate from charts.
+# =============================================================================
+cpr_rules:
+  description: |
+    Monthly CPR is a core framework. The three purple CPR lines (TC, Pivot, BC)
+    define probable price zones for the month. CPR History shows previous months'
+    lines as dimmer dashed purple on charts.
+
+  vcpr_rule: |
+    VCPR (Virgin CPR) — if price is below all 3 CPR lines at month start,
+    expect price to touch at least the lowest CPR line during the month,
+    then likely continue the prevailing trend direction.
+
+  confluence_rule: |
+    When CPR lines align with other support/resistance (EMA, user drawings,
+    EMA Ribbon levels), that zone has HIGH significance. Call these out explicitly
+    with the exact price levels that are clustering.
+    ESPECIALLY important: price touching EMA Ribbon at or near a CPR level
+    and getting rejected/supported — this is a high-confidence signal.
+
+  width_rule: |
+    Narrow CPR (TC and BC close together) signals an expected volatile move.
+    The narrower the range, the bigger the anticipated move. Direction is
+    unknown — it could go either way. Flag narrow CPR months as "volatile
+    month expected" and note the width compared to previous months.
+
+  trend_shift_detection: |
+    CRITICAL RULE — compare monthly CPR pivot values across months:
+    - DOWNTREND: successive months of declining pivot values (e.g., 113K → 94K → 88K → 84K)
+    - UPTREND: successive months of rising pivot values
+    - TREND SHIFT signal: after a sustained downtrend (3+ months of declining pivots),
+      the FIRST month where the new pivot is HIGHER than the previous month's pivot.
+      This is a potential trend reversal — flag it prominently.
+    - Vice versa: after a sustained uptrend, the first month where the new pivot is
+      LOWER than the previous month's → potential bearish reversal.
+    - Confluence boost: if the trend shift aligns with an EMA Ribbon color change
+      (e.g., EMA Ribbon flipping green at the same time CPR pivots start rising),
+      this is a very high-confidence signal. Call it out loudly.
+    - Use the exact numerical values from cpr_data.txt, not visual estimates.
+    - If a trend shift is detected, name the new CPR level as one to watch.
+
+  first_of_month_review: |
+    On the FIRST TRADING DAY of each month, include a dedicated "Monthly CPR Review"
+    section at the TOP of the report (before individual asset analysis). For EVERY asset:
+    - Current month pivot vs previous month pivot (higher/lower/same, exact values)
+    - CPR width (TC - BC) — narrow or wide compared to previous months
+    - Trend direction of monthly pivots (how many consecutive months rising/falling)
+    - TREND SHIFT flags for any asset where the direction changed
+    - VCPR status: is price above or below the new month's CPR?
+    On non-first-of-month days, still mention CPR in each asset's analysis but
+    skip the dedicated review section.
+
+
+# =============================================================================
+# PER-ASSET CONTEXT — what each instrument measures and how to read it
+# =============================================================================
+# Descriptive only. There is deliberately no per-asset bias field: the report
+# reads direction from the data. Operators can add or remove assets freely;
+# `watching_for` lists observations that would be notable in EITHER direction.
+assets:
+  # --- RATIOS (analyze first — they set the intermarket context) ---
+  BTC_SPX:
+    context: |
+      Bitcoin relative strength vs equities. Rising = BTC outperforming
+      stocks; falling = BTC underperforming.
+    watching_for: "trend changes on the weekly, either direction"
+
+  GOLD_BTC:
+    context: |
+      Safe haven vs risk asset. Rising = gold outperforming BTC (defensive
+      flows); falling = BTC outperforming gold (risk appetite).
+    watching_for: "extremes and reversals in the ratio's weekly trend"
+
+  SPX_GOLD:
+    context: |
+      Risk-on vs safe-haven ratio. Rising = equities outperforming gold;
+      falling = defensive positioning.
+    watching_for: "trend changes or base/top formation on the weekly"
+
+  ETH_BTC:
+    context: |
+      Altcoin strength indicator. Rising = ETH outperforming BTC (broader
+      crypto risk appetite); falling = BTC dominance rising.
+    watching_for: "trend changes and breaks of the recent range"
+
+  XRP_BTC:
+    context: |
+      XRP relative strength. XRP sometimes moves independently of the
+      rest of crypto (regulatory news, partnerships).
+    watching_for: "divergence from ETH_BTC in either direction"
+
+  QQQ_SPX:
+    context: |
+      Tech vs broad market ratio. Rising = tech leading the broader market;
+      falling = leadership rotating away from tech.
+    watching_for: "sustained moves in either direction"
+
+  GOLD_QQQ:
+    context: |
+      Real assets vs tech ratio. Rising = gold outperforming tech;
+      falling = tech outperforming gold.
+    watching_for: "breakouts or breakdowns of the multi-month range"
+
+  MAGS_SPX:
+    context: |
+      Magnificent 7 vs broad market. The purest read on mega-cap tech
+      concentration. Rising = narrowing leadership; falling = broadening
+      breadth or mega-cap tech underperforming.
+    watching_for: "breaks of key levels in either direction"
+
+  # --- MACRO ---
+  DXY:
+    context: |
+      Dollar strength. Usually inversely correlated with risk assets:
+      a rising DXY is typically a headwind for BTC, gold and stocks,
+      a falling DXY typically a tailwind.
+    watching_for: "breaks of multi-year support or resistance"
+
+  SPX:
+    context: |
+      Broad equity market health. Leading indicator for risk sentiment;
+      crypto has tended to move with equities, with higher beta.
+    watching_for: "weekly trend confirmation or failure"
+
+  QQQ:
+    context: |
+      Nasdaq 100 / tech-heavy index. More volatile than SPX.
+      Read together with QQQ_SPX for tech leadership.
+    watching_for: "relative strength or weakness vs SPX"
+
+  OIL:
+    context: |
+      Energy proxy and geopolitical risk indicator. Feeds inflation
+      expectations and therefore rate expectations.
+    watching_for: "weekly trend confirmation, breaks of the recent range"
+
+  GOLD:
+    context: |
+      Safe haven and inflation hedge. Driven by real yields, the dollar
+      and safe-haven flows.
+    watching_for: "monthly and weekly RSI extremes, breaks of key levels"
+
+  SILVER:
+    context: |
+      Industrial + precious metal hybrid. More volatile than gold.
+      The silver/gold relationship shows whether industrial demand or
+      safe-haven flows dominate.
+    watching_for: "depth of pullbacks, breakouts in either direction"
+
+  # --- COMMODITIES & ENERGY ---
+  MAGS:
+    context: |
+      Roundhill Magnificent Seven ETF (AAPL, AMZN, GOOG, META, MSFT, NVDA, TSLA).
+      Equal-weighted Mag 7 exposure. The purest proxy for mega-cap tech.
+      Read together with MAGS_SPX.
+    watching_for: "relative strength vs SPX, reactions to earnings"
+
+  COPPER:
+    context: |
+      Industrial bellwether and China demand proxy. Often leads commodity
+      cycles; rising copper usually reflects manufacturing and
+      infrastructure demand.
+    watching_for: "breaks of key levels, China policy signals"
+
+  NATGAS:
+    context: |
+      Natural gas. Strong seasonal patterns (winter demand) and
+      geopolitical sensitivity (LNG exports, pipeline politics).
+    watching_for: "seasonal patterns, supply disruptions, trend development"
+
+  XLE:
+    context: |
+      Energy Select Sector SPDR ETF (Exxon, Chevron, etc).
+      Direct measure of energy sector relative strength; compare its
+      trend with QQQ to read rotation between energy and tech.
+    watching_for: "relative performance vs QQQ, weekly breakouts or breakdowns"
+
+  CORN:
+    context: |
+      Corn futures. Part of the grain trio (corn/wheat/soybeans) — when all
+      three move together, it signals a broad agricultural trend.
+      Weather, ethanol demand, and geopolitics drive prices.
+    watching_for: "trend development, correlation with wheat/soybeans"
+
+  WHEAT:
+    context: |
+      Wheat futures. Geopolitically sensitive (Black Sea exports).
+      More volatile than corn. Part of the grain trio.
+    watching_for: "geopolitical catalysts, weekly trend confirmation"
+
+  SOYBEANS:
+    context: |
+      Soybean futures. China trade exposure (largest importer).
+      Completes the grain trio with corn and wheat.
+    watching_for: "trade-policy signals, grain trio correlation"
+
+  # --- CRYPTO ---
+  BTC:
+    context: |
+      The anchor crypto asset. Read the weekly trend first, then the
+      daily, with derivatives and on-chain data as context.
+    watching_for: |
+      - Weekly trend changes, either direction
+      - CPR VCPR touches
+      - Capitulation or euphoria signatures (volume, sentiment extremes)
+      - Range boundaries forming
+    key_levels_note: "user drawings on chart define the key levels"
+
+  ETH:
+    context: |
+      Second-largest crypto asset. Read together with ETH_BTC for
+      relative strength.
+    watching_for: "ETH_BTC trend, independent catalysts"
+
+  XRP:
+    context: |
+      Can diverge from BTC on regulatory/partnership news.
+    watching_for: "relative strength vs BTC, news catalysts"
+
+  FARTCOIN:
+    context: |
+      Memecoin used as a sentiment gauge: sharp speculative moves here
+      tend to coincide with retail euphoria or its absence.
+    watching_for: "volume spikes, correlation breaks from BTC"
+
+  HYPE:
+    context: |
+      HyperLiquid token. DeFi/perps platform; useful as a DeFi sector
+      proxy, and the platform's own data (OI, volume) is an indicator.
+    watching_for: "relative strength, DeFi sector rotation signals"
+
+  TOTAL:
+    context: |
+      Total crypto market cap. Shows whether BTC moves are isolated or
+      market-wide. Divergence between TOTAL and BTC signals altcoin flows.
+    watching_for: "key levels, divergence from BTC"
+
+# =============================================================================
+# INDICATOR INTERPRETATION GUIDE
+# =============================================================================
+indicators:
+  rsi:
+    oversold: 30
+    overbought: 70
+    note: |
+      Divergences matter more than absolute levels.
+      Monthly RSI extremes are rare and significant.
+      On weekly: sustained <30 has historically coincided with capitulation phases.
+
+    divergences:
+      priority: "HIGH — always call these out when spotted"
+      types:
+        regular_bullish: |
+          Price makes LOWER LOW, RSI makes HIGHER LOW.
+          Meaning: selling pressure weakening despite new price low.
+          Signal: potential reversal UP. Strongest at oversold levels (<30).
+          Most significant on weekly/daily timeframes.
+        regular_bearish: |
+          Price makes HIGHER HIGH, RSI makes LOWER HIGH.
+          Meaning: buying momentum fading despite new price high.
+          Signal: potential reversal DOWN. Strongest at overbought levels (>70).
+          Most significant on weekly/daily timeframes.
+        hidden_bullish: |
+          Price makes HIGHER LOW, RSI makes LOWER LOW.
+          Meaning: trend continuation signal in an uptrend.
+          Signal: pullback is over, expect trend to resume UP.
+          Confirms existing uptrend strength.
+        hidden_bearish: |
+          Price makes LOWER HIGH, RSI makes HIGHER HIGH.
+          Meaning: trend continuation signal in a downtrend.
+          Signal: relief rally is over, expect trend to resume DOWN.
+          Confirms existing downtrend strength.
+      reporting_rules: |
+        - Check RSI divergences on EVERY asset across all timeframes (1M, 1W, 1D, 4H)
+        - Always specify the type: "Regular Bullish Divergence" / "Hidden Bearish Divergence" etc.
+        - State the timeframe, the two price points, and the two RSI points
+        - Rate significance: weekly/monthly divergences > daily > 4H
+        - Note if divergence aligns with other signals (support, CPR, EMA)
+        - Hidden divergences in the direction of the prevailing trend carry extra weight
+        - Multiple-timeframe divergences (same type on daily AND weekly) = very high significance
+
+  ema:
+    fast: 20
+    medium: 50
+    slow: 200
+    interpretation: |
+      - Price > all EMAs = strong uptrend
+      - Price < all EMAs = strong downtrend
+      - EMAs stacked (20>50>200) = trend confirmed
+      - Price between EMAs = consolidation/decision point
+      - 200 EMA on weekly = major trend filter
+
+  cpr:
+    description: "Monthly Central Pivot Range (3 purple lines)"
+    interpretation: |
+      - Price above CPR = bullish bias for the month
+      - Price below CPR = bearish bias for the month
+      - VCPR: if below at month open, expect touch then continue direction
+      - Narrow CPR = big move expected, wide CPR = range-bound
+      - CPR + EMA/drawing confluence = high-probability S/R zone
+
+  ema_ribbon:
+    description: "EMA Ribbon momentum indicator"
+    interpretation: |
+      - Green = bullish momentum
+      - Red = bearish momentum
+      - Color change = momentum shift — important signal
+      - Use for trend confirmation, not entry timing
+      - Most valuable on weekly timeframe
+
+  keltner_tight:
+    description: "Tight Keltner Channel (EMA 35, ATR 14, mult 0.5)"
+    interpretation: |
+      - Tighter envelope than standard Keltner for mean-reversion setups
+      - Price outside channel = momentum shift
+      - Channel narrowing = compression, potential breakout
+
+# =============================================================================
+# OPTIONS CORNER — DERIVATIVES REGIME NARRATIVE
+# =============================================================================
+# Connected narrative using enriched Deribit data + regime classification.
+# Data pre-computed by deribit_options.py collector every 6h, stored in quant.derivatives.
+# Regime playbook in derivatives_regimes.yaml provides pattern-matching context.
+# =============================================================================
+options_corner:
+  enabled: true
+  tone: "Educational but analytical. Explain like teaching a smart friend — but with the depth of a professional derivatives commentary."
+  max_length: "400-600 words. Connected narrative, not a data dump."
+
+  # The regime playbook is loaded separately into the briefing.
+  # The LLM matches current metrics to known regimes and narrates the chain.
+
+  strategies:
+    risk_reversal:
+      name: "Risk Reversal (Bullish)"
+      description: "Sell OTM put + buy OTM call. Upside exposure financed by downside obligation."
+      best_regime: "short_squeeze_setup, post_crash_stabilization"
+      eli5: "Sell insurance to someone scared of a crash, use that money to buy a lottery ticket on a rally."
+
+    short_strangle:
+      name: "Short Strangle"
+      description: "Sell OTM put + sell OTM call. Profit if price stays in range."
+      best_regime: "complacent_bull, structural_carry, vol_compression"
+      eli5: "Bet the price will be boring. Keep premium if it is. Lose big if it explodes."
+
+    iron_condor:
+      name: "Iron Condor"
+      description: "Short strangle + buy further OTM wings. Defined risk version."
+      best_regime: "complacent_bull, structural_carry"
+      eli5: "Short strangle wearing a seatbelt. Less profit but can't blow up."
+
+    covered_call:
+      name: "Covered Call"
+      description: "Sell OTM call against spot holdings. Premium income in exchange for capped upside."
+      best_regime: "bear_grind, distribution_topping"
+      eli5: "You own BTC and rent out the upside to someone else for cash today."
+
+    protective_put:
+      name: "Protective Put"
+      description: "Buy OTM put as insurance against a crash on spot holdings."
+      best_regime: "euphoric_meltup, distribution_topping, pre_event_tension"
+      eli5: "Like buying home insurance. You hope you never need it, but you sleep better."
+
+    long_straddle:
+      name: "Long Straddle"
+      description: "Buy ATM put + ATM call. Profit from a big move in either direction."
+      best_regime: "vol_compression"
+      eli5: "You don't know which way the breakout goes, but you bet it'll be big. Lose if nothing happens."
+
+    calendar_spread:
+      name: "Calendar Spread"
+      description: "Sell near-term option, buy same-strike far-term option."
+      best_regime: "pre_event_tension"
+      eli5: "Sell an expensive near-term ticket, buy a cheap far-term one. Profit from time decay difference."
+
+  rules:
+    - "Build a CHAIN OF REASONING: basis → skew → GEX → term structure → IV-RV → strategy"
+    - "Every metric must connect to the next — the reader should feel the narrative flow"
+    - "Match the current regime from the playbook and explain WHY it matches"
+    - "Use the regime's transition warnings to flag what would change the picture"
+    - "Explain ONE strategy structure historically associated with the current regime (use best_regime mapping above), as a teaching example"
+    - "Give hypothetical examples with real numbers from the data"
+    - "End with 'What I learned today:' — one derivatives concept explained simply"
+    - "DO NOT recommend actual trades. Frame everything as hypotheticals for learning."
+    - "DO NOT just list metrics — INTERPRET them as a connected narrative"
+    - "Include the GEX flip point and explain what it means for near-term price action"
+
+# =============================================================================
+# DATA DEGRADATION PROTOCOL
+# =============================================================================
+# When data sources are unavailable, the report must not degrade in quality.
+# Instead, shift analytical weight to available data.
+# =============================================================================
+degradation_protocol:
+  rules:
+    - source: "sentiment"
+      fallback: "Infer sentiment from macro research tone, funding rates, RSI extremes, and Fear & Greed index if mentioned in macro data."
+    - source: "rs_rankings"
+      fallback: "Derive relative strength from individual asset price changes (% moves), signal data MA positions, and RSI readings across assets."
+    - source: "signal_diff"
+      fallback: "Compare current signals to yesterday's report narrative. Note any obvious signal flips visible in the chart data."
+    - source: "plays"
+      fallback: "Skip play references. Focus analysis on alert levels and user-drawn support/resistance from chart data."
+    - source: "options"
+      fallback: "Note that options data is unavailable. Use funding rates and OI from macro research as volatility proxies."
+    - source: "alerts"
+      fallback: "Skip alert-specific analysis. Focus on key technical levels from signal data."
+    - source: "positions"
+      fallback: "Skip position-specific P&L. Focus on general thesis evaluation."
+
+  principle: |
+    Quality must remain constant regardless of data availability.
+    Fewer data sources = deeper analysis of each available source.
+    Never produce a thin section — if you have less data, think harder about what the available data implies.
+
+# =============================================================================
+# OUTPUT PREFERENCES
+# =============================================================================
+output:
+  format: "narrative"
+
+  # 3-act, 8-section structure (replaces 17-section format)
+  sections:
+    # Act I — "What's Happening" (Overview tab)
+    - the_story                 # 2-3 paragraph narrative lede (400-600 words)
+    - action_dashboard          # 5-7 priority items + top-5 drivers table (300-400 words)
+    - scenarios                 # Scenario tree + invalidation bullets (300-400 words)
+    # Act II — "What the Data Says" (Analysis tab)
+    - regime_and_positioning    # Merged: macro regime, derivatives, on-chain, quant (500-700 words)
+    - asset_spotlight           # 3-5 narrative paragraphs for spotlight assets (400-600 words)
+    - market_snapshot           # Summary table for remaining assets + RS + rotation (300-400 words)
+
+  narrative_voice: |
+    Write like a senior analyst thinking out loud. Chain causes to effects:
+    "Oil's supply shock is forcing an inflation repricing that's lifting gold
+    while leaving equities at their most oversold level in months."
+    Vary sentence length. Use transitions. Explain every technical term in context.
+    Never stack more than 2 abbreviations in one sentence.
+
+  regime_and_positioning_guide: |
+    This section merges ALL quantitative context into one connected narrative.
+    Flow: macro regime → derivatives regime → on-chain health → anomalies →
+    correlations/lead-lag → transmission chains → analogues/scenarios.
+    Each point connects to the next — never list metrics without interpretation.
+    Include one ELI5 derivatives-strategy explainer (hypothetical, for learning) and a "What I learned today" concept.
+
+  confluence_reporting: |
+    When multiple indicators/levels cluster within 1-2% of each other,
+    mention the confluence zone within the relevant asset's narrative
+    paragraph. Include exact price range, which indicators align,
+    and current distance from price.
+
+  # What earns a place in the levels-to-watch list (the fixed "Action Items"
+  # heading is a list of thresholds and what each would mean, never actions).
+  watch_items_criteria:
+    - "within 2% of key level"
+    - "RSI extreme (>70 or <30)"
+    - "testing channel boundary"
+    - "EMA cross imminent"
+    - "CPR VCPR setup active"
+    - "Fear & Greed at an extreme (<15 or >85)"
+    - "confluence zone forming"
+
+  tone: "analytical, conversational — not a spreadsheet"
+
+  forbidden_phrases:
+    - "buy"
+    - "sell"
+    - "you should"
+    - "I recommend"
+    - "consider buying/selling"
+    - any price predictions
+    - "not financial advice"
+
+# Positions are not configured here. A shared report is market-wide; a
+# personalised report reads each user's own positions from their journal.

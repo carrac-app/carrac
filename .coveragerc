@@ -1,0 +1,44 @@
+[run]
+# Every first-party package and root module is listed, so the total reflects
+# the whole app. A source entry naming a missing package fails silently with a
+# zero, so keep this list in step with the tree.
+source =
+    carrac
+    quant
+    morning_engine
+    security
+    user_db
+    csv_cache
+    cache_manager
+    database
+    api_rate_limiter
+    push_notifications
+    data_sources
+    consensio
+    worker
+    instrument_master
+    backfill
+    volume_profile
+    weekly_signal_engine
+    changelog
+omit =
+    */__pycache__/*
+    */tests/*
+    */alembic/versions/*
+    */venv/*
+    */.venv/*
+
+[report]
+show_missing = true
+skip_empty = true
+precision = 1
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    raise AssertionError
+    if TYPE_CHECKING:
+    \.\.\.$
+
+[xml]
+output = coverage.xml

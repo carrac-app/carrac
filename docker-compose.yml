@@ -1,0 +1,305 @@
+services:
+  redis:
+    image: redis:7.4.11-alpine
+    container_name: carrac-redis
+    restart: unless-stopped
+    # Opt-in label for the optional autoheal service (ops profile), which only
+    # restarts containers that carry it.
+    labels:
+      - autoheal=true
+    command: redis-server --maxmemory 512mb --maxmemory-policy volatile-lru --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - carrac-network
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          # --maxmemory 512mb caps the dataset; this caps the PROCESS (RSS overhead
+          # can exceed maxmemory). Compose-level guard.
+          memory: 768m
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD --no-auth-warning ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    # Cap log files so a chatty bug cannot fill the disk.
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "5" }
+
+  postgres:
+    image: postgres:16.15-alpine
+    container_name: carrac-postgres
+    restart: unless-stopped
+    labels:
+      - autoheal=true
+    # Raise max_connections to 200 so a gthread web container
+    # (4 workers × up to 10 pool slots) + worker + quant + interactive psql
+    # cannot saturate the default 100-slot cap.
+    command: postgres -c max_connections=200 -c shared_buffers=256MB
+    environment:
+      - POSTGRES_DB=carrac
+      - POSTGRES_USER=carrac
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # init_postgres.pgsql is deliberately not mounted as an initdb hook: it
+      # would pre-create the tables and leave a brand-new database with the
+      # schema present but no alembic_version, the one state the migration
+      # runner refuses to touch. The alembic baseline revision executes the file
+      # instead, so migrations own a fresh database end to end.
+    networks:
+      - carrac-network
+    deploy:
+      resources:
+        limits:
+          # 1G leaves room for shared_buffers and work_mem with 200 connection
+          # slots configured; 512M runs out of memory under the morning-engine load.
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carrac -d carrac"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    # Cap log files.
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "5" }
+
+  # Make the ./data bind mount usable by the non-root app.
+  #
+  # data/ is gitignored, so a fresh clone has no data/ on the host. With the
+  # host path missing, the Docker daemon creates it root:root, and that mount
+  # masks the Dockerfile's build-time `chown -R appuser:appuser /app`. The app
+  # runs as appuser (uid 1000), cannot create /app/data/dynamic, and the web
+  # and worker containers crash-loop.
+  #
+  # This service runs as root purely to fix that ownership, then exits. It is
+  # deliberately not an entrypoint: dropping `USER appuser` so an entrypoint
+  # could chown would make every `docker exec` run as root, which writes
+  # root-owned files into /app/data and reintroduces the same bug.
+  #
+  # It reuses the app image, so there is nothing extra to pull. It is
+  # idempotent and cheap (a metadata-only walk), so running it on every
+  # `docker compose up` also repairs stray ownership. Deploys that pass
+  # --no-deps skip it.
+  data-init:
+    build: .
+    image: carrac-carrac
+    container_name: carrac-data-init
+    restart: "no"
+    user: "0:0"
+    volumes:
+      - ./data:/app/data
+    command: ["sh", "-c", "mkdir -p /app/data/dynamic && chown -R 1000:1000 /app/data"]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  carrac: &carrac_web
+    build: .
+    # Pinned explicitly so the optional standby (carrac-b) shares this exact
+    # image. Without a name, compose derives one per service and the standby
+    # would build its own image from the same tree: two builds that can drift
+    # and double the build time. One name means identical code by construction.
+    image: carrac-carrac
+    container_name: carrac
+    restart: unless-stopped
+    # 60s pairs with gunicorn --graceful-timeout 30 and autoheal's
+    # AUTOHEAL_DEFAULT_STOP_TIMEOUT=60 so the whole stop pipeline drains
+    # cleanly; a shorter grace period would SIGKILL workers mid-drain.
+    stop_grace_period: 60s
+    labels:
+      - autoheal=true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      data-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:5002:5000"
+    env_file:
+      - .env
+    environment: &carrac_env
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_SESSION_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+      - DATABASE_URL=postgresql://carrac:${POSTGRES_PASSWORD}@postgres:5432/carrac
+      - DB_TYPE=postgresql
+      - WORKER_MODE=true
+    volumes:
+      # The code runs baked into the image (Dockerfile COPY . .), not from
+      # bind-mounted source, so it changes only when the image is rebuilt and
+      # the containers are recreated. Only the persistent data dir is a mount,
+      # because it must survive rebuilds.
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - carrac-network
+    # Resource limits on the web container. An unbounded gunicorn arbiter, four
+    # UvicornWorkers and the anyio thread pool can starve postgres and redis;
+    # the PID cap blocks runaway thread forking.
+    deploy:
+      resources:
+        limits:
+          # 3.0 keeps the web tier responsive during the worker's precompute
+          # CPU bursts, and together with the worker's cap it leaves headroom
+          # so neither tier can take over the host.
+          cpus: "3.0"
+          memory: 3G
+          pids: 400
+    healthcheck:
+      # urllib instead of requests keeps the check's import time low, so it
+      # does not time out during heavy precompute CPU windows.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:5000/health',timeout=5); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      # /health can flip to degraded briefly on a stale HTF cache during a worker
+      # restart; 10 retries (5 min) absorb that 503 window instead of triggering
+      # a restart cascade.
+      retries: 10
+      start_period: 600s  # startup precompute (all assets, 365d daily) takes 10-15 min on a cold cache
+    # Cap log files. Web is the chattiest service — 50 MB × 5 rotated.
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "5" }
+
+  # The one place a schema is built, for every environment.
+  #
+  # Runs to completion and exits; `carrac`, `carrac-b` and `worker` all wait on
+  # it via `condition: service_completed_successfully`, so no container ever
+  # serves traffic against a half-migrated database. Idempotent, so re-running
+  # it on every `docker compose up` costs one no-op `alembic upgrade head`.
+  # The maintainer deploy passes --no-deps and runs its own one-off migrate.
+  migrate:
+    build: .
+    image: carrac-carrac
+    container_name: carrac-migrate
+    restart: "no"
+    command: ["python", "scripts/alembic_stamp_if_fresh.py"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment: *carrac_env
+    networks:
+      - carrac-network
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # Optional second web container (profile "ops"), so a rolling deploy never
+  # leaves a reverse proxy with nothing to proxy to: recreate this one first,
+  # wait for /health, then recreate `carrac`. The proxy's upstream (configured
+  # outside this repository) lists both ports. Not started by a plain
+  # `docker compose up -d`; enable with `--profile ops`.
+  #
+  # Merged from the `carrac` anchor rather than copied: the two must stay
+  # identical in image, env, limits and healthcheck, and a hand-maintained
+  # duplicate would drift. Only the name and the host port differ.
+  #
+  # Safe to run twice because neither web container keeps state of its own:
+  # user data, alerts included, lives in the database, where each write is its
+  # own row-level transaction, and sessions live in Redis (REDIS_SESSION_URL).
+  # WORKER_MODE=true (in the shared env anchor) makes
+  # _bootstrap_background_threads return immediately, so precompute, backfill,
+  # the sentiment scheduler and the WS workers all stay in the single `worker`
+  # container. Do not remove WORKER_MODE from this env:
+  # two copies of the background threads would double every scheduled write.
+  carrac-b:
+    <<: *carrac_web
+    profiles: ["ops"]
+    container_name: carrac-b
+    ports:
+      - "127.0.0.1:5012:5000"
+
+  worker:
+    build: .
+    container_name: carrac-worker
+    restart: unless-stopped
+    # The HTF warmup takes about three minutes; 200s avoids a SIGKILL mid-warmup on restart.
+    stop_grace_period: 200s
+    labels:
+      - autoheal=true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      data-init:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    # Shares the web service's environment block via the *carrac_env anchor.
+    environment: *carrac_env
+    volumes:
+      # Baked code, not bind-mounted source (see the web service).
+      - ./data:/app/data
+    command: ["python", "worker.py"]
+    deploy:
+      resources:
+        limits:
+          # The worker runs the single-threaded precompute loop; 2.0 CPUs let it
+          # finish its batches quickly without starving web or postgres.
+          cpus: "2.0"
+          memory: 2.5G
+          pids: 200
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - carrac-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis,os; r=redis.from_url(os.environ['REDIS_URL']); assert r.exists('mcd:worker:heartbeat')"]
+      interval: 60s
+      timeout: 15s  # Python cold start plus the redis import exceeds 5s under warmup CPU load
+      retries: 3
+      start_period: 900s  # the HTF warmup alone takes 15+ min on a cold cache before the heartbeat loop starts
+    # Cap log files.
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "5" }
+
+  # Restarts containers whose health status turns "unhealthy" (profile "ops").
+  # willfarrell/autoheal polls Docker every 30s, which covers the worker's
+  # heartbeat-based health check without Swarm. It mounts the Docker socket,
+  # which is root-equivalent access to the host, so it is not part of the
+  # default stack; enable it with `--profile ops`.
+  autoheal:
+    profiles: ["ops"]
+    image: willfarrell/autoheal:1.2.0
+    container_name: carrac-autoheal
+    restart: unless-stopped
+    # AUTOHEAL_CONTAINER_LABEL=autoheal restricts healing to containers that
+    # carry the `autoheal=true` label. AUTOHEAL_DEFAULT_STOP_TIMEOUT=60 gives
+    # gunicorn workers time to drain (matches stop_grace_period and
+    # --graceful-timeout).
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=30
+      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=60
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - carrac-network
+    # Cap log files.
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  carrac-network:
+    driver: bridge

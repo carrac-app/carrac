@@ -1,0 +1,57 @@
+# Data and caches
+data/
+*.csv
+*.parquet
+
+# Environment
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv
+.sdk-venv/
+venv/
+
+# Logs
+logs/
+*.log
+
+# Flask sessions (filesystem backend)
+flask_session/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Mac
+.DS_Store
+._*
+
+# Archives
+*.tar.gz
+*.zip
+
+# Local databases
+*.db
+*.sqlite
+
+# Local scratch and release-gate state
+tmp/
+.release/
+
+# Coverage artifacts (CI uploads coverage.xml as a build artifact)
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Per-machine make overrides (see the `-include local.mk` hook in the Makefile)
+local.mk
+.make.local

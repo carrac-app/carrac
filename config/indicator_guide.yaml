@@ -1,0 +1,163 @@
+# Indicator Visual Guide for AI Chart Reading
+# This file teaches the AI what visual elements mean on your charts
+
+version: "1.0"
+last_updated: "2026-01-21"
+
+# Standard indicators and their visual representation
+indicators:
+  - name: "Moving Averages"
+    description: "Trend-following overlays on price"
+    elements:
+      - visual: "Purple/magenta line"
+        meaning: "50 EMA (Exponential Moving Average)"
+        interpretation: "Medium-term trend. Price above = bullish bias."
+
+      - visual: "Blue line"
+        meaning: "200 EMA"
+        interpretation: "Long-term trend. Major support/resistance in trends."
+
+      - visual: "Orange/yellow thin line"
+        meaning: "21 EMA"
+        interpretation: "Short-term trend. Fast-moving, good for entries."
+
+      - visual: "White/gray thick line"
+        meaning: "200 WMA (Weekly Moving Average on daily chart)"
+        interpretation: "Bull market support band. Key level in crypto."
+
+  - name: "EMA Ribbon"
+    description: "EMA30/60 trend channel with ATR margin"
+    elements:
+      - visual: "Green shaded channel between two lines"
+        meaning: "Bullish trend - price trading above EMA30/60"
+        interpretation: "Trend is up. Look for dips to channel as support."
+
+      - visual: "Red shaded channel between two lines"
+        meaning: "Bearish trend - price trading below EMA30/60"
+        interpretation: "Trend is down. Look for rallies to channel as resistance."
+
+      - visual: "Yellow/amber shaded channel"
+        meaning: "Neutral/consolidation - EMAs are flat or crossing"
+        interpretation: "No clear trend. Wait for direction."
+
+      - visual: "No shading, just two lines close together"
+        meaning: "EMAs compressed, squeeze forming"
+        interpretation: "Volatility contraction. Expect expansion soon."
+
+  - name: "RSI (Relative Strength Index)"
+    description: "Momentum oscillator, usually shown below price"
+    elements:
+      - visual: "Line oscillating between 0-100"
+        meaning: "RSI indicator line"
+        interpretation: "Above 70 = overbought, below 30 = oversold."
+
+      - visual: "Horizontal line at 70"
+        meaning: "Overbought threshold"
+        interpretation: "RSI crossing above = potential reversal zone."
+
+      - visual: "Horizontal line at 30"
+        meaning: "Oversold threshold"
+        interpretation: "RSI crossing below = potential bounce zone."
+
+      - visual: "Horizontal line at 50"
+        meaning: "Neutral/midline"
+        interpretation: "Above 50 = bullish momentum, below = bearish."
+
+  - name: "Bollinger Bands"
+    description: "Volatility bands around moving average"
+    elements:
+      - visual: "Three lines - middle with upper/lower bands"
+        meaning: "20 SMA with 2 standard deviation bands"
+        interpretation: "Price at upper band = extended, lower band = compressed."
+
+      - visual: "Bands very close together (squeeze)"
+        meaning: "Low volatility, consolidation"
+        interpretation: "Expect volatility expansion, direction TBD."
+
+      - visual: "Bands very wide apart"
+        meaning: "High volatility, extended move"
+        interpretation: "Move may be exhausting, watch for reversal."
+
+  - name: "Consensio Table"
+    description: "Multi-timeframe trend alignment table"
+    elements:
+      - visual: "Green cells with + symbol"
+        meaning: "Bullish signal on that timeframe"
+        interpretation: "Number (1-3) indicates strength. +3 = strongest bull."
+
+      - visual: "Red cells with - symbol"
+        meaning: "Bearish signal on that timeframe"
+        interpretation: "Number (1-3) indicates strength. -3 = strongest bear."
+
+      - visual: "Gray/neutral cells"
+        meaning: "No clear signal"
+        interpretation: "Timeframe is neutral or consolidating."
+
+      - visual: "X/9 at bottom of table"
+        meaning: "Position size recommendation"
+        interpretation: "Out of max 9 units, how many to hold based on signals."
+
+  - name: "CPR (Central Pivot Range)"
+    description: "Pivot point levels - support/resistance"
+    elements:
+      - visual: "Three horizontal lines close together (TC, Pivot, BC)"
+        meaning: "Central Pivot Range"
+        interpretation: "TC = Top Central, BC = Bottom Central. Price above = bullish."
+
+      - visual: "Dashed lines labeled S1, S2, S3"
+        meaning: "Support levels below pivot"
+        interpretation: "Potential bounce zones. S3 = extreme."
+
+      - visual: "Dashed lines labeled R1, R2, R3"
+        meaning: "Resistance levels above pivot"
+        interpretation: "Potential rejection zones. R3 = extreme."
+
+  - name: "TTM Squeeze"
+    description: "Volatility squeeze indicator"
+    elements:
+      - visual: "Red dots on zero line"
+        meaning: "Squeeze is ON - Bollinger inside Keltner"
+        interpretation: "Low volatility, preparing for expansion."
+
+      - visual: "Green dots on zero line"
+        meaning: "Squeeze is OFF - expansion starting"
+        interpretation: "Volatility expanding, watch for directional move."
+
+      - visual: "Histogram bars above zero"
+        meaning: "Bullish momentum"
+        interpretation: "Increasing = accelerating, decreasing = decelerating."
+
+      - visual: "Histogram bars below zero"
+        meaning: "Bearish momentum"
+        interpretation: "Increasing negative = accelerating down."
+
+# User drawing types and how AI should interpret them
+user_drawing_types:
+  - type: "horizontal_line"
+    description: "Support or resistance level marked by user"
+    ai_instruction: "Report distance from current price as percentage. Note the user's label."
+
+  - type: "zone"
+    description: "Price zone (accumulation, distribution, demand, supply)"
+    ai_instruction: "Report if price is inside, above, or below the zone. Note the label."
+
+  - type: "trendline"
+    description: "Diagonal line connecting swing points"
+    ai_instruction: "Report if price is above or below the line. Note approximate angle."
+
+  - type: "annotation"
+    description: "Text note placed on chart by user"
+    ai_instruction: "Read and report the annotation text exactly as written."
+
+  - type: "fibonacci"
+    description: "Fibonacci retracement levels"
+    ai_instruction: "Report which fib level price is nearest to (0.236, 0.382, 0.5, 0.618, 0.786)."
+
+# AI behavior rules
+ai_rules:
+  - "Report FACTS only. Never give trading advice or predictions."
+  - "If you cannot read a value clearly, say 'unclear' - do not guess."
+  - "Report indicator readings as you see them (e.g., 'RSI at 65')."
+  - "For user drawings, report the label exactly and distance from current price."
+  - "If an element is not in this guide, describe what you see and flag as 'unknown indicator'."
+  - "Do not interpret what the user should do - just report the current state."

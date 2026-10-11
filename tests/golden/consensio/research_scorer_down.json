@@ -1,0 +1,18 @@
+{
+  "classification": "watch",
+  "components": {
+    "adx_position": 25,
+    "ema_position": 10,
+    "freshness": 0,
+    "volume": 10
+  },
+  "direction": "bearish",
+  "patterns": [
+    "adx_sweet_spot",
+    "unknown",
+    "volume_above_avg",
+    "price_below_ema20"
+  ],
+  "regime": "trend_forming",
+  "score": 45
+}

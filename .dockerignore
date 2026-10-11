@@ -1,0 +1,25 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.claude/
+backlog/
+docs/
+tests/
+*.md
+.env
+data/
+docker-compose*.yml
+
+# Keep the build context small and stable: local virtualenvs and the live
+# session files would otherwise be uploaded (or change under a running build).
+.venv/
+flask_session/
+.release/
+node_modules/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.log

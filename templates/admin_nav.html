@@ -1,0 +1,35 @@
+<style>
+    .admin-nav {
+        display: flex; align-items: center; gap: 2px;
+        background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+        padding: 4px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .admin-nav-item {
+        padding: 7px 14px; font-size: 13px; font-weight: 500;
+        color: #8b949e; text-decoration: none; border-radius: 6px;
+        transition: all 0.15s; white-space: nowrap;
+    }
+    .admin-nav-item:hover { color: #c9d1d9; background: #21262d; }
+    .admin-nav-item.active { color: #c9d1d9; background: #30363d; }
+    .admin-nav-right { margin-left: auto; color: #484f58; font-size: 12px; }
+    .admin-nav-right:hover { color: #8b949e; }
+    .nav-badge {
+        display: inline-block; min-width: 16px; height: 16px; line-height: 16px;
+        padding: 0 5px; margin-left: 4px; font-size: 10px; font-weight: 700;
+        text-align: center; border-radius: 8px;
+        background: #da3633; color: #fff;
+    }
+</style>
+<div class="admin-nav">
+    <a href="/admin" class="admin-nav-item {% if admin_page == 'overview' %}active{% endif %}">Overview</a>
+    <a href="/admin/users" class="admin-nav-item {% if admin_page == 'users' %}active{% endif %}">Users</a>
+    <a href="/admin/costs" class="admin-nav-item {% if admin_page == 'costs' %}active{% endif %}">Economics</a>
+    <a href="/admin/billing" class="admin-nav-item {% if admin_page == 'billing' %}active{% endif %}">Billing</a>
+    <a href="/admin/tiers" class="admin-nav-item {% if admin_page == 'tiers' %}active{% endif %}">Tiers</a>
+    <a href="/admin/waitlist" class="admin-nav-item {% if admin_page == 'waitlist' %}active{% endif %}">Waitlist</a>
+    <a href="/admin/usage" class="admin-nav-item {% if admin_page == 'usage' %}active{% endif %}">Usage</a>
+    <a href="/admin/intents" class="admin-nav-item {% if admin_page == 'intents' %}active{% endif %}">Intents</a>
+    <a href="/admin/feedback" class="admin-nav-item {% if admin_page == 'feedback' %}active{% endif %}">Feedback{% if g.new_feedback_count %}<span class="nav-badge">{{ g.new_feedback_count }}</span>{% endif %}</a>
+    <a href="/admin/health" class="admin-nav-item {% if admin_page == 'health' %}active{% endif %}">Health</a>
+    <a href="/" class="admin-nav-item admin-nav-right">&larr; Dashboard</a>
+</div>

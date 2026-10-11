@@ -1,0 +1,7 @@
+{
+  "bearish_divergence": true,
+  "bullish_divergence": false,
+  "divergence_type": "bearish",
+  "hidden_bearish_divergence": false,
+  "hidden_bullish_divergence": false
+}

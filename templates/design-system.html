@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System — Carrac</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v={{ cache_version('css/main.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/carrac-overhaul.css') }}?v={{ cache_version('css/carrac-overhaul.css') }}">
+<style>
+/* ── Page chrome only — every component below is rendered with main.css classes so this page can never drift from production ── */
+body { background:#0d1117; color:#c9d1d9; font-family:'JetBrains Mono', ui-monospace, monospace; margin:0; padding:0; line-height:1.55; }
+.ds-wrap { max-width:1100px; margin:0 auto; padding:48px 32px 120px; }
+.ds-h1 { font-size:24px; color:#e6edf3; margin:0 0 4px; letter-spacing:-0.01em; }
+.ds-lede { color:#8b949e; font-size:13px; margin:0 0 32px; }
+.ds-section { border-top:1px solid #21262d; padding:32px 0 0; margin-top:32px; }
+.ds-section:first-of-type { border-top:none; margin-top:0; padding-top:0; }
+.ds-h2 { font-size:14px; color:#f0b429; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 6px; }
+.ds-sub { color:#787b86; font-size:12px; margin:0 0 20px; }
+.ds-rule { background:#161b22; border:1px solid #21262d; border-left:3px solid #3fb950; padding:10px 14px; margin:0 0 20px; font-size:12px; color:#c9d1d9; }
+.ds-rule b { color:#3fb950; }
+.ds-rule .bad { color:#f85149; font-weight:700; }
+
+.ds-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+.ds-swatch { background:#0d1117; border:1px solid #21262d; padding:10px; }
+.ds-swatch .chip { height:48px; border:1px solid #21262d; }
+.ds-swatch .name { font-size:11px; color:#c9d1d9; margin-top:8px; }
+.ds-swatch .val  { font-size:10px; color:#787b86; }
+
+.ds-tokens { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px 18px; font-size:12px; }
+.ds-tokens .row { display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed #21262d; }
+.ds-tokens .row span:first-child { color:#8b949e; }
+.ds-tokens .row span:last-child  { color:#e6edf3; }
+
+.ds-demo { background:#131722; border:1px solid #21262d; padding:24px; margin-bottom:14px; min-height:80px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; position:relative; }
+.ds-demo.dark { background:#0d1117; }
+.ds-demo .ds-label { position:absolute; top:6px; right:8px; font-size:10px; color:#484f58; text-transform:uppercase; letter-spacing:0.06em; }
+
+.ds-code { background:#0d1117; border:1px solid #21262d; padding:10px 12px; font-size:11px; color:#8b949e; white-space:pre-wrap; margin:0 0 18px; overflow-x:auto; }
+.ds-code .k { color:#f0b429; }
+.ds-code .v { color:#3fb950; }
+
+.ds-cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:760px){ .ds-cols { grid-template-columns:1fr; } }
+
+.ds-good { border-left:3px solid #3fb950; }
+.ds-bad  { border-left:3px solid #f85149; }
+.ds-tag  { display:inline-block; font-size:10px; padding:2px 6px; border:1px solid; border-radius:1px; text-transform:uppercase; letter-spacing:0.05em; vertical-align:middle; margin-left:8px; }
+.ds-tag.good { color:#3fb950; border-color:#3fb950; }
+.ds-tag.bad  { color:#f85149; border-color:#f85149; }
+
+.ds-toc { display:flex; flex-wrap:wrap; gap:8px 14px; margin:0 0 32px; padding:14px 16px; background:#0d1117; border:1px solid #21262d; }
+.ds-toc a { color:#58a6ff; font-size:11px; text-decoration:none; }
+.ds-toc a:hover { text-decoration:underline; }
+
+/* Mock toolbar background so .tool-btn etc. show contrast */
+.ds-toolbar-mock {
+    background:#1e222d; padding:6px 10px; display:flex; align-items:center; gap:6px;
+    border:1px solid #2a2e39;
+}
+</style>
+</head>
+<body>
+<div class="ds-wrap">
+    <h1 class="ds-h1">Carrac Design System</h1>
+    <p class="ds-lede">Single source of truth for tokens, buttons, and popups. Every component below is rendered with the production <code>main.css</code> + <code>carrac-overhaul.css</code> (loaded in that order, same as the chart page) — what you see here is what ships.</p>
+
+    <nav class="ds-toc">
+        <a href="#principles">Principles</a>
+        <a href="#tokens">Tokens</a>
+        <a href="#colors">Colors</a>
+        <a href="#buttons">Buttons</a>
+        <a href="#popups">Popups & Menus</a>
+        <a href="#dropdowns">Dropdowns</a>
+        <a href="#examples">Live examples</a>
+    </nav>
+
+    <!-- ────────────────────── PRINCIPLES ────────────────────── -->
+    <section class="ds-section" id="principles">
+        <h2 class="ds-h2">Principles</h2>
+        <p class="ds-sub">Decisions that govern every UI surface in Carrac.</p>
+
+        <div class="ds-rule"><b>Flat with hard offset shadow.</b> No soft drop shadows, no blur, no glassmorphism. Surfaces are flat and the shadow is a 1:1 pixel offset to a solid black box. Read: Bloomberg terminal, not Figma.</div>
+        <div class="ds-rule"><b>Sharp corners (legacy) / one radius (toolbar).</b> <code>main.css</code> still uses <code>border-radius: 1px</code> everywhere. The chart toolbar and drawing tools (<code>.tool-btn</code>, <code>.tf-selector</code>, <code>.indicator-btn</code>, <code>.tool-group-btn</code>, <code>.ind-fav-pill</code>) were re-tokenized in <code>carrac-overhaul.css</code> §21 to share one radius, <code>var(--ctl-r)</code> (6px) — do not add new toolbar controls at 1px, match the token instead.</div>
+        <div class="ds-rule"><b>JetBrains Mono everywhere.</b> Numerical alignment matters more than aesthetics. Sans-serif only on landing/marketing pages.</div>
+        <div class="ds-rule"><b>Toolbar hover is a quiet tint, not a hard shadow.</b> The chart toolbar/drawing-tools row's canonical hover is <code>carrac-overhaul.css</code> §21's <code>background: rgba(255,255,255,.06); color: var(--fg1)</code> (active: <code>rgba(255,255,255,.10)</code>) — this now covers <code>.tool-btn</code>, <code>.tf-selector</code>, <code>.indicator-btn</code>, <code>.tool-group-btn</code>, and <code>.ind-fav-pill</code>/<code>.ind-fav-group</code> identically, so all five read as one control system. <span class="bad">DO NOT</span> add new hard-shadow (<code>2px 2px 0 #000</code>) hover rules to toolbar controls — that legacy <code>main.css</code> rule is superseded for this surface, even though it's still declared there (source order lets the overhaul layer win).</div>
+        <div class="ds-rule"><b>One popup style:</b> <code>border: 1px solid #2a2e39; border-radius: 1px; box-shadow: 5px 5px 0 #000;</code>. AI Copilot, asset switcher, ticker settings all use this. <span class="bad">DO NOT</span> use rounded corners or soft shadows on new popups.</div>
+    </section>
+
+    <!-- ────────────────────── TOKENS ────────────────────── -->
+    <section class="ds-section" id="tokens">
+        <h2 class="ds-h2">Tokens</h2>
+        <p class="ds-sub">Hardcoded across <code>main.css</code> — no CSS variables (legacy decision). Use these exact values.</p>
+
+        <div class="ds-cols">
+            <div>
+                <h3 style="font-size:12px;color:#787b86;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em">Surfaces</h3>
+                <div class="ds-tokens">
+                    <div class="row"><span>Page background</span><span>#0d1117</span></div>
+                    <div class="row"><span>Chart background</span><span>#131722</span></div>
+                    <div class="row"><span>Panel background</span><span>#161b22</span></div>
+                    <div class="row"><span>Toolbar background</span><span>#1e222d</span></div>
+                    <div class="row"><span>Menu background</span><span>#1e222d</span></div>
+                    <div class="row"><span>Item hover</span><span>#2a2e39</span></div>
+                </div>
+
+                <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Borders</h3>
+                <div class="ds-tokens">
+                    <div class="row"><span>Subtle (sections)</span><span>#21262d</span></div>
+                    <div class="row"><span>Default (menus)</span><span>#2a2e39</span></div>
+                    <div class="row"><span>Strong (hover)</span><span>#484f58</span></div>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="font-size:12px;color:#787b86;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.05em">Text</h3>
+                <div class="ds-tokens">
+                    <div class="row"><span>Primary</span><span>#e6edf3</span></div>
+                    <div class="row"><span>Secondary</span><span>#d1d4dc</span></div>
+                    <div class="row"><span>Muted</span><span>#8b949e</span></div>
+                    <div class="row"><span>Tertiary</span><span>#787b86</span></div>
+                    <div class="row"><span>Disabled</span><span>#484f58</span></div>
+                </div>
+
+                <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Shape</h3>
+                <div class="ds-tokens">
+                    <div class="row"><span>Border radius</span><span>1px</span></div>
+                    <div class="row"><span>Button height</span><span>22px</span></div>
+                    <div class="row"><span>Button hover shadow</span><span>2px 2px 0 #000</span></div>
+                    <div class="row"><span>Popup shadow (sm)</span><span>3px 3px 0 #000</span></div>
+                    <div class="row"><span>Popup shadow (md)</span><span>4px 4px 0 #000</span></div>
+                    <div class="row"><span>Popup shadow (lg)</span><span>5px 5px 0 #000</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────── COLORS ────────────────────── -->
+    <section class="ds-section" id="colors">
+        <h2 class="ds-h2">Accent colors</h2>
+        <p class="ds-sub">Reserved for state — never decoration. Use sparingly.</p>
+        <div class="ds-grid">
+            <div class="ds-swatch"><div class="chip" style="background:#3fb950"></div><div class="name">Success / long</div><div class="val">#3fb950</div></div>
+            <div class="ds-swatch"><div class="chip" style="background:#f85149"></div><div class="name">Danger / short</div><div class="val">#f85149</div></div>
+            <div class="ds-swatch"><div class="chip" style="background:#58a6ff"></div><div class="name">Info / link</div><div class="val">#58a6ff</div></div>
+            <div class="ds-swatch"><div class="chip" style="background:#f0b429"></div><div class="name">AI / featured</div><div class="val">#f0b429</div></div>
+            <div class="ds-swatch"><div class="chip" style="background:#e2b340"></div><div class="name">Watchlist star</div><div class="val">#e2b340</div></div>
+        </div>
+    </section>
+
+    <!-- ────────────────────── BUTTONS ────────────────────── -->
+    <section class="ds-section" id="buttons">
+        <h2 class="ds-h2">Buttons</h2>
+        <p class="ds-sub">All toolbar-class buttons share the same hover effect. Hover each button below to see it.</p>
+
+        <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Tool button — <code>.tool-btn .tool-text-btn</code></h3>
+        <div class="ds-demo dark">
+            <span class="ds-label">live</span>
+            <div class="ds-toolbar-mock">
+                <button class="tool-btn tool-text-btn">Default</button>
+                <button class="tool-btn tool-text-btn active">Active</button>
+                <button class="tool-btn tool-text-btn tool-danger">Danger</button>
+                <span class="tool-separator"></span>
+                <button class="tool-btn tool-text-btn">Hover me</button>
+            </div>
+        </div>
+        <pre class="ds-code"><span class="k">/* main.css (base) */</span>
+.tool-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #787b86;
+    height: 22px;
+    border-radius: 1px;
+    transition: all 0.15s ease;
+}
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #d1d4dc;
+    border-color: #484f58;
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 #000;
+}
+
+<span class="k">/* carrac-overhaul.css §21 (loaded after — wins on background/color) */</span>
+.tool-btn { <span class="v">height: var(--ctl-h); border-radius: var(--ctl-r);</span> }
+.tool-btn:hover { <span class="v">background: rgba(255,255,255,.06); color: var(--fg1);</span> }
+.tool-btn.active { <span class="v">background: rgba(255,255,255,.10); color: var(--fg1);</span> }
+<span class="k">/* transform/box-shadow above are NOT reset — they still fire on hover.
+   This is the current CANONICAL toolbar control: quiet tint + legacy lift,
+   together. .indicator-btn / .tool-group-btn / .ind-fav-pill now mirror
+   this exact pattern (see below) so all toolbar controls read as one system. */</span></pre>
+
+        <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Dropdown triggers — <code>.indicator-btn</code> / <code>.tool-group-btn</code></h3>
+        <div class="ds-demo dark">
+            <span class="ds-label">live</span>
+            <div class="ds-toolbar-mock">
+                <button class="indicator-btn">Indicators</button>
+                <button class="indicator-btn">Chart Type</button>
+                <button class="tool-group-btn tool-text-btn">Line</button>
+                <button class="tool-group-btn tool-text-btn active">EW</button>
+            </div>
+        </div>
+        <p class="ds-sub">Candles / Panes / Indicators / Line / EW are all the same control kind (text + chevron, opens a menu) and now share <code>.tool-btn</code>'s exact base/hover/active rule — hover any of them, they behave identically.</p>
+
+        <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Favourite/quick-access chips — <code>.ind-fav-pill</code></h3>
+        <div class="ds-demo dark">
+            <span class="ds-label">live</span>
+            <div class="ds-toolbar-mock">
+                <span class="ind-fav-pill">Macro</span>
+                <span class="ind-fav-pill active">Swing</span>
+                <span class="ind-fav-pill ind-fav-group">Custom Group</span>
+                <span class="ind-fav-pill ind-fav-group active">Active Group</span>
+            </div>
+        </div>
+        <p class="ds-sub">Same token palette (<code>--ctl-r</code> radius, <code>--green</code> accent) as the rest of the toolbar, kept as a distinct accent-tinted toggle since it's a quick-access shortcut, not a drawing tool. No more hardcoded teal/cyan.</p>
+
+        <h3 style="font-size:12px;color:#787b86;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.05em">Timeframe selector — <code>.tf-selector</code></h3>
+        <div class="ds-demo dark">
+            <span class="ds-label">live</span>
+            <div class="adv-chart-timeframes">
+                <button class="tf-selector">15m</button>
+                <button class="tf-selector">1H</button>
+                <button class="tf-selector">4H</button>
+                <button class="tf-selector active">1D</button>
+                <button class="tf-selector">1W</button>
+                <button class="tf-selector">1M</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────── POPUPS ────────────────────── -->
+    <section class="ds-section" id="popups">
+        <h2 class="ds-h2">Popups &amp; menus</h2>
+        <p class="ds-sub">All floating surfaces use the same flat treatment.</p>
+
+        <div class="ds-rule"><b>The rule.</b> <code>background:#1e222d; border:1px solid #2a2e39; border-radius:1px; box-shadow:4px 4px 0 #000;</code> &mdash; vary the shadow offset (3/4/5px) by visual weight, never the radius or border style.</div>
+
+        <div class="ds-cols">
+            <div class="ds-demo ds-good" style="display:block">
+                <span class="ds-label">good</span>
+                <div style="font-size:11px;color:#3fb950;margin-bottom:8px">FLAT — DO THIS<span class="ds-tag good">use</span></div>
+                <div style="background:#1e222d;border:1px solid #2a2e39;border-radius:1px;box-shadow:5px 5px 0 #000;padding:14px 16px;width:240px;color:#c9d1d9;font-size:12px">
+                    <div style="color:#f0b429;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Popup title</div>
+                    Sharp corners, hard shadow, solid border.
+                </div>
+            </div>
+            <div class="ds-demo ds-bad" style="display:block">
+                <span class="ds-label">bad</span>
+                <div style="font-size:11px;color:#f85149;margin-bottom:8px">SOFT — NOT THIS<span class="ds-tag bad">avoid</span></div>
+                <div style="background:#1e222d;border:1px solid #30363d;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);padding:14px 16px;width:240px;color:#c9d1d9;font-size:12px">
+                    <div style="color:#f0b429;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Popup title</div>
+                    Rounded corners, blurred shadow. Looks alien next to the rest of the app.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────── DROPDOWNS ────────────────────── -->
+    <section class="ds-section" id="dropdowns">
+        <h2 class="ds-h2">Dropdowns</h2>
+        <p class="ds-sub">Live: hover the buttons to see the menus stay open (not interactive demos).</p>
+
+        <div class="ds-demo dark" style="display:block">
+            <span class="ds-label">live: indicator menu</span>
+            <div style="position:relative;display:inline-block">
+                <div class="indicator-menu visible" style="position:relative;top:0;left:0;display:flex;flex-direction:column;min-width:280px">
+                    <div class="indicator-master-toggle">All indicators</div>
+                    <div style="padding:6px 12px;color:#787b86;font-size:11px;text-transform:uppercase;letter-spacing:0.05em">Trend</div>
+                    <div style="padding:6px 12px;color:#c9d1d9;font-size:12px">EMA 21</div>
+                    <div style="padding:6px 12px;color:#c9d1d9;font-size:12px">EMA 200</div>
+                    <div style="padding:6px 12px;color:#3fb950;font-size:12px">VWAP <span style="color:#3fb950">●</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────── EXAMPLES ────────────────────── -->
+    <section class="ds-section" id="examples">
+        <h2 class="ds-h2">Reference: where each pattern is used</h2>
+        <p class="ds-sub">If you want to see one of these in production, here&rsquo;s where to look.</p>
+        <div class="ds-tokens" style="grid-template-columns:1fr">
+            <div class="row"><span>Tool button hover shadow</span><span>Chart toolbar — Draw, Indicators, all .tool-btn / .indicator-btn / .tf-selector</span></div>
+            <div class="row"><span>Asset switcher dropdown</span><span>Click the symbol next to the watchlist star</span></div>
+            <div class="row"><span>Floating asset search popup</span><span>Press <code>Space</code> on any chart</span></div>
+            <div class="row"><span>Ticker settings popup</span><span>Right-click ticker bar &rarr; Settings</span></div>
+            <div class="row"><span>Indicator menu</span><span>Click "Indicators" in chart toolbar</span></div>
+            <div class="row"><span>AI Copilot small chat</span><span>Click the AI FAB (bottom-right). Now flat. Was rounded with soft shadow before 2026-04-07.</span></div>
+        </div>
+    </section>
+
+    <p style="margin-top:48px;color:#484f58;font-size:11px;text-align:center">
+        This page imports <code>/static/css/main.css</code> directly &mdash; it cannot drift from production.
+        Edit <code>main.css</code> and the components above update automatically.
+    </p>
+</div>
+</body>
+</html>

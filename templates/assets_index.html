@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% if not assets_public %}<meta name="robots" content="noindex, nofollow">{% endif %}
+<title>Tracked assets — market-structure directory · Carrac</title>
+<meta name="description" content="Browse deterministic market structure for the crypto, equity, and commodity assets Carrac tracks — trend, momentum, stretch, and key levels. Facts, not advice.">
+<link rel="canonical" href="{{ canonical }}">
+<meta property="og:title" content="Tracked assets — market-structure directory · Carrac">
+<meta property="og:description" content="Browse deterministic market structure for the crypto, equity, and commodity assets Carrac tracks — trend, momentum, stretch, and key levels. Facts, not advice.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:site_name" content="Carrac">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tracked assets — market-structure directory · Carrac">
+<meta name="twitter:description" content="Browse deterministic market structure for the crypto, equity, and commodity assets Carrac tracks. Facts, not advice.">
+<meta name="twitter:image" content="{{ site_url }}/static/og-dashboard.png">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.fc-wrap{max-width:1100px;margin:0 auto;padding:48px 24px 100px;}
+.fc-h1{font-size:30px;margin:0 0 8px;}
+.intro{font-size:13.5px;color:var(--cream-2);max-width:72ch;line-height:1.6;margin:0 0 22px;}
+#asset-search{width:100%;max-width:360px;padding:10px 14px;background:var(--ink-2,#1b1c22);color:var(--cream);border:1px solid var(--rule);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:30px;}
+#asset-search:focus{outline:none;border-color:var(--gold-dim,#5a4f33);}
+.acluster{margin-bottom:30px;}
+.acluster h2{font-family:"Fraunces",serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.acard{display:flex;align-items:baseline;gap:8px;padding:12px 14px;border:1px solid var(--rule);border-radius:9px;background:var(--ink-2,#1b1c22);text-decoration:none;color:var(--cream);}
+.acard:hover{border-color:var(--gold-dim,#5a4f33);}
+.acard .asym{font-family:"Fraunces",serif;font-weight:600;font-size:15px;}
+.acard .anm{font-size:12px;color:var(--faint);}
+.cap{font-size:11px;color:var(--faint);border-top:1px solid var(--rule);padding-top:12px;margin-top:20px;}
+.noresults{color:var(--faint);font-size:13px;display:none;}
+.fc-topnav{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px;flex-wrap:wrap;}
+.fc-open{font-size:12.5px;color:var(--cream-2);text-decoration:none;border:1px solid var(--rule);border-radius:7px;padding:6px 12px;white-space:nowrap;}
+.fc-open:hover{border-color:var(--gold-dim);color:var(--gold);}
+.fc-ctaband{border:1px solid var(--rule);border-radius:12px;background:var(--ink-2);padding:20px 24px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.fc-ctaband p{margin:0;font-size:13.5px;color:var(--cream-2);max-width:56ch;}
+.fc-cta-btn{font-family:"Inter",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--gold);border-radius:8px;padding:9px 16px;text-decoration:none;white-space:nowrap;}
+.fc-cta-btn:hover{background:#d4b87e;}
+</style>
+{% include '_posthog_marketing.html' %}
+</head>
+<body class="ed-scope">
+<div class="fc-wrap">
+  {% set _utm = 'utm_source=assets&utm_medium=seo&utm_campaign=index' %}
+  <div class="fc-topnav">
+    <div class="kick"><b>Carrac</b> · directory</div>
+    <a class="fc-open" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+  </div>
+  <h1 class="fc-h1 serif">Tracked assets</h1>
+  <p class="intro">Deterministic market structure for the assets Carrac tracks — trend, momentum, stretch, and the nearest key levels, refreshed through the trading day. Pick an asset for the full read.</p>
+  <input id="asset-search" type="text" placeholder="Filter by name or ticker…" autocomplete="off" spellcheck="false" aria-label="Filter assets">
+  {% for g in groups %}
+  <section class="acluster" data-cluster>
+    <h2>{{ g.cluster }}</h2>
+    <div class="agrid">
+      {% for a in g.assets %}
+      <a class="acard" href="/assets/{{ a.symbol }}" data-name="{{ (a.name ~ ' ' ~ a.symbol) | lower }}">
+        <span class="asym">{{ a.symbol }}</span><span class="anm">{{ a.name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  <p class="noresults" id="noresults">No assets match that filter.</p>
+  <p class="cap">Observations only; not financial advice. Data from Carrac&rsquo;s analytics engine.</p>
+  <div class="fc-ctaband">
+    <p>Like what you see? Get live updates, alerts, and the full 70+ indicator stack.</p>
+    <a class="fc-cta-btn" href="/register?{{ _utm }}" target="_blank" rel="noopener">Get started free →</a>
+  </div>
+</div>
+<script nonce="{{ csp_nonce | default('') }}">
+/* Client-side filter ONLY — there is no server search endpoint, so no user query
+   ever reaches the backend (zero injection / DoS surface). */
+(function () {
+  var q = document.getElementById('asset-search');
+  if (!q) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.acard'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('[data-cluster]'));
+  var noResults = document.getElementById('noresults');
+  q.addEventListener('input', function () {
+    var v = this.value.trim().toLowerCase();
+    var anyVisible = false;
+    cards.forEach(function (c) {
+      var show = !v || c.getAttribute('data-name').indexOf(v) >= 0;
+      c.style.display = show ? '' : 'none';
+      if (show) anyVisible = true;
+    });
+    sections.forEach(function (s) {
+      var vis = Array.prototype.some.call(s.querySelectorAll('.acard'), function (c) { return c.style.display !== 'none'; });
+      s.style.display = vis ? '' : 'none';
+    });
+    if (noResults) noResults.style.display = anyVisible ? 'none' : 'block';
+  });
+})();
+</script>
+</body>
+</html>

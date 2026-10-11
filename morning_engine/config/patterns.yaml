@@ -1,0 +1,29 @@
+# =============================================================================
+# CROSS-ASSET PATTERN MEMORY — NEUTRAL DEFAULT / TEMPLATE
+# =============================================================================
+# This file is pasted verbatim into the report prompts as the model's pattern
+# memory. It ships EMPTY: the structure is kept, the values are not. Operators
+# (or agents curating on their behalf) fill it with cross-asset patterns they
+# have actually observed, and prune the ones that stop holding. Leave it empty
+# and the model derives patterns from the data alone.
+#
+# Entry shape for active_patterns:
+#   - pattern: "short statement of the observed relationship"
+#     first_observed: "YYYY-MM"
+#     last_confirmed: "YYYY-MM-DD"
+#     confidence: high | medium | low
+#     assets: [SYMBOL, ...]
+#     contrarian: true            # optional
+#     note: "supporting numbers"  # optional
+#
+# key_levels maps a symbol to a mapping of named levels, e.g.
+#   BTC: { support: 0, resistance: 0 }
+# =============================================================================
+
+active_patterns: []
+
+# What the analyst keeps repeating across reports (list of short strings).
+recurring_themes: []
+
+# Levels mentioned across multiple reports (symbol -> named levels).
+key_levels: {}

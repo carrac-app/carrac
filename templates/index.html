@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- App version — used by _loadScript() to cache-bust lazily-injected JS modules -->
+    <meta name="app-version" content="{{ app_version }}">
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0d1117">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carrac">
+    <meta name="description" content="Carrac — AI-enhanced trading platform with 70+ indicators, custom formulas, backtester, trade plays, and a journal where you own your data.">
+    <meta name="robots" content="noindex">
+    <!-- Catch static asset (script/stylesheet) load
+         failures as early as possible in load order — before any other
+         <link>/<script> resource tag below — so a failure that breaks
+         everything downstream of it (e.g. kline-drawings.js failing to load,
+         its globals never existing, the next tap throwing a ReferenceError
+         unless the reader guards it with typeof) still leaves a trace. Capture phase is required: resource load errors
+         (script/link/img) don't bubble, only capture. Kept dependency-free
+         and tiny since it must survive being the very first thing that runs. -->
+    <script nonce="{{ csp_nonce }}">
+    (function() {
+        window.addEventListener('error', function(e) {
+            var t = e.target;
+            if (!t || (t.tagName !== 'SCRIPT' && t.tagName !== 'LINK')) return;
+            var src = t.src || t.href || '';
+            if (typeof window.carracLog === 'function') {
+                // Normal case: stale-tab-recovery.js has already defined the
+                // wrapper (its own ring buffer, cap, and debug echo — see its
+                // _clog()).
+                window.carracLog('assets', 'load-failed', { src: src });
+            } else {
+                // Early case: this listener is registered before ANY other
+                // script runs, so most real failures (any of the ~50 deferred
+                // JS files, or even sentry.bundle.min.js itself) fire before
+                // stale-tab-recovery.js has had a chance to define
+                // window.carracLog (it is the second-to-last chart-app script
+                // to run). Write straight to the ring buffer it wraps —
+                // window.__carracLog — instead of silently dropping the event.
+                // Its later `window.__carracLog = window.__carracLog || []`
+                // preserves whatever this already wrote.
+                try {
+                    window.__carracLog = window.__carracLog || [];
+                    window.__carracLog.push({ ts: Date.now(), cat: 'assets', msg: 'load-failed', data: { src: src } });
+                    if (window.__carracLog.length > 250) window.__carracLog.splice(0, window.__carracLog.length - 250);
+                } catch (_) {}
+            }
+            if (window.__carracSentryReady && typeof Sentry !== 'undefined' && typeof Sentry.captureMessage === 'function') {
+                // Post-init failure (e.g. a lazily-loaded module such as
+                // kline-drawings.js/carrac-indicator-pack.js) — Sentry has a
+                // client attached to the scope by now, so per-src reporting
+                // reaches Bugsink as before.
+                Sentry.captureMessage('static asset failed to load: ' + src, 'error');
+            } else {
+                // Sentry.captureMessage() before
+                // Sentry.init() has run is a silent no-op — the vendored SDK's
+                // Scope.captureMessage bails out with `if (!this.U) return`
+                // (no client attached yet) and never creates an event; on prod
+                // even its own console.warn is invisible (terser strips
+                // console.* — see the Makefile minify step). Sentry.init()
+                // only runs in the DOMContentLoaded handler below, but THIS
+                // listener is capture-phase and registered before any other
+                // script, so it fires for every deferred <script>/<link> that
+                // fails DURING PARSING — i.e. exactly the failures most worth
+                // knowing about (a script that never loads otherwise surfaces only
+                // as a downstream ReferenceError). Queue the src;
+                // the DOMContentLoaded handler flushes this as ONE event right
+                // after Sentry.init(), so a lost block of N becomes one issue
+                // naming all N srcs instead of N silently-dropped calls.
+                try {
+                    window.__carracAssetFailQueue = window.__carracAssetFailQueue || [];
+                    window.__carracAssetFailQueue.push(src);
+                } catch (_) {}
+            }
+        }, true);
+    })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v={{ cache_version('css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/carrac-overhaul.css') }}?v={{ cache_version('css/carrac-overhaul.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/radar.css') }}?v={{ cache_version('css/radar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/carrac-details.css') }}?v={{ cache_version('css/carrac-details.css') }}" nonce="{{ csp_nonce | default('') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+    <title>Carrac</title>
+    {% if sentry_browser_dsn %}
+    <!-- Error tracking (Sentry-compatible endpoint via tunnel) — SDK vendored
+         locally (no third-party CDN); init runs once the script has loaded.
+         Rendered only when SENTRY_BROWSER_DSN is configured. -->
+    <script src="{{ url_for('static', filename='js/vendor/sentry.bundle.min.js') }}?v={{ cache_version('js/vendor/sentry.bundle.min.js') }}" defer nonce="{{ csp_nonce }}"></script>
+    <script nonce="{{ csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Sentry !== 'undefined') {
+        var _origWarn = console.warn;
+        console.warn = function(){};
+        try {
+            Sentry.init({
+                dsn: {{ sentry_browser_dsn | tojson }},
+                tunnel: "/api/error-tunnel",
+                // Same release tag as the Python SDK, so the weekly
+                // Bugsink review can tell a pre-promote browser event from a
+                // post-promote one (they all read release '' before this).
+                release: "{{ app_version }}",
+                sendDefaultPii: false,
+                tracesSampleRate: 0,
+            });
+            // Attach the logged-in user id and tier (never the email) so an
+            // exception can be tied to an account without storing personal data.
+            {% if session.get('user_id') %}
+            try {
+                Sentry.setUser({
+                    id: "{{ session['user_id'] }}",
+                    {% if session.get('tier') %}tier: "{{ session['tier'] }}",{% endif %}
+                });
+            } catch(e) {}
+            {% endif %}
+            // a client is attached now — later failures
+            // (lazy loads) go straight through the per-src path above instead
+            // of queuing.
+            window.__carracSentryReady = true;
+            // Flush anything the capture-phase listener above queued while
+            // Sentry had no client yet (pre-init parse-time asset failures) as
+            // ONE event naming every failed src, instead of the silent no-ops
+            // those individual captureMessage calls would otherwise have been.
+            if (window.__carracAssetFailQueue && window.__carracAssetFailQueue.length) {
+                var _carracFailedSrcs = window.__carracAssetFailQueue;
+                window.__carracAssetFailQueue = [];
+                try {
+                    // One constant title so Bugsink groups every such load
+                    // into one issue (one title, many sources); the srcs ride in
+                    // extra, which the event page still shows.
+                    Sentry.captureMessage(
+                        'static assets failed to load before Sentry init',
+                        { level: 'error', tags: { kind: 'asset_load_failed', count: _carracFailedSrcs.length },
+                          extra: { srcs: _carracFailedSrcs.join(', ') } }
+                    );
+                } catch (e) {}
+            }
+        } catch(e) {}
+        console.warn = _origWarn;
+    }
+    });
+    </script>
+    {% endif %}
+    {% include '_posthog_init.html' %}
+    <style>
+        /* Hide dashboard briefly in PWA standalone — chart opens immediately, prevents flash */
+        @media all and (display-mode: standalone) {
+            body:not(.pwa-ready) .container { visibility: hidden; }
+            body:not(.pwa-ready) { background: #0d1117; }
+        }
+        .fe-preview-status { font-size:12px;margin-bottom:4px;min-height:18px; }
+        .fe-preview-status.fe-error { color:#f85149; }
+        .fe-preview-status.fe-ok { color:#8b949e; }
+        .fe-new-btn:hover { opacity:0.9 !important; border-color:#58a6ff !important; }
+        .fe-row { margin-bottom:6px; padding:8px; background:#0d1117; border:1px solid #21262d; border-radius:6px; }
+        .fe-row:focus-within { border-color:#388bfd; }
+        .fe-row-formula { width:100%; padding:6px 8px; background:#161b22; border:1px solid #30363d; border-radius:4px; color:#e6edf3; font-family:monospace; font-size:13px; resize:none; margin-bottom:6px; tab-size:2; }
+        .fe-row-controls { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        .fe-row-style, .fe-row-pane { padding:4px 6px; background:#161b22; border:1px solid #30363d; border-radius:4px; color:#e6edf3; font-size:12px; }
+        .fe-row-color { width:28px; height:24px; padding:0; border:1px solid #30363d; border-radius:4px; cursor:pointer; background:none; }
+        .fe-row-remove { width:24px; height:24px; background:none; border:1px solid transparent; border-radius:4px; color:#484f58; cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
+        .fe-row-remove:hover { color:#f85149; border-color:#f85149; }
+        #fe-add-row { padding:6px 12px; background:#21262d; border:1px solid #30363d; border-radius:6px; color:#8b949e; cursor:pointer; font-size:12px; margin-bottom:12px; }
+        #fe-add-row:hover { border-color:#58a6ff; color:#e6edf3; }
+        /* Keep the "New formula" button visible on mobile so users
+           see the feature exists. Tapping it triggers a desktop-only toast
+           from custom-indicators.js. The editor modal itself stays hidden
+           because it doesn't fit on a phone viewport. */
+        @media (max-width: 768px) { #formula-editor-modal { display:none !important; } }
+        /* iOS standalone (navigator.standalone) — class set by inline script below */
+        body.pwa-ios-standalone:not(.pwa-ready) .container { visibility: hidden; }
+        body.pwa-ios-standalone:not(.pwa-ready) { background: #0d1117; }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <script nonce="{{ csp_nonce }}">if(window.navigator.standalone)document.body.classList.add('pwa-ios-standalone');</script>
+    <main id="main-content">
+    <div class="container">
+        <!-- Apply split layout at first paint (desktop) so the app never paints
+             in normal-flow "boxed" state and then jumps to full-viewport when
+             initSplitLayout() runs at window.onload. Mirrors exactly what the JS
+             adds, so the later JS call is an idempotent no-op. Mobile (<=768px)
+             keeps its existing onload behaviour. -->
+        <script nonce="{{ csp_nonce }}">if(window.innerWidth>768){document.body.classList.add('split-active');document.currentScript.parentElement.classList.add('split-active');}</script>
+        <script nonce="{{ csp_nonce }}">try{if(localStorage.getItem('lastViewedAsset')||sessionStorage.getItem('klineOpenSymbol'))document.body.classList.add('has-restored-chart');}catch(e){}</script>
+        <!-- Unified Header Bar -->
+        <div class="action-bar" id="sentiment-bar" role="banner">
+            <div class="action-bar-left">
+                <a href="/" class="dashboard-title" aria-label="Carrac home"><span class="wordmark">[Carrac]</span><span class="brand-mark mark-mobile">C<sup>4</sup></span></a>
+            </div>
+            <div class="action-bar-center ticker-bar" id="ticker-container" aria-live="polite" aria-atomic="false">
+                <div class="ticker-track" id="ticker-track">
+                    <span class="ticker-item"><span class="ticker-label" style="color:#8b949e">Loading ticker...</span></span>
+                </div>
+            </div>
+            <button class="ticker-config-btn" id="ticker-config-btn" aria-label="Ticker settings" title="Configure ticker">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <div class="action-bar-right">
+                <span id="conn-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b949e;cursor:default;flex-shrink:0;align-self:center;" title="Live data: initializing" aria-label="Connection status"></span>
+                {% set _tier = session.get('tier', 'free') %}
+                {% if payments_enabled and _tier in ('free', 'member') %}
+                <button data-action="openPremiumModal" class="upsell-btn upsell-btn--{{ _tier }}" data-current-tier="{{ _tier }}">{% if _tier == 'member' %}Upgrade to Premium{% else %}Become Premium{% endif %}</button>
+                {% endif %}
+                <!-- Mobile asset search (desktop uses the Space key) -->
+                <button class="action-btn mobile-list-search-btn" id="mobile-list-search-btn" aria-label="Search assets" title="Search assets"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="mls-label">Search assets…</span></button>
+                <!-- More dropdown -->
+                <div class="more-menu-wrapper">
+                    <button class="action-btn more-menu-btn" id="more-menu-btn" data-action="toggleMoreMenu" aria-label="Menu" aria-expanded="false" aria-haspopup="true">☰</button>
+                    <div class="more-menu-dropdown" id="more-menu-dropdown" role="menu" aria-label="Main menu">
+                        <div class="more-menu-user">
+                            <div class="menu-avatar" aria-hidden="true">{{ (session.get('display_name') or session.get('email') or 'U')[0]|upper }}</div>
+                            <div class="more-menu-user-name">{{ session.get('display_name', '') }}</div>
+                            <div class="more-menu-user-email">{{ session.get('email', '') }}</div>
+                            <div class="more-menu-user-tier-line">User tier: <span class="more-menu-user-tier tier-{{ session.get('tier', 'free') }}" id="menu-tier-label">{{ session.get('tier', 'free') }}</span>{% if session.get('tier') == 'premium' %} <span class="tier-check" aria-hidden="true">✓</span>{% endif %}
+                                {% if session.get('is_admin') %}
+                                <label for="admin-tier-switch" class="sr-only">Change user tier</label>
+                                <select id="admin-tier-switch" class="more-menu-admin-tier-switch" aria-label="Change user tier">
+                                    <option value="admin" {% if session.get('tier') == 'admin' %}selected{% endif %}>admin</option>
+                                    <option value="premium" {% if session.get('tier') == 'premium' %}selected{% endif %}>premium</option>
+                                    <option value="member" {% if session.get('tier') == 'member' %}selected{% endif %}>member</option>
+                                    <option value="tester" {% if session.get('tier') == 'tester' %}selected{% endif %}>tester</option>
+                                    <option value="free" {% if session.get('tier') == 'free' %}selected{% endif %}>free</option>
+                                </select>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="more-menu-section-label">Your space</div>
+                        {# Mirrors the /desk gate in dashboard/routes.py exactly — a link
+                           shown where the route 404s is worse than no link at all. #}
+                        {% if desk_enabled or session.get('is_admin') %}
+                        <a href="/desk" class="more-menu-item">Trader’s Desk</a>
+                        {% endif %}
+                        <a href="/journal" class="more-menu-item">Journal</a>
+                        <a href="/portfolio" class="more-menu-item">Portfolio</a>
+                        <a href="/report/morning" class="more-menu-item">Morning Report</a>
+
+                        {% if session.get('tier') in ('tester', 'premium', 'admin') or session.get('is_admin') %}
+                        <div class="more-menu-section-label">Tools</div>
+                        {% if session.get('tier') in ('tester', 'premium', 'admin') %}
+                        <a href="{{ url_for('dashboard.intelligence_page') }}" class="more-menu-item">Intelligence</a>
+                        {% endif %}
+                        {% if session.get('is_admin') %}
+                        <a href="{{ url_for('admin.admin_panel') }}" class="more-menu-item more-menu-admin">Admin Panel</a>
+                        {% endif %}
+                        {% if session.get('tier') in ('tester', 'admin') %}
+                        <a href="/design-system" class="more-menu-item" target="_blank">Design System</a>
+                        {% endif %}
+                        {% endif %}
+
+                        <div class="more-menu-section-label">Help</div>
+                        <a href="/guide" class="more-menu-item" target="_blank">User Guide</a>
+                        <button class="more-menu-item more-menu-install" data-action="showInstallModalAndClose" type="button">Try Mobile / Install App</button>
+                        {% if config.get('DISCORD_INVITE_URL') %}<a href="{{ config.get('DISCORD_INVITE_URL') }}" target="_blank" rel="noopener noreferrer" class="more-menu-item more-menu-discord">Discord</a>{% endif %}
+                        <button class="more-menu-item" data-action="openFeedbackAndClose">Feedback{% if new_feedback_count %}<span class="more-menu-badge">{{ new_feedback_count }}</span>{% endif %}</button>
+
+                        <div class="more-menu-section-label">Account</div>
+                        <a href="/settings" class="more-menu-item">Settings</a>
+                        <form method="POST" action="{{ url_for('auth.logout') }}" class="more-menu-logout-form js-logout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="more-menu-item more-menu-logout">Logout</button></form>
+
+                        <div class="more-menu-footer">
+                            <a href="{{ url_for('legal.disclaimer') }}" class="more-menu-footer-link">Not financial advice</a>
+                            <button type="button" id="manage-cookie-prefs" class="more-menu-footer-link" style="background:none;border:none;padding:0;margin:0;cursor:pointer;">Manage cookie preferences</button>
+                            <a href="/changelog" class="more-menu-footer-link more-menu-version">v{{ app_version }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Split Layout Wrapper -->
+        <div class="split-layout" id="split-layout">
+
+            <!-- LEFT: Persistent chart area (desktop) + compact mobile hint -->
+            <div class="chart-area" id="chart-area">
+                <div id="chart-area-content">
+                    <!-- Desktop empty state = the first-run guide.
+                         Hidden pre-paint via body.has-restored-chart when a
+                         chart is about to auto-restore; destroyed outright the
+                         first time a chart opens (buildChartPanelHTML). -->
+                    <div class="chart-placeholder chart-placeholder-desktop" id="chart-placeholder">
+                        <div class="chart-placeholder-inner">
+                            <h3>Welcome to Carrac</h3>
+                            <ol class="placeholder-steps">
+                                <li><b>Pick an asset</b> from the panel on the right — or press <kbd>Space</kbd> to search any symbol.</li>
+                                <li><b>Read the chart.</b> Scores, signals and key levels are computed for you on every timeframe.</li>
+                                <li><b>Bring your own AI.</b> Connect Carrac to Claude or Cursor and it can read this same chart &mdash; see <a href="/integrations">Integrations</a>.</li>
+                            </ol>
+                            <p class="placeholder-footnote">Press <kbd>?</kbd> anytime for all keyboard shortcuts.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drag divider -->
+            <div class="panel-divider" id="panel-divider"></div>
+
+            <!-- RIGHT: Tabbed panel -->
+            <div class="right-panel" id="right-panel">
+                <!-- Vertical view mode strip (left edge) -->
+                <div class="view-mode-strip" id="view-mode-strip" role="tablist" aria-label="View modes" aria-orientation="vertical">
+                    <button class="view-mode-btn" data-mode="minimal" title="Lite view" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-screener">Lite</button>
+                    <button class="view-mode-btn active" data-mode="consensio" title="Consensio view" role="tab" aria-selected="true" tabindex="0" aria-controls="tab-screener">Cons.</button>
+                    <button class="view-mode-btn" data-mode="full" title="Detail view" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-screener">Detail</button>
+                    <button class="view-mode-btn" data-mode="news" title="News (N)" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-news-view"><i data-lucide="rss" style="width:12px;height:12px;" aria-hidden="true"></i> News</button>
+                    <button class="view-mode-btn" data-mode="report" title="Report view" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-report-view">Report</button>
+                    <button class="view-mode-btn" data-mode="plays" title="Plays (P)" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-plays-view"><i data-lucide="target" style="width:12px;height:12px;" aria-hidden="true"></i> Plays</button>
+                    <button class="view-mode-btn" data-mode="journal" title="Trade Journal" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-journal-view"><i data-lucide="book-open" style="width:12px;height:12px;" aria-hidden="true"></i> Journal</button>
+                    <button class="view-mode-btn" data-mode="portfolio" title="Portfolio" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-portfolio-view"><i data-lucide="layers" style="width:12px;height:12px;" aria-hidden="true"></i> Portfolio</button>
+                    <button class="panel-collapse-toggle" id="panel-collapse-btn" data-action="toggleRightPanel" title="Collapse panel (E)" aria-label="Collapse panel"><i data-lucide="chevrons-right" style="width:14px;height:14px"></i></button>
+                </div>
+
+                <!-- Panel tabs (spans full width above strip+content) -->
+                <div class="panel-tabs" id="panel-tabs" role="tablist" aria-label="Asset categories">
+                    <button class="panel-tab active" data-tab="watchlist" role="tab" aria-selected="true" tabindex="0" aria-controls="tab-screener">Watchlist</button>
+                    <button class="panel-tab" data-tab="crypto" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-screener">Crypto</button>
+                    <button class="panel-tab" data-tab="misc" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-screener">TradFi</button>
+                    <button class="panel-tab" data-tab="screener" role="tab" aria-selected="false" tabindex="-1" aria-controls="tab-screener">All</button>
+                </div>
+                <div class="panel-actions-row" id="panel-actions-row">
+                    <button class="collapse-toggle-btn" id="panel-filter-toggle" title="Filter assets" aria-label="Filter assets by symbol or name" aria-expanded="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+                    <input type="search" id="panel-quick-filter" class="panel-quick-filter collapsed" placeholder="Filter&hellip;" autocomplete="off" spellcheck="false" aria-label="Filter assets by symbol or name">
+                    <button class="collapse-toggle-btn" id="panel-help-btn" data-action="openHelpModal" title="Column and badge help" aria-label="Column and badge help">&#9432;</button>
+                    <button class="collapse-toggle-btn" id="groups-edit-btn" data-action="showAssetGroupEditor" title="Watchlist groups" aria-label="Edit watchlist groups" style="display:none;">&#9998;</button>
+                    <button class="collapse-toggle-btn" id="collapse-toggle" data-action="toggleCollapseAll" title="Toggle all sections" aria-label="Toggle all sections">&#9662;</button>
+                    <div class="panel-settings-wrapper">
+                        <button class="panel-settings-btn" id="filter-settings-btn" data-action="toggleFilterSettings" title="Settings" aria-label="Filter and display settings">&#9881;</button>
+                        <div class="panel-settings-dropdown" id="filter-settings-panel" style="display:none;">
+                            <button class="panel-settings-item" id="refresh-btn" data-action="manualRefresh">&#8635; Refresh data</button>
+                            <div class="panel-settings-divider"></div>
+                            <div class="panel-settings-section">
+                                <span class="filter-label">Columns:</span>
+                                <div class="custom-filter-wrapper">
+                                    <button class="filter-btn view-filter-btn" id="columns-filter-btn" data-action="toggleColumnsFilter">
+                                        Toggle <span class="dropdown-arrow">▼</span>
+                                    </button>
+                                    <div class="custom-filter-dropdown" id="columns-filter-dropdown">
+                                        <div class="filter-group">
+                                            <label><input type="checkbox" id="view-name" data-change="toggleColumnVisibility" data-column="name"> Name</label>
+                                            <label><input type="checkbox" id="view-changeval" data-change="toggleColumnVisibility" data-column="changeval"> Chg $</label>
+                                            <label><input type="checkbox" id="view-wrsi" checked data-change="toggleColumnVisibility" data-column="wrsi"> W-RSI</label>
+                                            <label><input type="checkbox" id="view-cpr" checked data-change="toggleColumnVisibility" data-column="cpr"> CPR</label>
+                                            <label><input type="checkbox" id="view-bb" checked data-change="toggleColumnVisibility" data-column="bb"> BB</label>
+                                            <label><input type="checkbox" id="view-trend4h" checked data-change="toggleColumnVisibility" data-column="trend4h"> Structure</label>
+                                            <label><input type="checkbox" id="view-macd" checked data-change="toggleColumnVisibility" data-column="macd"> MACD</label>
+                                            <label><input type="checkbox" id="view-adx" checked data-change="toggleColumnVisibility" data-column="adx"> ADX</label>
+                                            <label><input type="checkbox" id="view-atr" checked data-change="toggleColumnVisibility" data-column="atr"> ATR%</label>
+                                            <label><input type="checkbox" id="view-vol" checked data-change="toggleColumnVisibility" data-column="vol"> Volume</label>
+                                            <label><input type="checkbox" id="view-signals" checked data-change="toggleColumnVisibility" data-column="signals"> Signals</label>
+                                            <div class="filter-group-header" style="margin-top:6px;font-size:10px;color:#8b949e;">Extended</div>
+                                            <label><input type="checkbox" id="view-ichimoku" data-change="toggleColumnVisibility" data-column="ichimoku"> Ichimoku</label>
+                                            <label><input type="checkbox" id="view-supertrend" data-change="toggleColumnVisibility" data-column="supertrend"> SuperTrend</label>
+                                            <label><input type="checkbox" id="view-psar" data-change="toggleColumnVisibility" data-column="psar"> PSAR</label>
+                                            <label><input type="checkbox" id="view-emacross" data-change="toggleColumnVisibility" data-column="emacross"> EMA Cross</label>
+                                            <label><input type="checkbox" id="view-alligator" data-change="toggleColumnVisibility" data-column="alligator"> Alligator</label>
+                                            <label><input type="checkbox" id="view-stochrsi" data-change="toggleColumnVisibility" data-column="stochrsi"> Stoch RSI</label>
+                                            <label><input type="checkbox" id="view-ttmsqueeze" data-change="toggleColumnVisibility" data-column="ttmsqueeze"> TTM Squeeze</label>
+                                            <label><input type="checkbox" id="view-donchian" data-change="toggleColumnVisibility" data-column="donchian"> Donchian</label>
+                                            <label><input type="checkbox" id="view-nr7" data-change="toggleColumnVisibility" data-column="nr7"> NR7</label>
+                                            <label><input type="checkbox" id="view-bbwpct" data-change="toggleColumnVisibility" data-column="bbwpct"> BBW %ile</label>
+                                            <label><input type="checkbox" id="view-atrpctrank" data-change="toggleColumnVisibility" data-column="atrpctrank"> ATR %ile</label>
+                                            <label><input type="checkbox" id="view-obv" data-change="toggleColumnVisibility" data-column="obv"> OBV</label>
+                                            <label><input type="checkbox" id="view-fvg" data-change="toggleColumnVisibility" data-column="fvg"> FVG</label>
+                                            <label><input type="checkbox" id="view-vplevels" data-change="toggleColumnVisibility" data-column="vplevels"> VP Levels</label>
+                                            <label><input type="checkbox" id="view-rsidiv" data-change="toggleColumnVisibility" data-column="rsidiv"> RSI Div</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel-settings-section">
+                                <span class="filter-label">Signals:</span>
+                                <div class="custom-filter-wrapper">
+                                    <button class="filter-btn custom-filter-btn" id="custom-filter-btn" data-action="toggleCustomFilter">
+                                        Filter <span class="dropdown-arrow">▼</span>
+                                        <span class="custom-filter-count" id="custom-filter-count"></span>
+                                    </button>
+                                    <div class="custom-filter-dropdown" id="custom-filter-dropdown">
+                                        <div class="filter-actions">
+                                            <button class="filter-action-btn" data-action="selectAllCustomFilter">Select All</button>
+                                            <button class="filter-action-btn" data-action="clearCustomFilter">Clear All</button>
+                                        </div>
+                                        <div class="filter-group">
+                                            <div class="filter-group-header">Alerts</div>
+                                            <label><input type="checkbox" value="ema_squeeze" data-change="updateCustomFilter"> SQZ (EMA Squeeze)</label>
+                                            <label><input type="checkbox" value="v_cpr" data-change="updateCustomFilter"> V-CPR (Vacuum)</label>
+                                            <label><input type="checkbox" value="near_s3" data-change="updateCustomFilter"> S3 (Support)</label>
+                                            <label><input type="checkbox" value="near_r3" data-change="updateCustomFilter"> R3 (Resistance)</label>
+                                        </div>
+                                        <div class="filter-group">
+                                            <div class="filter-group-header">Divergences</div>
+                                            <label><input type="checkbox" value="divergence" data-change="updateCustomFilter"> TF-DIV (Timeframe)</label>
+                                            <label><input type="checkbox" value="rsi_bull_div" data-change="updateCustomFilter"> RSI&#8593; (Bullish)</label>
+                                            <label><input type="checkbox" value="rsi_bear_div" data-change="updateCustomFilter"> RSI&#8595; (Bearish)</label>
+                                            <label><input type="checkbox" value="rsi_hidden_bull_div" data-change="updateCustomFilter"> H-RSI&#8593; (Hidden Bull)</label>
+                                            <label><input type="checkbox" value="rsi_hidden_bear_div" data-change="updateCustomFilter"> H-RSI&#8595; (Hidden Bear)</label>
+                                            <label><input type="checkbox" value="structure_bearish" data-change="updateCustomFilter"> STR&#8595; (Structure Bear)</label>
+                                            <label><input type="checkbox" value="structure_bullish" data-change="updateCustomFilter"> STR&#8593; (Structure Bull)</label>
+                                        </div>
+                                        <div class="filter-group">
+                                            <div class="filter-group-header">Conditions</div>
+                                            <label><input type="checkbox" value="tightening" data-change="updateCustomFilter"> TGT (EMA Ribbon Tightening)</label>
+                                            <label><input type="checkbox" value="rsi_oversold" data-change="updateCustomFilter"> RSI&lt;30 (Oversold)</label>
+                                            <label><input type="checkbox" value="rsi_overbought" data-change="updateCustomFilter"> RSI&gt;70 (Overbought)</label>
+                                            <label><input type="checkbox" value="direction_change" data-change="updateCustomFilter"> CC (Consensio Change)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="group-editor-popup" id="asset-group-editor" style="display:none;"></div>
+
+                <!-- Content area (filter + table) -->
+                <div class="panel-content-area">
+
+                <div class="panel-tab-content active" id="tab-screener" role="tabpanel">
+
+        <!-- Refresh Loading Indicator (above watchlist) -->
+        <div id="refresh-loading" class="refresh-loading" style="display: none;" role="status" aria-live="polite">
+            <div class="progress-container">
+                <div class="progress-bar" id="refresh-progress-bar"></div>
+            </div>
+            <div class="progress-phase" id="refresh-progress-phase">Refreshing...</div>
+        </div>
+
+        <!-- Watchlist Section -->
+        <div class="watchlist-section" id="watchlist-section" style="display: none;">
+            <div class="watchlist-header" data-action="toggleWatchlistCollapse" role="button" tabindex="0">
+                <button class="watchlist-collapse-btn" id="watchlist-collapse-btn" title="Collapse/Expand" aria-label="Collapse or expand watchlist" aria-expanded="true">▼</button>
+                <span style="font-size: 1.2em;">&#9733;</span>
+                <h2>Watchlist</h2>
+                <span class="watchlist-count" id="watchlist-count">0</span>
+            </div>
+            <div id="watchlist-content">
+                <!-- Dynamically generated group content -->
+            </div>
+        </div>
+
+        <div id="loading" class="loading" role="status" aria-live="polite">
+            <div class="loading-text">Loading market data...</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="loading-progress-bar"></div>
+            </div>
+            <div class="progress-phase" id="loading-progress-phase">Connecting...</div>
+        </div>
+        <div id="error" class="error" style="display: none;" role="alert" aria-live="assertive"></div>
+        <div class="table-wrapper" id="table-wrapper" style="display: none;">
+            <table id="data-table" role="table" aria-label="Market data">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="symbol" scope="col">Symbol</th>
+                        <th class="sortable name-col" data-sort="name" scope="col">Name</th>
+                        <th class="sortable price" data-sort="price" scope="col">Price</th>
+                        <th class="sortable change-col" data-sort="change" scope="col">Chg%</th>
+                        <th class="change-value-col" scope="col">Chg $</th>
+                        <th class="sortable consensio-col" data-sort="consensio" title="Consensio MA alignment — 0-9 positions across 1D/3D/1W (9/9 = full bull, 0/9 = full bear)" scope="col">Consensio</th>
+                        <th class="sortable signal-1d-col" data-sort="signal_1d" title="Per-timeframe Consensio signal (-3 to +3)" scope="col">1D</th>
+                        <th class="sortable signal-3d-col" data-sort="signal_3d" title="Per-timeframe Consensio signal (-3 to +3)" scope="col">3D</th>
+                        <th class="sortable signal-1w-col" data-sort="signal_1w" title="Per-timeframe Consensio signal (-3 to +3)" scope="col">1W</th>
+                        <th class="sortable rsi-col" data-sort="rsi" title="Weekly RSI (14)" scope="col">W-RSI</th>
+                        <th class="sortable cpr-col" data-sort="cpr" title="Monthly CPR Zone (TC/BC/CP levels)" scope="col">CPR</th>
+                        <th class="sortable bb-col" data-sort="bb" title="Bollinger Band Width vs 60-day average" scope="col">BB</th>
+                        <th class="sortable ema-ribbon-col" data-sort="ema_ribbon" title="EMA 30/60 trend — price Above / Below / Inside the ribbon" scope="col">EMA Ribbon</th>
+                        <th class="sortable changed-col" data-sort="changed" title="When the EMA Ribbon trend last flipped" scope="col">Changed</th>
+                        <th class="sortable structure-col" data-sort="structure" title="Daily market structure (HH/HL = Uptrend, LH/LL = Downtrend)" scope="col">Structure</th>
+                        <th class="sortable macd-col" data-sort="macd" title="MACD histogram direction" scope="col">MACD</th>
+                        <th class="sortable adx-col" data-sort="adx" title="ADX trend strength" scope="col">ADX</th>
+                        <th class="sortable atr-col" data-sort="atr" title="ATR as percentage of price" scope="col">ATR%</th>
+                        <th class="sortable vol-col" data-sort="vol" title="Volume vs 20-bar average" scope="col">Vol</th>
+                        <th class="sortable signals-col" data-sort="signals" title="Signal badges — hover a badge for its meaning" scope="col">Signals</th>
+                        <th class="ichimoku-col" title="Ichimoku cloud position + TK cross" scope="col">Ichi</th>
+                        <th class="supertrend-col" title="SuperTrend direction (* = flip)" scope="col">STrend</th>
+                        <th class="psar-col" title="Parabolic SAR direction (* = flip)" scope="col">PSAR</th>
+                        <th class="emacross-col" title="EMA 9/21 cross state + bars" scope="col">EMA-X</th>
+                        <th class="alligator-col" title="Bill Williams Alligator state" scope="col">Allig</th>
+                        <th class="stochrsi-col" title="Stochastic RSI K/D" scope="col">StRSI</th>
+                        <th class="ttmsqueeze-col" title="TTM Squeeze active + momentum" scope="col">Sqz</th>
+                        <th class="donchian-col" title="Donchian Channel breakout" scope="col">Donch</th>
+                        <th class="nr7-col" title="Narrowest Range 7 bars" scope="col">NR7</th>
+                        <th class="bbwpct-col" title="Bollinger Width percentile rank" scope="col">BBW%</th>
+                        <th class="atrpctrank-col" title="ATR percentile rank" scope="col">ATR%R</th>
+                        <th class="obv-col" title="On-Balance Volume trend + divergence" scope="col">OBV</th>
+                        <th class="fvg-col" title="Fair Value Gaps (bullish/bearish)" scope="col">FVG</th>
+                        <th class="vplevels-col" title="Volume Profile POC level" scope="col">VP</th>
+                        <th class="rsidiv-col" title="RSI Divergence (daily/weekly)" scope="col">RSI-D</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+                </div><!-- /tab-screener -->
+
+                    <div class="cd-scrim" id="cd-scrim" hidden></div>
+                    <aside class="cd-drawer" id="cd-drawer" aria-hidden="true"><div class="cd-drawer-inner" id="cd-drawer-body"></div></aside>
+
+                <!-- Morning report view (hidden, shown by Report mode) — editorial mini-cockpit -->
+                <div class="panel-report-view ed-scope" id="panel-report-view" role="tabpanel" style="display: none;">
+                    <div class="pbody" id="panel-report-content">
+                        <!-- JS (split-layout.js:loadPanelReport) populates the editorial mini-cockpit -->
+                    </div>
+                </div>
+
+                <!-- AI Panel view (hidden, shown by AI mode) -->
+                <!-- Journal Panel view (hidden, shown by Journal mode) -->
+                <div class="panel-journal-view" id="panel-journal-view" role="tabpanel" style="display: none;">
+                    <!-- Header: title + stats -->
+                    <div class="jp-header">
+                        <span class="jp-title">Journal</span>
+                        <span class="jp-stats" id="journal-stats-bar"></span>
+                    </div>
+
+                    <!-- First-run onboarding (replaces dashboard card while there are no trades) -->
+                    <div class="jp-onboarding" id="jp-onboarding" style="display: none;">
+                        <div class="jp-onboarding-title">Your journal remembers what you won&rsquo;t.</div>
+                        <div class="jp-onboarding-sub">Log a trade and Carrac starts tracking the patterns &mdash; automatically.</div>
+                        <ul class="jp-onboarding-list">
+                            <li>Entry, exit, R-multiple and market context saved at the moment you trade.</li>
+                            <li>An AI grade on setup, execution, exit and discipline once a trade closes.</li>
+                            <li>Streaks, drawdown and win rate &mdash; visible over time, not just per trade.</li>
+                        </ul>
+                        <div class="jp-onboarding-actions">
+                            <button class="jp-btn jp-btn-primary" id="jp-onboarding-log">+ Log your first trade</button>
+                            <button class="jp-btn" id="jp-onboarding-import" title="Convert position drawings from your charts into journal entries">Import from a drawing</button>
+                        </div>
+                        <a href="/journal/guide" class="jp-onboarding-guide">How the journal works &rarr;</a>
+                    </div>
+
+                    <!-- Dashboard card (always visible, above scroll) -->
+                    <div class="jp-dashboard" id="jp-dashboard">
+                        <div class="jp-dash-cols">
+                            <div class="jp-dash-left">
+                                <canvas class="jp-sparkline-canvas" id="jp-sparkline"></canvas>
+                                <div class="jp-mini-cal" id="jp-mini-cal"></div>
+                            </div>
+                            <div class="jp-dash-right">
+                                <div class="jp-live-pnl" id="jp-live-pnl"></div>
+                                <div class="jp-kpi-row" id="jp-kpi-row"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="jp-actions">
+                        <button class="jp-btn jp-btn-primary" id="journal-log-trade">+ Log Trade</button>
+                        <button class="jp-btn" id="journal-import-drawings" title="Import from chart drawings">Import</button>
+                    </div>
+
+                    <!-- Early-days milestone nudge (1-4 trades) -->
+                    <div class="jp-milestone-nudge" id="jp-milestone-nudge" style="display: none;"></div>
+
+                    <!-- Tab bar -->
+                    <div class="jp-tab-bar" id="jp-tab-bar">
+                        <button class="jp-tab active" data-jp-tab="positions">Positions</button>
+                        <button class="jp-tab" data-jp-tab="history">History</button>
+                        <button class="jp-tab" data-jp-tab="tools">Tools</button>
+                    </div>
+
+                    <!-- Scrollable tab content -->
+                    <div class="jp-scroll">
+                        <!-- Positions tab -->
+                        <div class="jp-tab-content active" id="jp-tab-positions">
+                            <div class="jp-section">
+                                <div class="jp-section-title">
+                                    <span class="jp-open-label">Open Positions</span>
+                                    <label class="jp-watch-toggle" title="Enable position health monitoring">
+                                        <input type="checkbox" id="jp-watch-enabled" data-change="togglePositionWatch">
+                                        <span class="jp-watch-slider"></span>
+                                    </label>
+                                </div>
+                                <div id="journal-open-trades" class="journal-trades-list"></div>
+                                <div id="jp-watch-content" class="jp-watch-content"></div>
+                            </div>
+                        </div>
+
+                        <!-- History tab -->
+                        <div class="jp-tab-content" id="jp-tab-history" style="display:none;">
+                            <div class="jp-section jp-section-highlight" id="journal-asset-section" style="display:none;">
+                                <div class="jp-section-title"><span id="journal-asset-label">Asset</span> <span style="color:#484f58;font-weight:400;text-transform:none;">on this chart</span></div>
+                                <div id="journal-asset-trades" class="journal-trades-list"></div>
+                            </div>
+                            <div class="jp-section">
+                                <div class="jp-section-title">Recent Closed <span id="jp-closed-count" class="jp-count"></span></div>
+                                <div id="journal-closed-trades" class="journal-trades-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Tools tab -->
+                        <div class="jp-tab-content" id="jp-tab-tools" style="display:none;">
+                            <div class="jp-section jp-section-tools">
+                                <div class="jp-tools-row">
+                                    <button class="jp-btn" id="journal-toggle-analytics">Analytics</button>
+                                    <select id="journal-analytics-days" class="jp-days-select">
+                                        <option value="7">7d</option>
+                                        <option value="30" selected>30d</option>
+                                        <option value="90">90d</option>
+                                        <option value="365">1y</option>
+                                    </select>
+                                    <span style="flex:1"></span>
+                                    <button class="jp-btn" id="journal-weekly-review">Weekly Review</button>
+                                </div>
+                                <div class="journal-analytics-panel" id="journal-analytics-panel" style="display:none;">
+                                    <div id="journal-analytics-content"></div>
+                                </div>
+                                <div class="journal-kelly-section" id="journal-kelly-section" style="display:none;">
+                                    <div class="jp-section-title">Position Sizing (Kelly)</div>
+                                    <div class="kelly-account-row">
+                                        <label>Account $</label>
+                                        <input type="number" id="kelly-account-size" class="kelly-input" placeholder="10000">
+                                        <label>Kelly</label>
+                                        <select id="kelly-fraction" class="kelly-input kelly-select">
+                                            <option value="15">15% (safe)</option>
+                                            <option value="25" selected>25% (std)</option>
+                                            <option value="50">50% (agg)</option>
+                                        </select>
+                                    </div>
+                                    <div id="kelly-result"></div>
+                                    <div id="kelly-trade-calc" style="display:none;">
+                                        <div class="kelly-trade-row">
+                                            <label>Entry</label><input type="number" id="kelly-entry" class="kelly-input" step="any">
+                                            <label>Stop</label><input type="number" id="kelly-stop" class="kelly-input" step="any">
+                                        </div>
+                                        <div id="kelly-trade-result"></div>
+                                    </div>
+                                </div>
+                                <div id="journal-review-output" class="journal-review-output" style="display:none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Full journal link -->
+                        <div class="jp-section" style="text-align:center;">
+                            <a href="/journal" class="jp-full-link" data-action="openFullJournal">Open Full Journal</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matrix view (hidden, shown by Matrix mode) -->
+                <div class="panel-matrix-view" id="panel-matrix-view" style="display: none;">
+                    <div class="mx-header">
+                        <span class="mx-title">Screening Matrix</span>
+                        <div class="mx-tabs" id="mx-tabs">
+                            <button class="mx-tab active" data-mx-tab="watchlist">Watchlist</button>
+                            <button class="mx-tab" data-mx-tab="all">All</button>
+                        </div>
+                        <button class="mx-refresh" id="mx-refresh-btn" title="Refresh">&#8635;</button>
+                    </div>
+                    <div class="mx-scroll" id="mx-scroll">
+                        <table class="mx-table" id="mx-table">
+                            <thead id="mx-thead"></thead>
+                            <tbody id="mx-tbody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Asset cockpit (replaces table when asset clicked) -->
+                    <div class="mx-cockpit" id="mx-cockpit" style="display:none;">
+                        <div class="mx-cockpit-header">
+                            <button class="mx-back" id="mx-back-btn">&larr; Back</button>
+                            <span class="mx-cockpit-title" id="mx-cockpit-title"></span>
+                        </div>
+                        <div class="mx-cockpit-body" id="mx-cockpit-body"></div>
+                    </div>
+                </div>
+
+                <!-- Plays panel view -->
+                <div class="panel-plays-view" id="panel-plays-view" role="tabpanel" style="display: none;">
+                    <div class="plays-header">
+                        <span class="plays-title">Plays</span>
+                        
+                        <span class="plays-count" id="plays-count"></span>
+                        <button class="plays-new-btn" id="plays-new-btn" title="New Play">+ New</button>
+                    </div>
+                    <div class="plays-content" id="plays-content"></div>
+                </div>
+
+                <!-- News panel view -->
+                <div class="panel-news-view" id="panel-news-view" role="tabpanel" style="display: none;">
+                    <div class="news-panel-header">
+                        <span class="news-panel-title">News</span>
+                        <span class="news-panel-count" id="news-panel-count"></span>
+                        <span class="np-countdown" id="np-countdown" title="Next refresh"></span>
+                        <span style="flex:1"></span>
+                        <span class="np-group-toggle" id="np-group-toggle">
+                            <button class="np-group-btn active" data-group="chrono" title="Chronological">Latest</button>
+                            <button class="np-group-btn" data-group="source" title="Group by source">Source</button>
+                        </span>
+                        <button class="news-panel-font-btn" id="news-font-down" title="Smaller text">A&minus;</button>
+                        <button class="news-panel-font-btn" id="news-font-up" title="Larger text">A+</button>
+                        <button class="news-panel-gear-btn" id="news-panel-gear" title="Feed settings">&#9881;</button>
+                    </div>
+                    <div class="news-panel-content" id="news-panel-content"></div>
+                </div>
+
+                <!-- Portfolio panel view — reuses portfolio.js + portfolio-charts.js,
+                     the same JS that drives the standalone /portfolio page,
+                     so the element ids below must match theirs exactly. -->
+                <div class="panel-portfolio-view" id="panel-portfolio-view" role="tabpanel" style="display: none;">
+                    <div class="pf-panel-header">
+                        <span class="pf-panel-title">Portfolio</span>
+                        <a href="/portfolio" class="pf-panel-fulllink">Full view &rarr;</a>
+                    </div>
+                    <div class="pf-panel-scroll">
+                        <div class="pf-hero">
+                            <div class="pf-tile pf-tile-primary">
+                                <div class="pf-tile-label">Book value</div>
+                                <div class="pf-tile-value" id="pf-book-value">&mdash;</div>
+                                <div class="pf-tile-sub" id="pf-book-split"></div>
+                            </div>
+                            <div class="pf-tile">
+                                <div class="pf-tile-label">Today</div>
+                                <div class="pf-tile-value" id="pf-day-change">&mdash;</div>
+                                <div class="pf-tile-sub">Open positions only</div>
+                            </div>
+                            <div class="pf-tile">
+                                <div class="pf-tile-label">Unrealised</div>
+                                <div class="pf-tile-value" id="pf-unrealized">&mdash;</div>
+                                <div class="pf-tile-sub" id="pf-cost-basis"></div>
+                            </div>
+                            <div class="pf-tile">
+                                <div class="pf-tile-label">Positions</div>
+                                <div class="pf-tile-value" id="pf-position-count">&mdash;</div>
+                            </div>
+                        </div>
+
+                        <div class="pf-excluded" id="pf-excluded" style="display:none;"></div>
+
+                        <!-- Zero-position empty state — every new account on day one.
+                             Toggled by portfolio.js's loadSummary()
+                             alongside #pf-sections below. -->
+                        <div class="pf-empty" id="pf-empty" style="display:none;">
+                            No open positions yet. Log a trade or place a position and it will show up here &mdash; book value, allocation and P&amp;L.
+                        </div>
+
+                        <div id="pf-sections">
+                            <section class="pf-section">
+                                <div class="pf-section-head">
+                                    <h2>Book value</h2>
+                                    <select id="pf-curve-range" class="pf-range">
+                                        <option value="30">30d</option>
+                                        <option value="90" selected>90d</option>
+                                        <option value="365">1y</option>
+                                        <option value="1825">All</option>
+                                    </select>
+                                </div>
+                                <div id="pf-curve" class="pf-chart pf-chart-tall"></div>
+                            </section>
+
+                            <section class="pf-section pf-section-split">
+                                <div>
+                                    <h2>Allocation</h2>
+                                    <div id="pf-donut" class="pf-chart"></div>
+                                </div>
+                                <div>
+                                    <h2>Composition</h2>
+                                    <div id="pf-split" class="pf-chart"></div>
+                                </div>
+                            </section>
+
+                            <section class="pf-section">
+                                <h2>Positions</h2>
+                                <div class="pf-table-wrap">
+                                <table class="pf-table">
+                                    <thead>
+                                        <tr>
+                                            <th data-sort="asset">Asset</th><th data-sort="kind">Type</th>
+                                            <th data-sort="direction">Side</th><th data-sort="size">Size</th>
+                                            <th data-sort="entry_price">Entry</th><th data-sort="current_price">Price</th>
+                                            <th data-sort="book_contribution">Value</th>
+                                            <th data-sort="unrealized_pnl_usd">P&amp;L</th>
+                                            <th data-sort="weight_pct">Weight</th><th data-sort="opened_at">Opened</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pf-table-body"></tbody>
+                                </table>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                </div><!-- /panel-content-area -->
+            </div><!-- /right-panel -->
+        </div><!-- /split-layout -->
+    </div><!-- /container -->
+
+    {% if ai_chat_enabled %}
+    <!-- AI Floating Panel (overlay, outside layout flow) -->
+    <div class="ai-float" id="ai-float">
+        <div class="ai-float-header">
+            <div class="ai-titlebar">
+                <svg class="ai-titlebar-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span class="ai-float-title" id="ai-panel-title">AI Copilot</span>
+                
+                <div class="ai-window-controls">
+                    <button class="ai-win-btn" id="ai-win-minimize" title="Minimize to button" aria-label="Minimize">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,4.5 6,8.5 10,4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg>
+                    </button>
+                    <button class="ai-win-btn" id="ai-win-dock" title="Dock as column" aria-label="Dock/undock">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><polygon points="6,1.5 10.5,6 6,10.5 1.5,6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg>
+                    </button>
+                    <button class="ai-win-btn ai-win-close-btn" id="ai-win-close" title="Close" aria-label="Close">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Persistent non-advice disclaimer in the Copilot drawer header -->
+            <div class="ai-disclaimer-strip" role="note" style="padding:5px 10px;font-size:10.5px;color:#787b86;background:#0a0c10;border-top:1px solid #21262d;border-bottom:1px solid #21262d;text-align:center;letter-spacing:0.02em;">
+                Carrac AI &mdash; market analysis, not financial advice.
+            </div>
+            <div class="ai-toolbar">
+                <button class="ai-tb-btn" id="ai-new-chat" title="New Chat">+ New Chat</button>
+                <button class="ai-tb-btn" id="ai-actions-btn" title="Quick Actions">Actions &#9662;</button>
+                <button class="ai-tb-btn" id="ai-history-btn" title="Recent Chats">History</button>
+                <button class="ai-tb-btn" id="ai-overflow-btn" title="Settings">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                <div class="ai-overflow-menu" id="ai-overflow-menu" style="display:none">
+                    <button class="ai-overflow-item" id="ai-context-btn">Context Composer</button>
+                    <hr>
+                    <button class="ai-overflow-item" id="ai-font-down">A&minus; Smaller text</button>
+                    <button class="ai-overflow-item" id="ai-font-up">A+ Larger text</button>
+                    <hr>
+                    <a class="ai-overflow-item" href="/settings#profile">Trading Profile</a>
+                </div>
+                <span class="ai-panel-bal" id="ai-panel-bal">...</span>
+            </div>
+        </div>
+        <div class="ai-float-context-bar" id="ai-context-bar" title="Click to expand context details"></div>
+        <div class="ai-float-actions" id="ai-quick-actions"></div>
+        <!-- History panel (replaces chat area when shown) -->
+        <div class="ai-history-panel" id="ai-history-panel" style="display:none">
+            <div class="ai-history-header">
+                <button class="ai-history-back" id="ai-history-back">&larr; Back</button>
+                <span class="ai-history-title">Recent Chats</span>
+            </div>
+            <div class="ai-history-list" id="ai-history-list"></div>
+        </div>
+        <!-- Context Composer sub-view (hidden by default) -->
+        <div class="composer-panel" id="composer-panel" style="display:none;">
+            <div class="composer-header">
+                <span class="composer-title">Context Recipe</span>
+                <button class="composer-back-btn" id="composer-back" title="Back to Chat">&larr; Chat</button>
+            </div>
+            <div class="composer-controls">
+                <select class="composer-template-select" id="composer-template" title="Template">
+                    <option value="">Custom</option>
+                </select>
+                <button class="composer-btn" id="composer-save" title="Save recipe">Save</button>
+                <button class="composer-btn composer-btn-secondary" id="composer-reset" title="Reset to defaults">Reset</button>
+            </div>
+            <div class="composer-block-list" id="composer-block-list"></div>
+            <div class="composer-thesis-section">
+                <label class="composer-config-label">My Thesis</label>
+                <textarea class="composer-thesis" id="composer-thesis-input" placeholder="What do you think will happen and why?" rows="2"></textarea>
+            </div>
+            <div class="composer-budget">
+                <div class="composer-budget-bar">
+                    <div class="composer-budget-bar-fill" id="composer-budget-fill"></div>
+                </div>
+                <span class="composer-budget-label" id="composer-budget-label">0/4000 tokens</span>
+                <span class="composer-tier-label" id="composer-tier-label">Tier budget: 4,000 tokens (Free)</span>
+            </div>
+            <div class="composer-preview-section" style="display:none;">
+                <pre class="composer-preview-content" id="composer-preview-content"></pre>
+            </div>
+            <button class="composer-preview-btn" id="composer-preview-btn">Preview Prompt</button>
+        </div>
+        <div class="ai-panel-chat" id="ai-panel-chat">
+            <div class="ai-panel-empty"><span style="color:#484f58;font-size:0.65rem">Ask a question or try one of these:</span></div>
+        </div>
+        <div class="ai-panel-input" id="ai-panel-input-wrapper">
+            <textarea id="ai-panel-textarea" placeholder="Ask about this chart..." rows="1"></textarea>
+            <button class="ai-panel-send" id="ai-panel-send" aria-label="Send message"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+        </div>
+    </div>
+    <div class="ai-float-backdrop" id="ai-float-backdrop" style="display:none"></div>
+    <button class="ai-fab" id="ai-fab" title="AI Copilot (/)" aria-label="Open AI Copilot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="ai-fab-badge" id="ai-fab-badge"></span>
+    </button>
+    <div class="ai-onboarding-tooltip" id="ai-onboarding-tooltip">Ask AI Copilot about this chart &mdash; press <kbd>/</kbd></div>
+    {% endif %}
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal" data-action="closeHelpModal">
+        <div class="modal" data-action="stopPropagation" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+            <button class="modal-close" data-action="closeHelpModal" aria-label="Close">&times;</button>
+            <h2 id="help-modal-title">Carrac &mdash; User Guide</h2>
+            <p>Multi-timeframe technical analysis dashboard for swing and position traders. 337 curated assets plus dynamic symbol search across crypto, stocks, ETFs, indices, forex, and commodities. Real-time data via Binance WebSocket.</p>
+
+            <div class="help-expand-controls">
+                <button class="help-expand-btn" data-action="expandAllHelpSections">Expand All</button>
+                <button class="help-expand-btn" data-action="collapseAllHelpSections">Collapse All</button>
+            </div>
+
+            <h3>Getting Started</h3>
+            <p><strong>Morning routine (5-10 min):</strong></p>
+            <ol>
+                <li>Glance at the <strong>sentiment bar</strong> (F&amp;G &mdash; Fear &amp; Greed index, MVRV-Z &mdash; BTC valuation vs. cost basis, Funding Rate &mdash; perpetuals long/short cost) for macro mood</li>
+                <li>Open <strong>Morning Report</strong> &mdash; 8-tab analysis: Summary, Macro, Alerts, Social, Relative Strength, Assets, Options, Internals</li>
+                <li>Switch to <strong>Watchlist</strong> &mdash; scan signal badges (SQZ &mdash; EMA squeeze, flip imminent; V-CPR &mdash; price vacuum, may pull to the middle; TF-DIV &mdash; daily disagrees with higher timeframes; CC &mdash; Consensio changed since yesterday) for overnight changes</li>
+                <li>Click any flagged asset &rarr; chart opens &rarr; quick timeframe scan (1D &rarr; 1W)</li>
+                <li>Press <code>Q</code> to cycle to AI panel &rarr; click "Analyze" for a second opinion</li>
+            </ol>
+            <p><strong>Finding setups:</strong></p>
+            <ol>
+                <li>Sort by <strong>Consensio</strong> (multi-MA alignment score, out of 9) &mdash; find 7-9/9 (strong bull) or 0-2/9 (strong bear) extremes</li>
+                <li>Check <strong>EMA Ribbon</strong> (two EMAs colored by trend) column for SQZ/TGT badges (TGT &mdash; EMAs converging, flip may be imminent)</li>
+                <li>Open chart &rarr; toggle indicators: CPR + EMA Ribbon + RSI Divergence</li>
+                <li>Cycle timeframes (<code>,</code> / <code>.</code>) to confirm multi-TF alignment</li>
+                <li>Create a play (<code>P</code>) &rarr; AI Validate for structured scorecard</li>
+            </ol>
+
+            <h3>Backtester</h3>
+            <p>Open the <strong>Backtest</strong> tab in the chart drawer to test a rule against the asset&rsquo;s own history before you act on it. Write an entry and an exit formula &mdash; the same expression language as custom indicators &mdash; and Run. Trades are marked on the chart, and the results report win rate, profit factor, drawdown and Sharpe.</p>
+            <ul>
+                <li><strong>Regime filter</strong> &mdash; split the results by the market regime in force at the time, so you can see whether an edge is real or just one long trending stretch.</li>
+                <li><strong>Realism &amp; Risk Controls</strong> &mdash; collapsed by default. Slippage, stops, targets and fill timing all live here. A stop set while Stop Type is on <em>Close only</em> does nothing &mdash; switch it to Intrabar.</li>
+                <li><strong>Save / Load</strong> keeps the formulas and costs, but not the timeframe, date range or risk controls. <strong>History</strong> lists past runs, including any your AI assistant saved over MCP.</li>
+            </ul>
+            <p>Full detail in the <a href="/guide#backtester" target="_blank">Backtester guide</a>.</p>
+
+            <h3>Layout &amp; Navigation</h3>
+            <p>Split layout: <strong>chart on the left</strong>, <strong>panel on the right</strong> with a draggable divider.</p>
+            <p><strong>View modes</strong> (press <code>E</code> to cycle, <code>Shift+E</code> backward):</p>
+            <ul>
+                <li><strong>Lite</strong> &mdash; Minimal screener (symbol, price, change, consensio)</li>
+                <li><strong>Consensio</strong> &mdash; Default view with Consensio, EMA Ribbon, signals</li>
+                <li><strong>Detail</strong> &mdash; Full screener with all columns and signal badges</li>
+                <li><strong>Report</strong> &mdash; Morning analysis report inline</li>
+                <li><strong>AI</strong> &mdash; AI assistant with chat and action presets</li>
+                <li><strong>Journal</strong> &mdash; Quick trade journal panel</li>
+                <li><strong>Collapsed</strong> &mdash; Panel hidden, chart takes full width</li>
+            </ul>
+            <p><strong>Panel tabs:</strong></p>
+            <ul>
+                <li><strong>Watchlist</strong> &mdash; Personal symbol list (star to add/remove, drag to reorder)</li>
+                <li><strong>Crypto</strong> &mdash; All curated cryptocurrency assets</li>
+                <li><strong>TradFi</strong> &mdash; Stocks, ETFs, indices, forex, commodities</li>
+                <li><strong>All</strong> &mdash; Complete catalog across all categories</li>
+            </ul>
+
+            <h3>Sentiment Bar</h3>
+            <p>Header indicators for quick market read (hover for tooltips):</p>
+            <ul>
+                <li><strong>Regime</strong> &mdash; Market regime badge (Risk-On / Neutral / Risk-Off)</li>
+                <li><strong>F&amp;G</strong> &mdash; Fear &amp; Greed Index (0-100). <span style="color:#f85149;">0-24 Extreme Fear</span>, <span style="color:#fb923c;">25-44 Fear</span>, <span style="color:#fbbf24;">45-54 Neutral</span>, <span style="color:#a3e635;">55-74 Greed</span>, <span style="color:#3fb950;">75-100 Extreme Greed</span></li>
+                <li><strong>MVRV-Z</strong> &mdash; On-chain valuation. <span style="color:#3fb950;">&lt;0 undervalued</span>, <span style="color:#fbbf24;">0-3 fair</span>, <span style="color:#fb923c;">3-7 expensive</span>, <span style="color:#f85149;">&gt;7 overvalued</span></li>
+                <li><strong>ASI</strong> &mdash; Alt Season Index. <span style="color:#fb923c;">&lt;25 BTC season</span>, <span style="color:#fbbf24;">25-75 neutral</span>, <span style="color:#3fb950;">&gt;75 alt season</span></li>
+                <li><strong>L/S R</strong> &mdash; Long/Short Ratio (Binance futures)</li>
+                <li><strong>FR</strong> &mdash; Funding Rate. Positive = bullish crowd, negative = bearish crowd</li>
+                <li><strong>OI</strong> &mdash; Open Interest change (24h)</li>
+            </ul>
+
+            <h3>Screener Columns</h3>
+            <ul>
+                <li><strong>Consensio (X/9)</strong> &mdash; Multi-TF MA alignment. 9/9 = full bull, 0/9 = full bear</li>
+                <li><strong>1D / 3D / 1W</strong> &mdash; Per-timeframe signal strength (-3 to +3). Green flash = improved, red = dropped since yesterday</li>
+                <li><strong>W-RSI</strong> &mdash; Weekly RSI (14). Below 30 = oversold, above 70 = overbought</li>
+                <li><strong>CPR</strong> &mdash; Monthly Central Pivot Range zone. <span style="color:#f85149;">S3&ndash;S1</span>, <span style="color:#a78bfa;">BC&ndash;TC (inside)</span>, <span style="color:#3fb950;">R1&ndash;R3</span></li>
+                <li><strong>BB</strong> &mdash; Bollinger Band squeeze. <span style="color:#f85149;">&lt;30% extreme</span>, <span style="color:#d29922;">30-50% squeeze</span>, <span style="color:#8b949e;">50-150% normal</span></li>
+                <li><strong>EMA Ribbon</strong> &mdash; EMA 30/60 crossover. Green = above, red = below, yellow = inside</li>
+                <li><strong>Changed</strong> &mdash; Days since the EMA Ribbon trend last flipped</li>
+                <li><strong>Structure</strong> &mdash; Daily market structure. <span style="color:#3fb950;">HH/HL</span> uptrend, <span style="color:#f85149;">LH/LL</span> downtrend</li>
+                <li><strong>ADX</strong> &mdash; Trend strength. &lt;20 ranging, 20-30 forming, &gt;30 strong</li>
+            </ul>
+
+            <h3>Signal Badges</h3>
+            <p>Compact badges in the Signals column. Hover any badge for details.</p>
+            <ul>
+                <li><span class="signal-badge signal-squeeze" style="font-size:0.9em;">SQZ</span> &mdash; EMA Squeeze &mdash; 30/60 EMAs within 0.5%, flip imminent</li>
+                <li><span class="signal-badge signal-tightening" style="font-size:0.9em;">TGT</span> &mdash; Tightening &mdash; EMAs converging, early warning before SQZ</li>
+                <li><span class="signal-badge signal-vcpr" style="font-size:0.9em;">V-CPR</span> &mdash; CPR Vacuum &mdash; price hasn't touched monthly CPR zone yet</li>
+                <li><span class="signal-badge signal-bear" style="font-size:0.9em;">S3</span> / <span class="signal-badge signal-bull" style="font-size:0.9em;">R3</span> &mdash; Near monthly S3 support / R3 resistance (within 2%)</li>
+                <li><span class="signal-badge signal-divergence" style="font-size:0.9em;">TF-DIV</span> &mdash; Daily vs weekly direction disagree</li>
+                <li><span class="signal-badge signal-bull" style="font-size:0.9em;">RSI&#8593;</span> / <span class="signal-badge signal-bear" style="font-size:0.9em;">RSI&#8595;</span> &mdash; RSI bullish / bearish divergence</li>
+                <li><span class="signal-badge signal-hidden" style="font-size:0.9em;">H-RSI&#8593;</span> / <span class="signal-badge signal-hidden" style="font-size:0.9em;">H-RSI&#8595;</span> &mdash; Hidden divergences (trend continuation)</li>
+                <li><span class="signal-badge signal-structure-bull" style="font-size:0.9em;">STR&#8593;</span> / <span class="signal-badge signal-structure-bear" style="font-size:0.9em;">STR&#8595;</span> &mdash; Structure disagrees with EMA Ribbon trend</li>
+                <li><span class="signal-badge signal-cc" style="font-size:0.9em;">CC</span> &mdash; Consensio changed since yesterday</li>
+            </ul>
+
+            <h3>Chart &amp; Indicators</h3>
+            <p>Click any asset name to open the chart. <strong>Crypto:</strong> 11 timeframes (1m to 1M). <strong>TradFi:</strong> 1H, 4H, 1D, 3D, 1W, 1M. Live prices via Binance WebSocket.</p>
+            <p><strong>Indicator categories</strong> (press <code>I</code> to toggle panel):</p>
+            <ul>
+                <li><strong>Oscillators:</strong> RSI (TradingView-style with MA line), MACD, TTM Squeeze, BB Width %, ATR %, NR7</li>
+                <li><strong>Trend &amp; MAs:</strong> Daily EMAs (21/50/200), Weekly MAs, Bull Market Band, EMA Ribbon, Consensio, Alligator, CM Ultimate, Keltner Tight, Pi Cycle Top, SMA 20/200</li>
+                <li><strong>Levels &amp; Zones:</strong> CPR + CPR History, Key Levels, S/R Channels, Auto Fib, Fair Value Gaps, Liquidation Zones</li>
+                <li><strong>Volume &amp; Flow:</strong> Volume, Volume Profile, CVD Spot, CVD Futures (USDT/COIN), Open Interest, Derivatives Combined</li>
+                <li><strong>Structure:</strong> Market Structure, Order Blocks, Equal H/L, Value Zones</li>
+            </ul>
+            <p><strong>Indicator Groups:</strong> Click "+" in the favourite pills bar to create a named preset of indicators. Click a group pill to toggle all members on/off. Right-click for rename/edit/delete.</p>
+            <p><strong>Log scale:</strong> Press <code>O</code> or click the <code>A/L</code> buttons on the Y-axis. All indicators, drawings, and live updates work correctly in both modes.</p>
+
+            <h3>Drawing Tools</h3>
+            <p>Full toolbar with all drawing types. Drawings sync across devices via server.</p>
+            <ul>
+                <li><strong>L</strong> &mdash; Trendline. <strong>P</strong> &mdash; Parallel channel. <strong>R</strong> &mdash; Rectangle (with corner/edge resize handles). <strong>F</strong> &mdash; Fibonacci retracement</li>
+                <li><strong>H</strong> &mdash; Horizontal line. <strong>B</strong> &mdash; Position tool (entry/SL/TP with R:R). <strong>T</strong> &mdash; Text annotation</li>
+                <li><strong>X</strong> &mdash; Measure tool. <strong>Shift+V</strong> &mdash; Volume Profile range. <strong>Shift+A</strong> &mdash; Alert line</li>
+                <li><strong>C</strong> &mdash; Cycle colors. <strong>+/-</strong> &mdash; Thickness. <strong>[/]</strong> &mdash; Opacity. <strong>Del</strong> &mdash; Delete selected</li>
+                <li><strong>Ctrl+Z/Y</strong> &mdash; Undo/redo. <strong>D</strong> &mdash; Toggle toolbar. Sub-pane drawing supported (RSI, MACD, etc.)</li>
+            </ul>
+            <p><strong>Spot Buy Tracker:</strong> Click the teal Spot button, place entries on the chart. Each shows as a triangle marker. A dashed average entry line shows aggregate cost basis with live P&amp;L. Full portfolio tree view in the Positions drawer tab.</p>
+
+            <h3>Price Alerts</h3>
+            <ul>
+                <li>Press <code>A</code> to open alerts panel. Click the chart to set the price level</li>
+                <li>Auto-detects above/below direction from current price</li>
+                <li>Notified via ntfy push notifications. <strong>Premium:</strong> Telegram + Discord</li>
+                <li><strong>Free:</strong> 5 active alerts. <strong>Premium:</strong> 100</li>
+                <li>Frequency: once per bar or once (auto-disable). Editing a triggered alert reactivates it</li>
+                <li>Alert lines visible as overlays on the chart</li>
+            </ul>
+
+            <h3>Plays</h3>
+            <ul>
+                <li>Thesis-first trade hypotheses with structured conditions, milestones, and invalidation tracking</li>
+                <li>Press <code>P</code> to open plays panel. Create plays with entry/exit zones, conviction levels, and condition checklists</li>
+                <li>Condition builder: 17 condition types across 6 categories with ALL/ANY/custom logic</li>
+                <li>Auto-evaluated against live market data. Create alerts from play conditions. Log to journal on completion</li>
+                <li>Plays visible in morning reports with per-condition evidence</li>
+                <li><strong>Free:</strong> 3 plays. <strong>Premium:</strong> 10</li>
+            </ul>
+
+            <h3>Positions Tracker</h3>
+            <p>Card-based position tracker in the bottom drawer Positions tab.</p>
+            <ul>
+                <li>Each card shows direction, entry, SL, TP levels, per-target R:R ratios, and live P&amp;L</li>
+                <li>Cards glow green in profit, red in loss. Dashed indicator shows where price sits vs targets</li>
+                <li>Drag SL/entry/TP levels directly on the chart to reposition. Click a card to center the chart on it</li>
+                <li><strong>Hover actions:</strong> Validate (AI scorecard), Close &amp; Log (to journal), Clear (remove from chart), Delete</li>
+                <li>Toggle "All assets" to see positions across your entire portfolio</li>
+                <li>Futures/Spots/Both toggle &mdash; spot buys show as a hierarchical tree with aggregate P&amp;L</li>
+            </ul>
+
+            <h3>Scanner</h3>
+            <ul>
+                <li>6 conditions checked per watchlist asset, 2 points each (0-12 scale)</li>
+                <li>Criteria: Consensio trend, EMA Ribbon+MACD momentum, RSI positioning, swing structure, S/R proximity, macro regime</li>
+                <li>Labels: High (11-12), Moderate (8-10), Mixed (6-7), Low (3-5), Conflicting (0-2)</li>
+                <li>Press <code>S</code> to open scanner tab. Click to expand detail, double-click to navigate to chart</li>
+                <li>Filters by alignment label and direction (long/short/both). Auto-refreshes every 60s</li>
+                <li>Score snapshots captured at trade open and close, shown in the journal</li>
+            </ul>
+
+            <h3>AI Assistant</h3>
+            <p>AI-powered analysis using Grok. Access via the AI view mode (<code>E</code> to cycle) or directly in the panel.</p>
+            <p><strong>Action presets</strong> (click "+" dropdown):</p>
+            <ul>
+                <li><strong>Analyze</strong> &mdash; Full chart read: trend, key levels, indicators, notable observations</li>
+                <li><strong>Validate</strong> &mdash; 0-12 scorecard across 6 criteria with a High/Moderate/Mixed/Low/Conflicting label, plus alternative setups</li>
+                <li><strong>Challenge</strong> &mdash; Devil's advocate &mdash; every reason the trade could fail</li>
+                <li><strong>Checklist</strong> &mdash; 9-point pre-trade evaluation (PASS/WARN/FAIL per criterion)</li>
+                <li><strong>Confluence</strong> &mdash; Multi-timeframe alignment analysis (1D vs 3D vs 1W)</li>
+                <li><strong>Patterns</strong> &mdash; Shape correlation search (Pearson r &ge; 0.85) across 1D/3D/1W with sparkline overlays and forward returns</li>
+            </ul>
+            <p>Conversations persist across sessions (50 messages). History dropdown to load past chats. Font size adjustable (A-/A+).</p>
+            <p><strong>Trading Profile:</strong> 40+ field identity (11 sections) in Settings. Covers trading style, risk management, psychology, market biases. Profile context is injected into every AI response for personalized analysis.</p>
+
+            <h3>Trade Journal</h3>
+            <p>Full trading journal at <code>/journal</code> (dedicated page) or as a panel view mode. Also accessible from the hamburger menu.</p>
+            <ul>
+                <li><strong>Log trades</strong> &mdash; Asset, direction, entry/SL/TP, size, fees, setup type, confidence &amp; mood sliders, tags. Live R:R preview as you type</li>
+                <li><strong>Close trades</strong> &mdash; Exit price, reason (Manual/TP/SL/Trailing/Time/BE), mistake tags (FOMO, revenge, etc.), MFE/MAE auto-calculated</li>
+                <li><strong>Trade list</strong> &mdash; Sortable table with filters (date range, asset, direction, setup, mistakes). KPI bar with win rate, avg R, best/worst</li>
+                <li><strong>Equity curve</strong> &mdash; Cumulative R over time with drawdown shading</li>
+                <li><strong>Calendar</strong> &mdash; Monthly grid showing daily net R, trade count, wins/losses</li>
+                <li><strong>Sessions</strong> &mdash; Group trades by day with pre/post notes. AI session summary</li>
+                <li><strong>Analytics</strong> &mdash; R-multiple histogram, MFE/MAE scatter, breakdowns by setup/asset/direction/weekday/duration, rule adherence tracking, streak stats, NL query for custom analysis</li>
+                <li><strong>Playbooks</strong> &mdash; Document setups with rules and conditions. Live stats from matching trades</li>
+                <li><strong>Goals</strong> &mdash; Monthly targets (max daily loss, max trades/day, min R:R). Color-coded progress bars</li>
+                <li><strong>AI review</strong> &mdash; Entry quality, exit timing, risk management grades per trade. Weekly summary with action items</li>
+                <li><strong>Setup checklists</strong> &mdash; Template per setup type, auto-renders in trade modal, analytics track adherence vs performance</li>
+                <li><strong>Screenshots</strong> &mdash; Auto-captured at open and close, visible in trade detail</li>
+                <li><strong>Export</strong> &mdash; CSV (trades) or JSON (full backup including sessions, playbooks, goals)</li>
+            </ul>
+
+            <h3>Morning Report</h3>
+            <p>AI-generated daily analysis. Access via hamburger menu or Report view mode.</p>
+            <ul>
+                <li><strong>8 tabs:</strong> Summary, Macro, Alerts, Social, Relative Strength, Assets, Options, Internals</li>
+                <li><strong>Voice briefing</strong> &mdash; 2-3 minute spoken summary delivered via ntfy and Telegram</li>
+                <li>Asset ticker mentions are clickable &mdash; navigate directly to the chart</li>
+                <li>Keyboard: <code>J/K</code> cycles tabs, <code>1-8</code> direct jump. PDF export available</li>
+            </ul>
+            <p><strong>Personal sections (Premium):</strong> Executive Summary, X Feed Digest, YouTube Analyst Insights, Devil's Advocate on positions, Play Evaluations, Alerts &amp; Positions Follow-Up, Comparison to Yesterday, Pattern Status, Action Items.</p>
+            <p><strong>Analyst sources:</strong> Configure your X handles and YouTube channels in Settings &rarr; Analyst Sources for personalized report sections.</p>
+
+            <h3>Multi-Chart</h3>
+            <p>View up to 4 charts simultaneously. Each pane has independent asset and timeframe.</p>
+            <ul>
+                <li><strong>Layouts:</strong> Single, Dual (side-by-side), Tri (1+2 stack), Quad (2&times;2 grid)</li>
+                <li><strong>Ctrl+1/2/3/4/5</strong> &mdash; Switch layouts. <strong>Tab/Shift+Tab</strong> &mdash; Cycle active pane</li>
+                <li>Active pane gets blue border and receives all keyboard shortcuts</li>
+                <li>Companion panes auto-open at the next timeframe up from the primary</li>
+            </ul>
+            <p><strong>Rotation mode:</strong></p>
+            <ul>
+                <li><strong>Ctrl+6</strong> &mdash; Rotate through all plays. <strong>Ctrl+7</strong> &mdash; Rotate through watchlist</li>
+                <li>Adjustable speed (5s to 5m). Pause/resume, manual navigation. Screen stays awake</li>
+                <li>Full-screen rotation hides all panels for maximum chart space. <code>ESC</code> to exit</li>
+            </ul>
+
+            <h3>Mobile Widgets</h3>
+            <p>Home screen widgets for iOS (Scriptable) and Android (Glance APK). Setup at <code>Settings &rarr; Widgets</code>.</p>
+            <ul>
+                <li><strong>Watchlist</strong> &mdash; Prices and 24h change for all favourites</li>
+                <li><strong>Market Pulse</strong> &mdash; F&amp;G, MVRV-Z, funding rates, regime</li>
+                <li><strong>Positions</strong> &mdash; Open positions with live P&amp;L</li>
+                <li><strong>Alerts</strong> &mdash; Active alerts with distance-to-target</li>
+            </ul>
+
+            <h3>Keyboard Shortcuts</h3>
+            <p>Press <code>?</code> in the chart for the full shortcuts reference. Key shortcuts:</p>
+            <table style="width:100%;font-size:0.85em;border-collapse:collapse;margin:8px 0;">
+                <tr><td style="padding:2px 8px;color:#8b949e;">Navigation</td><td style="padding:2px 8px;"><code>Space</code> search, <code>, .</code> cycle favourites, <code>G</code> reset view, <code>J</code> center price, <code>Arrows</code> pan</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Timeframes</td><td style="padding:2px 8px;"><code>1</code>=1D, <code>3</code>=3D, <code>4</code>=4H, <code>5</code>=15m, <code>H</code>=1H, <code>W</code>=1W, <code>M</code>=1M</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Panels</td><td style="padding:2px 8px;"><code>A</code> alerts, <code>P</code> plays, <code>N</code> news, <code>I</code> indicators, <code>D</code> drawings, <code>V</code> volume profile, <code>S</code> scanner</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Drawing</td><td style="padding:2px 8px;"><code>L</code> trend, <code>P</code> channel, <code>R</code> rect, <code>F</code> fib, <code>B</code> position, <code>T</code> text, <code>X</code> measure</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Editing</td><td style="padding:2px 8px;"><code>C</code> color, <code>+/-</code> thickness, <code>[ ]</code> opacity, <code>Del</code> delete, <code>Ctrl+Z/Y</code> undo/redo</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Views</td><td style="padding:2px 8px;"><code>E</code> cycle view modes, <code>Q</code> cycle drawer tabs, <code>/</code> AI chat, <code>O</code> log scale, <code>?</code> shortcuts</td></tr>
+                <tr><td style="padding:2px 8px;color:#8b949e;">Multi-chart</td><td style="padding:2px 8px;"><code>Ctrl+1-5</code> layouts, <code>Ctrl+6/7</code> rotation, <code>Tab</code> next pane, <code>ESC</code> exit</td></tr>
+            </table>
+
+            <h3>Mobile &amp; PWA</h3>
+            <ul>
+                <li><strong>Install:</strong> iOS &mdash; Share &rarr; Add to Home Screen. Android &mdash; Menu &rarr; Install app</li>
+                <li>Touch action bar: Prev / TF / Indicators / Alert / Search / Next</li>
+                <li>TradingView-quality touch controls: Y-axis zoom, X-axis zoom, chart pan</li>
+                <li>TF bottom sheet for quick timeframe switching</li>
+                <li>Fullscreen mode when installed as PWA. 30-day session persistence</li>
+                <li>Dual chart layout available on mobile (portrait stacked, landscape side-by-side)</li>
+            </ul>
+
+            <h3>Premium Features</h3>
+            <ul>
+                <li><strong>Sub-hourly timeframes</strong> &mdash; 1m, 3m, 5m, 15m, 30m, 1H</li>
+                <li><strong>Derivatives</strong> &mdash; CVD Futures (USDT-M + COIN-M), Open Interest, Combined view</li>
+                <li><strong>Extended limits</strong> &mdash; 100 price alerts, 10 trade plays</li>
+                <li><strong>AI assistant</strong> &mdash; Chart analysis, validation, pattern matching</li>
+                <li><strong>Morning report</strong> &mdash; Personal sections + voice briefing</li>
+                <li><strong>Telegram + Discord</strong> &mdash; Notification channels for alerts</li>
+                <li><strong>Analyst sources</strong> &mdash; Personal X handles and YouTube channels for report</li>
+                <li><strong>Credits</strong> &mdash; Top up credits ($5/$10/$25/$50/$100) for AI features</li>
+            </ul>
+
+        </div>
+    </div>
+
+    <!-- API Status Modal -->
+    <div class="modal-overlay" id="api-status-modal" data-action="closeApiStatusModal">
+        <div class="modal api-status-modal" data-action="stopPropagation" role="dialog" aria-modal="true" aria-labelledby="api-status-modal-title">
+            <button class="modal-close" data-action="closeApiStatusModal" aria-label="Close">&times;</button>
+            <h2 id="api-status-modal-title">API Status</h2>
+            <p style="color: #8b949e; margin-bottom: 16px;">Connection status of external data sources</p>
+            <div id="api-status-content" class="api-status-content">
+                <div class="api-loading">Checking API connections...</div>
+            </div>
+
+            <!-- Rate Limit Usage Section -->
+            <div class="api-usage-section">
+                <h3 style="color: #58a6ff; margin: 16px 0 8px 0; font-size: 1em;">Rate Limit Usage</h3>
+                <div id="api-usage-content" class="api-usage-content">
+                    <div class="api-loading">Loading usage stats...</div>
+                </div>
+            </div>
+
+            <div class="api-status-footer">
+                <button class="action-btn" data-action="refreshApiStatus">↻ Refresh</button>
+                <span id="api-status-timestamp" style="color: #8b949e; font-size: 0.85em;"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Modal -->
+    <div class="modal-overlay" id="premium-modal" data-action="closePremiumModal">
+        <div class="modal premium-modal-content" data-action="stopPropagation" role="dialog" aria-modal="true" aria-labelledby="premium-modal-title">
+            <button class="modal-close" data-action="closePremiumModal" aria-label="Close">&times;</button>
+            <h2 id="premium-modal-title" style="color:#f0b429; margin-bottom:20px; font-size:1.3em;">Premium</h2>
+
+            <div class="tier-card" id="pm-tier-card">
+                <span class="tier-badge" id="pm-tier-badge">...</span>
+                <div class="tier-status" id="pm-tier-status">Loading...</div>
+            </div>
+
+            <table class="feature-table">
+                <thead>
+                    <tr><th>Feature</th><th>Free</th><th>Member</th><th>Premium</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="feat-name">Curated + dynamic assets</td><td class="feat-check">&#10003;</td><td class="feat-check">&#10003;</td><td class="feat-check">&#10003;</td></tr>
+                    <tr><td class="feat-name">Price alerts</td><td class="feat-value">5</td><td class="feat-value">50</td><td class="feat-value">200</td></tr>
+                    <tr><td class="feat-name">Trade plays</td><td class="feat-dash">&mdash;</td><td class="feat-value">5</td><td class="feat-value">20</td></tr>
+                    <tr><td class="feat-name">Scenarios</td><td class="feat-dash">&mdash;</td><td class="feat-value">15</td><td class="feat-value">999</td></tr>
+                    <tr><td class="feat-name">AI queries / month</td><td class="feat-dash">&mdash;</td><td class="feat-value">40</td><td class="feat-value">150</td></tr>
+                    <tr><td class="feat-name">Derivatives (CVD, OI)</td><td class="feat-dash">&mdash;</td><td class="feat-check">&#10003;</td><td class="feat-check">&#10003;</td></tr>
+                    <tr><td class="feat-name">Telegram notifications</td><td class="feat-dash">&mdash;</td><td class="feat-check">&#10003;</td><td class="feat-check">&#10003;</td></tr>
+                    <tr><td class="feat-name">Discord notifications</td><td class="feat-dash">&mdash;</td><td class="feat-check">&#10003;</td><td class="feat-check">&#10003;</td></tr>
+                    <tr><td class="feat-name">Morning report</td><td class="feat-value">shared</td><td class="feat-value">standard</td><td class="feat-value">full + audio</td></tr>
+                    <tr><td class="feat-name">Backtester / Quant Engine</td><td class="feat-dash">&mdash;</td><td class="feat-dash">&mdash;</td><td class="feat-check">&#10003;</td></tr>
+                </tbody>
+            </table>
+
+            <div class="upgrade-section" id="pm-upgrade-section"></div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedback-modal" data-action="closeFeedbackModal">
+        <div class="modal feedback-modal-content" data-action="stopPropagation" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+            <button class="modal-close" data-action="closeFeedbackModal" aria-label="Close">&times;</button>
+            <h2 id="feedback-modal-title" style="margin-bottom:16px;">Send Feedback</h2>
+
+            <div class="feedback-type-toggle">
+                <button class="feedback-type-btn active" data-type="bug" data-action="setFeedbackTypeBug">Bug Report</button>
+                <button class="feedback-type-btn" data-type="feature" data-action="setFeedbackTypeFeature">Feature Request</button>
+            </div>
+
+            <form id="feedback-form">
+                <div class="fb-form-group">
+                    <label>Where in the app</label>
+                    <select id="fb-area">
+                        <option value="">Select area...</option>
+                        <option value="Dashboard / Table">Dashboard / Table</option>
+                        <option value="Chart">Chart</option>
+                        <option value="Drawing Tools">Drawing Tools</option>
+                        <option value="Alerts">Alerts</option>
+                        <option value="Plays">Plays</option>
+                        <option value="Morning Report">Morning Report</option>
+                        <option value="AI Assistant">AI Assistant</option>
+                        <option value="Settings">Settings</option>
+                        <option value="Mobile">Mobile</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="fb-form-group">
+                    <label id="fb-description-label">What happened?</label>
+                    <textarea id="fb-description" rows="5" placeholder="Describe the issue..." required></textarea>
+                </div>
+
+                <div id="fb-bug-fields">
+                    <div class="fb-form-group">
+                        <label>Expected behavior</label>
+                        <textarea id="fb-expected" rows="4" placeholder="What should have happened?"></textarea>
+                    </div>
+                    <div class="fb-form-group">
+                        <label>Actual behavior</label>
+                        <textarea id="fb-actual" rows="4" placeholder="What actually happened?"></textarea>
+                    </div>
+                </div>
+
+                <div id="fb-feature-fields" style="display:none;">
+                    <div class="fb-form-group">
+                        <label>How should it work?</label>
+                        <textarea id="fb-how" rows="4" placeholder="Describe the ideal experience..."></textarea>
+                    </div>
+                </div>
+
+                <div class="fb-form-group">
+                    <label>Additional details <span style="color:#8b949e;font-weight:normal;">(optional)</span></label>
+                    <textarea id="fb-extra" rows="3" placeholder="Steps to reproduce, browser, device, etc."></textarea>
+                </div>
+
+                <div id="fb-status" style="display:none;margin-bottom:12px;"></div>
+
+                <button type="submit" class="fb-submit-btn" id="fb-submit-btn">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Formula Editor Modal -->
+    <div class="modal-overlay" id="formula-editor-modal" data-action="closeFormulaEditor">
+        <div class="modal" data-action="stopPropagation" role="dialog" aria-modal="true" aria-labelledby="fe-title" style="max-width:520px">
+            <button class="modal-close" data-action="closeFormulaEditor" aria-label="Close">&times;</button>
+            <h2 id="fe-title" style="margin-bottom:16px">Custom Indicator</h2>
+
+            <div style="margin-bottom:12px">
+                <label style="display:block;margin-bottom:4px;font-size:13px;color:#8b949e">Name</label>
+                <input type="text" id="fe-name" maxlength="30" placeholder="My Indicator" style="width:100%;padding:8px 10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px">
+            </div>
+
+            <div id="fe-rows" style="margin-bottom:8px;max-height:320px;overflow-y:auto"></div>
+            <button type="button" id="fe-add-row">+ Add row</button>
+
+            <div id="fe-preview-status" class="fe-preview-status" role="alert"></div>
+            <canvas id="fe-preview-canvas" width="480" height="48" style="width:100%;height:48px;margin-bottom:12px;border-radius:4px;background:#0d1117"></canvas>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="display:flex;gap:8px">
+                    <a href="/formulas" target="_blank" style="padding:8px 14px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#8b949e;text-decoration:none;font-size:13px">Docs</a>
+                    <button id="fe-delete-btn" data-action="deleteFormula" style="display:none;padding:8px 14px;background:#b62324;border:1px solid #f85149;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500">Delete</button>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button data-action="closeFormulaEditor" style="padding:8px 14px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#e6edf3;cursor:pointer;font-size:13px">Cancel</button>
+                    <button data-action="saveFormula" style="padding:8px 14px;background:#238636;border:1px solid #2ea043;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicator Settings Modal -->
+    <div class="modal-overlay" id="indicator-settings-modal">
+        <div class="modal" style="max-width:420px" role="dialog" aria-modal="true" aria-labelledby="is-title">
+            <button class="modal-close" aria-label="Close">&times;</button>
+            <h2 id="is-title" style="margin-bottom:12px">Indicator Settings</h2>
+            <div class="is-tabs" id="is-tabs">
+                <button class="is-tab active" data-tab="inputs">Inputs</button>
+                <button class="is-tab" data-tab="style">Style</button>
+            </div>
+            <div id="is-form" class="is-form"></div>
+            <div class="is-footer">
+                <button id="is-reset" class="is-reset-btn">Reset to Defaults</button>
+                <button id="is-done" class="is-done-btn">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>
+            <a href="/changelog" class="version">v{{ app_version }}</a>
+        </p>
+    </div>
+
+    <!-- Chart Preview Tooltip Container -->
+    <div id="chart-tooltip" class="chart-tooltip"></div>
+
+    <!-- TradingView Lightweight Charts (for tooltip preview) — self-hosted (was unpkg);
+         same-origin so it's CF-cached + Brotli'd and off the third-party critical path. -->
+    <script src="{{ url_for('static', filename='js/lightweight-charts.min.js') }}?v={{ cache_version('js/lightweight-charts.min.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- DOMPurify for safe innerHTML rendering — self-hosted (vendor/) -->
+    <script src="{{ url_for('static', filename='js/vendor/purify.min.js') }}?v={{ cache_version('js/vendor/purify.min.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Lucide Icons — tree-shaken subset (32 icons vs 1500 in full build) -->
+    <script src="{{ url_for('static', filename='js/lucide-icons.js') }}?v={{ cache_version('js/lucide-icons.js') }}" nonce="{{ csp_nonce | default('') }}"></script>
+    <script nonce="{{ csp_nonce }}">if(typeof lucide!=='undefined')lucide.createIcons({attrs:{'stroke-width':1.75}});</script>
+    <!-- KLineChart for advanced modal with drawing tools -->
+    <script src="{{ url_for('static', filename='js/klinecharts.min.js') }}?v={{ cache_version('js/klinecharts.min.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Shared escapeHtml()/showToast() — must precede every script that calls them. -->
+    <script src="{{ url_for('static', filename='js/shared-utils.js') }}?v={{ cache_version('js/shared-utils.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- CSRF helper — single source of truth, loaded before any script that posts. -->
+    <script src="{{ url_for('static', filename='js/csrf-utils.js') }}?v={{ cache_version('js/csrf-utils.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Indicator Registry (single source of truth for all indicators) -->
+    <script src="{{ url_for('static', filename='js/indicator-registry.js') }}?v={{ cache_version('js/indicator-registry.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Smart Money Concepts Indicator -->
+    <script src="{{ url_for('static', filename='js/smart-money-concepts.js') }}?v={{ cache_version('js/smart-money-concepts.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- TA Library + Formula Parser + Custom Indicators -->
+    <script src="{{ url_for('static', filename='js/ta-lib.js') }}?v={{ cache_version('js/ta-lib.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/formula-parser.js') }}?v={{ cache_version('js/formula-parser.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom-indicators.js') }}?v={{ cache_version('js/custom-indicators.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Backtester -->
+    <script src="{{ url_for('static', filename='js/backtester.js') }}?v={{ cache_version('js/backtester.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/backtest-ui.js') }}?v={{ cache_version('js/backtest-ui.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- Indicator Pack: lazily loaded by ensureCarracPack() on first chart open -->
+    <!-- carrac-indicator-pack.js removed from eager load -->
+    <script src="{{ url_for('static', filename='js/indicator-settings.js') }}?v={{ cache_version('js/indicator-settings.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/watchlist.js') }}?v={{ cache_version('js/watchlist.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/chart-preview.js') }}?v={{ cache_version('js/chart-preview.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/api-status-modal.js') }}?v={{ cache_version('js/api-status-modal.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/volume-profile.js') }}?v={{ cache_version('js/volume-profile.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/naked-poc.js') }}?v={{ cache_version('js/naked-poc.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/frvp.js') }}?v={{ cache_version('js/frvp.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/key-levels.js') }}?v={{ cache_version('js/key-levels.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/confluence-zones.js') }}?v={{ cache_version('js/confluence-zones.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/liq-heatmap.js') }}?v={{ cache_version('js/liq-heatmap.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/freehand.js') }}?v={{ cache_version('js/freehand.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- kline-drawings.js: lazily loaded by ensureKLineDrawings() on first chart open -->
+    <script src="{{ url_for('static', filename='js/alert-panel.js') }}?v={{ cache_version('js/alert-panel.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- SortableJS for milestone drag-and-drop -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"
+            integrity="sha512-csIng5zcB+XpulRUa+ev1zKo7zRNGpEaVfNB9On1no9KYTEY/rLGAEEpvgdw6nim1WdTuihZY1eqZ31K7/fZjw=="
+            crossorigin="anonymous" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/scenarios.js') }}?v={{ cache_version('js/scenarios.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/condition-builder.js') }}?v={{ cache_version('js/condition-builder.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/asset-search-core.js') }}?v={{ cache_version('js/asset-search-core.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/asset-search.js') }}?v={{ cache_version('js/asset-search.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/countdown-timer.js') }}?v={{ cache_version('js/countdown-timer.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- tick-color.js: TradingView-style tick-direction + partial-digit coloring (must load before ticker-bar and WS files) -->
+    <script src="{{ url_for('static', filename='js/tick-color.js') }}?v={{ cache_version('js/tick-color.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/ticker-bar.js') }}?v={{ cache_version('js/ticker-bar.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/conn-store.js') }}?v={{ cache_version('js/conn-store.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-live-tick.js') }}?v={{ cache_version('js/chart-live-tick.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/binance-ws.js') }}?v={{ cache_version('js/binance-ws.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/hyperliquid-ws.js') }}?v={{ cache_version('js/hyperliquid-ws.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/table-tickers-ws.js') }}?v={{ cache_version('js/table-tickers-ws.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/ccxt-ws.js') }}?v={{ cache_version('js/ccxt-ws.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- finnhub-ws.js polls /api/finnhub/quotes (server proxy); no API key is exposed to the page. -->
+    <script src="{{ url_for('static', filename='js/finnhub-ws.js') }}?v={{ cache_version('js/finnhub-ws.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/main-page-search.js') }}?v={{ cache_version('js/main-page-search.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-touch.js') }}?v={{ cache_version('js/mobile-touch.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-draw.js') }}?v={{ cache_version('js/mobile-draw.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- ai-panel.js: lazily loaded by ensureAIPanel() on first FAB click or / key -->
+    <script src="{{ url_for('static', filename='js/context-composer.js') }}?v={{ cache_version('js/context-composer.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/report-core.js') }}?v={{ cache_version('js/report-core.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/price-formatting.js') }}?v={{ cache_version('js/price-formatting.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/score-formatting.js') }}?v={{ cache_version('js/score-formatting.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/signal-formatting.js') }}?v={{ cache_version('js/signal-formatting.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/display-options.js') }}?v={{ cache_version('js/display-options.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script nonce="{{ csp_nonce }}">window.PAYMENTS_ENABLED = {{ payments_enabled|tojson }};</script>
+    <script src="{{ url_for('static', filename='js/help-modal.js') }}?v={{ cache_version('js/help-modal.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-toolbar.js') }}?v={{ cache_version('js/chart-toolbar.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/radar.js') }}?v={{ cache_version('js/radar.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/split-layout.js') }}?v={{ cache_version('js/split-layout.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/screening-matrix.js') }}?v={{ cache_version('js/screening-matrix.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/plays-panel.js') }}?v={{ cache_version('js/plays-panel.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/plays-creation-form.js') }}?v={{ cache_version('js/plays-creation-form.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/plays-backtest-panel.js') }}?v={{ cache_version('js/plays-backtest-panel.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/share-modal.js') }}?v={{ cache_version('js/share-modal.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/news-panel.js') }}?v={{ cache_version('js/news-panel.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- echarts + portfolio-charts.js/portfolio.js: lazily loaded by ensurePortfolioPanel()
+         on first selection of the Portfolio view mode, same lazy pattern as
+         ai-panel.js above. They are the same files templates/portfolio.html uses standalone. -->
+    <script src="{{ url_for('static', filename='js/multi-chart.js') }}?v={{ cache_version('js/multi-chart.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/onboarding.js') }}?v={{ cache_version('js/onboarding.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/contextual-nudges.js') }}?v={{ cache_version('js/contextual-nudges.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/satisfaction-survey.js') }}?v={{ cache_version('js/satisfaction-survey.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <!-- feature-tour.js removed — chart placeholder guide replaces it -->
+    <script src="{{ url_for('static', filename='js/a11y.js') }}?v={{ cache_version('js/a11y.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/details-drawer.js') }}?v={{ cache_version('js/details-drawer.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-gestures.js') }}?v={{ cache_version('js/chart-gestures.js') }}" nonce="{{ csp_nonce | default('') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/drawing-context-bar.js') }}?v={{ cache_version('js/drawing-context-bar.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/toolbar-tooltips.js') }}?v={{ cache_version('js/toolbar-tooltips.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-hover-prefetch.js') }}?v={{ cache_version('js/chart-hover-prefetch.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/screener-table.js') }}?v={{ cache_version('js/screener-table.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-indicator-defs.js') }}?v={{ cache_version('js/chart-indicator-defs.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-position-overlays.js') }}?v={{ cache_version('js/chart-position-overlays.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-overlay-defs.js') }}?v={{ cache_version('js/chart-overlay-defs.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    {# The chart app's own files: classic scripts sharing one global scope, so
+       this order is part of the contract (tests/test_chart_standalone_scripts.py
+       checks it here and in chart_standalone.html). main.js runs last. #}
+    <script src="{{ url_for('static', filename='js/app-core.js') }}?v={{ cache_version('js/app-core.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/indicator-prefs.js') }}?v={{ cache_version('js/indicator-prefs.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-cache.js') }}?v={{ cache_version('js/chart-cache.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-modal.js') }}?v={{ cache_version('js/chart-modal.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-events.js') }}?v={{ cache_version('js/chart-events.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-keyboard.js') }}?v={{ cache_version('js/chart-keyboard.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/position-tools.js') }}?v={{ cache_version('js/position-tools.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-indicators.js') }}?v={{ cache_version('js/chart-indicators.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/drawing-editing.js') }}?v={{ cache_version('js/drawing-editing.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/draw-tool-palette.js') }}?v={{ cache_version('js/draw-tool-palette.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-loading.js') }}?v={{ cache_version('js/chart-loading.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart-render.js') }}?v={{ cache_version('js/chart-render.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-chart.js') }}?v={{ cache_version('js/mobile-chart.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/stale-tab-recovery.js') }}?v={{ cache_version('js/stale-tab-recovery.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v={{ cache_version('js/main.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+
+    <!-- PWA Install Modal -->
+    <div id="install-modal" class="modal-overlay" style="display: none;">
+        <div class="install-modal" role="dialog" aria-modal="true" aria-labelledby="install-modal-title">
+            <button class="modal-close" data-action="hideInstallModal" aria-label="Close">&times;</button>
+            <h2 id="install-modal-title">Install Carrac App</h2>
+            <div id="install-content">
+                <!-- Content will be dynamically populated based on device -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Filter Toggle -->
+    <script nonce="{{ csp_nonce }}">
+    window._userId = {{ user.id if user else 0 }};
+    window._userTier = '{{ user.tier if user else "free" }}';
+    window._isPremium = ['member','premium','admin','tester'].includes(window._userTier);
+    window._hasPremiumFeatures = ['premium','admin','tester'].includes(window._userTier);
+    window._onboardingCompleted = {{ 'true' if onboarding_completed else 'false' }};
+    window._onboardingVersion = {{ onboarding_version|default(1) }};
+    window._tourCompleted = {{ 'true' if tour_completed else 'false' }};
+    window._features = { detailsDrawer: {{ 'true' if details_drawer_enabled else 'false' }} };
+    /* ── Clear localStorage on user change (prevents cross-account data leak) ── */
+    (function() {
+        var prevUser = localStorage.getItem('_carracUserId');
+        var curUser = String(window._userId);
+        if (prevUser && prevUser !== curUser) {
+            var keep = ['cvx_cookie_notice'];
+            var saved = {};
+            keep.forEach(function(k) { var v = localStorage.getItem(k); if (v !== null) saved[k] = v; });
+            localStorage.clear();
+            Object.keys(saved).forEach(function(k) { localStorage.setItem(k, saved[k]); });
+        }
+        localStorage.setItem('_carracUserId', curUser);
+    })();
+    /* ── Admin tier switch (session-only, no DB) ── */
+    (function() {
+        var sel = document.getElementById('admin-tier-switch');
+        if (!sel) return;
+        sel.addEventListener('change', function() {
+            var tier = sel.value;
+            var csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch('/admin/impersonate-tier', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf}, body:JSON.stringify({tier:tier})})
+            .then(function(r){ return r.json(); })
+            .then(function(d){ if (d.ok) location.reload(); });
+        });
+        sel.addEventListener('click', function(e) { e.stopPropagation(); });
+    })();
+    /* ── Event delegation for CSP nonce compliance ── */
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var action = btn.dataset.action;
+        var handlers = {
+            'manualRefresh': function() { manualRefresh(); },
+            'toggleMoreMenu': function() { toggleMoreMenu(); },
+            'toggleCollapseAll': function() { toggleCollapseAll(); },
+            'toggleFilterSettings': function() { toggleFilterSettings(); },
+            'toggleCustomFilter': function() { toggleCustomFilter(); },
+            'selectAllCustomFilter': function() { selectAllCustomFilter(); },
+            'clearCustomFilter': function() { clearCustomFilter(); },
+            'toggleColumnsFilter': function() { toggleColumnsFilter(); },
+            'toggleDisplayFilter': function() { toggleDisplayFilter(); },
+            'toggleWatchlistCollapse': function() { toggleWatchlistCollapse(); },
+            'toggleHotSection': function() { toggleHotSection(); },
+            'expandAllHelpSections': function() { expandAllHelpSections(); },
+            'collapseAllHelpSections': function() { collapseAllHelpSections(); },
+            'refreshApiStatus': function() { refreshApiStatus(); },
+            'hideInstallModal': function() { hideInstallModal(); },
+            'showInstallModal': function() { showInstallModal(); },
+            'triggerInstall': function() { triggerInstall(); },
+            'setFilter': function() { setFilter(btn.dataset.filterValue); },
+            'togglePushNotificationsAndClose': function() { togglePushNotifications(); toggleMoreMenu(); },
+            'showInstallModalAndClose': function() { showInstallModal(); toggleMoreMenu(); },
+            'openHelpModalAndClose': function() { openHelpModal(); toggleMoreMenu(); },
+            'openHelpModal': function() { openHelpModal(); },
+            'openApiStatusModalAndClose': function() { openApiStatusModal(); toggleMoreMenu(); },
+            'openPremiumModal': function() { openPremiumModal(); },
+            'closePremiumModal': function() { closePremiumModal(); },
+            'openFeedbackAndClose': function() { openFeedbackModal(); toggleMoreMenu(); },
+            'closeFeedbackModal': function() { closeFeedbackModal(); },
+            'closeFormulaEditor': function() { if (window.CustomIndicators) CustomIndicators.closeEditor(); },
+            'saveFormula': function() { if (window.CustomIndicators) CustomIndicators.saveFormula(); },
+            'deleteFormula': function() { if (window.CustomIndicators) CustomIndicators.deleteFormula(); },
+            'openFormulaEditor': function() { if (window.CustomIndicators) CustomIndicators.openEditor(); },
+            'setFeedbackTypeBug': function() { setFeedbackType('bug'); },
+            'setFeedbackTypeFeature': function() { setFeedbackType('feature'); },
+            'stopPropagation': function() { e.stopPropagation(); },
+            'closeHelpModal': function() { closeHelpModal(); },
+            'closeApiStatusModal': function() { closeApiStatusModal(); },
+            'toggleRightPanel': function() { toggleRightPanel(); },
+            'aiFontDown': function() { if(_aiFontIdx>0){_aiFontIdx--;_aiApplyFont();} },
+            'aiFontUp': function() { if(_aiFontIdx<_aiFontSizes.length-1){_aiFontIdx++;_aiApplyFont();} },
+            'openFullJournal': function() { e.preventDefault(); toggleFullPage('journal'); },
+            'closeFullpageOverlay': function() { if(e.target===btn) toggleFullPage(null); },
+            'closeFullpage': function() { toggleFullPage(null); }
+        };
+        if (handlers[action]) handlers[action]();
+    });
+    document.addEventListener('change', function(e) {
+        var el = e.target.closest('[data-change]');
+        if (!el) return;
+        var action = el.dataset.change;
+        if (action === 'updateCustomFilter') { updateCustomFilter(); }
+        else if (action === 'toggleColumnVisibility') { toggleColumnVisibility(el.dataset.column); }
+        else if (action === 'toggleGreenRedCandles') { toggleGreenRedCandles(); }
+        else if (action === 'toggleWhiteBackground') { toggleWhiteBackground(); }
+    });
+    // CSP: logout form — clear localStorage on submit (replaces inline onsubmit attribute)
+    document.addEventListener('submit', function(e) {
+        if (e.target.classList.contains('js-logout-form')) {
+            try { localStorage.clear(); } catch(ex) {}
+        }
+    });
+
+    var mobileFiltersExpanded = false;
+    function toggleMobileFilters() {
+        mobileFiltersExpanded = !mobileFiltersExpanded;
+        var content = document.getElementById('filter-bar-content');
+        var btn = document.getElementById('mobile-filter-toggle');
+        if (mobileFiltersExpanded) {
+            content.classList.add('expanded');
+            btn.textContent = 'Filters ▲';
+        } else {
+            content.classList.remove('expanded');
+            btn.textContent = 'Filters ▼';
+        }
+    }
+
+    /* ── Feedback Modal ── */
+    function openFeedbackModal() {
+        var modal = document.getElementById('feedback-modal');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        if (window.a11y) a11y.trapFocus(modal.querySelector('[role="dialog"]'));
+    }
+    function closeFeedbackModal() {
+        var modal = document.getElementById('feedback-modal');
+        if (window.a11y) a11y.releaseFocus(modal.querySelector('[role="dialog"]'));
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    var _fbType = 'bug';
+    function setFeedbackType(type) {
+        _fbType = type;
+        document.querySelectorAll('.feedback-type-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelector('.feedback-type-btn[data-type="' + type + '"]').classList.add('active');
+        document.getElementById('fb-bug-fields').style.display = type === 'bug' ? '' : 'none';
+        document.getElementById('fb-feature-fields').style.display = type === 'feature' ? '' : 'none';
+        document.getElementById('fb-description-label').textContent = type === 'bug' ? 'What happened?' : 'What would you like?';
+        document.getElementById('fb-description').placeholder = type === 'bug' ? 'Describe the issue...' : 'Describe the feature you want...';
+    }
+    document.getElementById('feedback-form').addEventListener('submit', function(evt) {
+        evt.preventDefault();
+        var btn = document.getElementById('fb-submit-btn');
+        var status = document.getElementById('fb-status');
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        var csrf = document.querySelector('meta[name="csrf-token"]').content;
+        var body = {
+            type: _fbType,
+            area: document.getElementById('fb-area').value,
+            description: document.getElementById('fb-description').value,
+            expected: document.getElementById('fb-expected').value,
+            actual: document.getElementById('fb-actual').value,
+            how_should_work: document.getElementById('fb-how').value,
+            extra: document.getElementById('fb-extra').value
+        };
+        fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify(body)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ok) {
+                status.style.display = 'block';
+                status.style.color = '#3fb950';
+                // Surface the ticket id so the user knows their report
+                // has a trackable handle, not just a toast that vanishes.
+                var ticket = (d.id != null) ? ' (ticket #' + d.id + ')' : '';
+                status.textContent = 'Thanks — we got it' + ticket + '. We\'ll follow up by email if needed.';
+                document.getElementById('feedback-form').reset();
+                setFeedbackType('bug');
+                setTimeout(function() { closeFeedbackModal(); status.style.display = 'none'; }, 3500);
+            } else {
+                status.style.display = 'block';
+                status.style.color = '#f85149';
+                status.textContent = d.error || 'Something went wrong';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+        })
+        .catch(function() {
+            status.style.display = 'block';
+            status.style.color = '#f85149';
+            status.textContent = 'Network error — please try again';
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+        });
+    });
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script nonce="{{ csp_nonce }}">
+    // PWA Install handling
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('install-btn');
+    const installModal = document.getElementById('install-modal');
+    const installContent = document.getElementById('install-content');
+
+    // Detect device type
+    function getDeviceType() {
+        const ua = navigator.userAgent;
+        if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+        if (/android/i.test(ua)) return 'android';
+        return 'desktop';
+    }
+
+    // Check if running as standalone PWA
+    function isStandalone() {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+    }
+
+    // Generate QR code URL (using QR Server API)
+    function getQRCodeUrl() {
+        const appUrl = encodeURIComponent(window.location.origin);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${appUrl}&bgcolor=0d1117&color=3fb950`;
+    }
+
+    // Capture install prompt for later use
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    function showInstallModal() {
+        const deviceType = getDeviceType();
+
+        let content = '';
+
+        if (deviceType === 'ios') {
+            content = `
+                <div class="install-instructions">
+                    <h3 style="color: #3fb950; margin-bottom: 1rem;">Install on iPhone/iPad</h3>
+                    <p class="install-step"><span class="step-num">1</span> Open <strong>${window.location.origin}</strong> in Safari</p>
+                    <p class="install-step"><span class="step-num">2</span> Tap the <strong>Share</strong> button <span style="font-size:1.2em">&#x2191;&#xFE0E;</span> at the bottom</p>
+                    <p class="install-step"><span class="step-num">3</span> Scroll down and tap <strong>"Add to Home Screen"</strong></p>
+                    <p class="install-step"><span class="step-num">4</span> Tap <strong>"Add"</strong> in the top right</p>
+                </div>
+                <p class="install-note">The app will launch full-screen from your home screen — no browser bars, instant chart access.</p>
+            `;
+        } else if (deviceType === 'android') {
+            content = `
+                <div class="install-instructions">
+                    <h3 style="color: #3fb950; margin-bottom: 1rem;">Install on Android</h3>
+                    ${deferredPrompt ? `
+                        <button data-action="triggerInstall" class="install-now-btn" style="width: 100%; padding: 1rem; font-size: 1.1em; background: #238636; border: none; border-radius: 8px; color: white; cursor: pointer; margin-bottom: 1rem;">
+                            <strong>Install App Now</strong>
+                        </button>
+                        <p style="text-align: center; color: #8b949e; margin-bottom: 1rem;">or manually:</p>
+                    ` : ''}
+                    <p class="install-step"><span class="step-num">1</span> Open <strong>${window.location.origin}</strong> in Chrome</p>
+                    <p class="install-step"><span class="step-num">2</span> Tap the <strong>menu</strong> button <span style="font-size:1.3em;font-weight:bold">&#8942;</span> in the top right</p>
+                    <p class="install-step"><span class="step-num">3</span> Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong></p>
+                    <p class="install-step"><span class="step-num">4</span> Tap <strong>"Install"</strong> to confirm</p>
+                </div>
+                <p class="install-note">The app will launch full-screen from your home screen — no browser bars, instant chart access.</p>
+            `;
+        } else {
+            // Desktop — show both iOS and Android instructions + QR code
+            content = `
+                <div class="install-qr" style="text-align: center; margin-bottom: 1.5rem;">
+                    <p style="margin-bottom: 0.75rem; color: #8b949e;">Scan with your phone camera to open on mobile:</p>
+                    <img src="${getQRCodeUrl()}" alt="QR Code" class="qr-code-img" style="border-radius: 8px; margin-bottom: 0.5rem;">
+                    <p class="qr-url" style="font-size: 0.85em; color: #58a6ff;">${window.location.origin}</p>
+                </div>
+                <hr style="border: none; border-top: 1px solid #30363d; margin: 1.5rem 0;">
+                <div style="display: flex; gap: 24px;">
+                    <div style="flex: 1;">
+                        <h3 style="color: #c9d1d9; margin-bottom: 0.75rem; font-size: 1em;">
+                            <span style="font-size: 1.2em; margin-right: 4px;">&#xF8FF;</span> iPhone / iPad
+                        </h3>
+                        <p class="install-step"><span class="step-num">1</span> Open the link in <strong>Safari</strong></p>
+                        <p class="install-step"><span class="step-num">2</span> Tap <strong>Share</strong> <span style="font-size:1.1em">&#x2191;&#xFE0E;</span></p>
+                        <p class="install-step"><span class="step-num">3</span> <strong>"Add to Home Screen"</strong></p>
+                        <p class="install-step"><span class="step-num">4</span> Tap <strong>"Add"</strong></p>
+                    </div>
+                    <div style="flex: 1; border-left: 1px solid #30363d; padding-left: 24px;">
+                        <h3 style="color: #c9d1d9; margin-bottom: 0.75rem; font-size: 1em;">
+                            <span style="font-size: 1.1em; margin-right: 4px;">&#x1F4F1;</span> Android
+                        </h3>
+                        <p class="install-step"><span class="step-num">1</span> Open the link in <strong>Chrome</strong></p>
+                        <p class="install-step"><span class="step-num">2</span> Tap <strong>menu</strong> <span style="font-weight:bold">&#8942;</span></p>
+                        <p class="install-step"><span class="step-num">3</span> <strong>"Add to Home screen"</strong></p>
+                        <p class="install-step"><span class="step-num">4</span> Tap <strong>"Install"</strong></p>
+                    </div>
+                </div>
+                <p class="install-note" style="margin-top: 1.25rem;">The app launches full-screen from your home screen — no browser bars, instant chart access, push notifications.</p>
+            `;
+        }
+
+        // Add Widgets section (for logged-in users)
+        {% if session.get('user_id') %}
+        content += `
+            <hr style="border: none; border-top: 1px solid #30363d; margin: 1.5rem 0;">
+            <div class="widget-promo" style="text-align: center;">
+                <h3 style="color: #3fb950; margin-bottom: 0.75rem; font-size: 1.1em;">Home Screen Widgets</h3>
+                <p style="color: #8b949e; margin-bottom: 1rem; font-size: 0.9em;">Real widgets for your home screen & lock screen — prices, positions, alerts, sentiment.</p>
+                <a href="/settings#widget" class="install-now-btn" style="display: inline-block; padding: 0.75rem 2rem; font-size: 1em; background: #238636; border: none; border-radius: 8px; color: white; cursor: pointer; text-decoration: none;">
+                    Set Up Widgets
+                </a>
+            </div>
+        `;
+        {% endif %}
+
+        installContent.innerHTML = content;
+        installModal.style.display = 'flex';
+        var dlg = installModal.querySelector('[role="dialog"]');
+        if (window.a11y && dlg) a11y.trapFocus(dlg);
+    }
+
+    function triggerInstall() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choice) => {
+                if (choice.outcome === 'accepted') {
+                    hideInstallModal();
+                }
+                deferredPrompt = null;
+            });
+        }
+    }
+
+    function hideInstallModal() {
+        var dlg = installModal.querySelector('[role="dialog"]');
+        if (window.a11y && dlg) a11y.releaseFocus(dlg);
+        installModal.style.display = 'none';
+    }
+
+    // Close modal on overlay click
+    installModal.addEventListener('click', (e) => {
+        if (e.target === installModal) hideInstallModal();
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideInstallModal();
+    });
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js', {scope: '/'})
+                .then((reg) => {
+                    console.log('[PWA] Service Worker registered:', reg.scope);
+
+                    // Check for updates periodically
+                    setInterval(() => reg.update(), 60 * 60 * 1000); // hourly
+                })
+                .catch((err) => {
+                    console.error('[PWA] Service Worker registration failed:', err);
+                });
+        });
+    }
+
+    // Handle app installed event
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        console.log('[PWA] App installed');
+    });
+
+    // Activity heartbeat — pings server every 10 min so admin can see who's online
+    // SILENCE-OK: admin-only telemetry, not user-facing; a miss just skips one
+    // ping and the next setInterval tick retries in 10 minutes.
+    setInterval(function() {
+        fetch('/api/heartbeat', { method: 'POST', credentials: 'same-origin' }).catch(function(){});
+    }, 600000);
+
+    // ============================================================
+    // Push Notification Support
+    // ============================================================
+
+    var notifyBtn = document.getElementById('notify-btn');
+    var pushSubscription = null;
+    var vapidPublicKey = null;
+
+    // Check if push is supported
+    function isPushSupported() {
+        return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    }
+
+    // Convert VAPID key for subscription
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    // Initialize push notifications UI
+    async function initPushNotifications() {
+        if (!isPushSupported()) {
+            console.log('[Push] Not supported');
+            return;
+        }
+
+        // Get VAPID public key
+        try {
+            var resp = await fetch('/api/push/vapid-key');
+            var data = await resp.json();
+            vapidPublicKey = data.publicKey;
+            if (!vapidPublicKey) {
+                console.log('[Push] VAPID key not configured');
+                return;
+            }
+        } catch (e) {
+            console.error('[Push] Failed to get VAPID key:', e);
+            return;
+        }
+
+        // Check current subscription status
+        try {
+            var reg = await navigator.serviceWorker.ready;
+            pushSubscription = await reg.pushManager.getSubscription();
+            updateNotifyButton();
+        } catch (e) {
+            console.error('[Push] Failed to check subscription:', e);
+        }
+    }
+
+    // Update notify button appearance
+    function updateNotifyButton() {
+        if (!notifyBtn) return;
+        if (pushSubscription) {
+            notifyBtn.innerHTML = '<span class="more-menu-icon">🔔</span> Notified';
+            notifyBtn.classList.add('notify-active');
+            notifyBtn.title = 'Notifications enabled (click to disable)';
+        } else {
+            notifyBtn.innerHTML = '<span class="more-menu-icon">🔔</span> Notify';
+            notifyBtn.classList.remove('notify-active');
+            notifyBtn.title = 'Enable notifications';
+        }
+    }
+
+    // Toggle push notifications
+    async function togglePushNotifications() {
+        if (!isPushSupported()) {
+            alert('Push notifications are not supported in this browser.');
+            return;
+        }
+
+        if (pushSubscription) {
+            // Unsubscribe
+            try {
+                await pushSubscription.unsubscribe();
+                await fetch('/api/push/unsubscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+                pushSubscription = null;
+                updateNotifyButton();
+                console.log('[Push] Unsubscribed');
+            } catch (e) {
+                console.error('[Push] Unsubscribe failed:', e);
+            }
+        } else {
+            // Subscribe
+            try {
+                // Request permission
+                var permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert('Notification permission denied. Please enable notifications in browser settings.');
+                    return;
+                }
+
+                // Subscribe to push
+                var reg = await navigator.serviceWorker.ready;
+                pushSubscription = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                });
+
+                // Send subscription to server
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ subscription: pushSubscription.toJSON() })
+                });
+
+                updateNotifyButton();
+                console.log('[Push] Subscribed');
+
+                // Send test notification
+                await fetch('/api/push/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+            } catch (e) {
+                console.error('[Push] Subscribe failed:', e);
+                alert('Failed to enable notifications: ' + e.message);
+            }
+        }
+    }
+
+    // Show in-page toast when push arrives while page is focused
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'push-received') {
+            showToast((event.data.title || 'Alert') + ': ' + (event.data.body || ''));
+        }
+        if (event.data.type === 'NAVIGATE_TO_SYMBOL' && event.data.symbol) {
+            // Find and scroll to symbol row, or open chart
+            var symbol = event.data.symbol;
+            var row = document.querySelector(`tr[data-symbol="${symbol}"]`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('highlight');
+                setTimeout(() => row.classList.remove('highlight'), 2000);
+            }
+        }
+    });
+
+    // Initialize push on load
+    window.addEventListener('load', () => {
+        setTimeout(initPushNotifications, 1000);
+    });
+
+    // ============================================================
+    // In-App Alert Toasts (polls for triggered alerts every 60s)
+    // ============================================================
+    var _alertToastSince = new Date().toISOString();
+    var _alertToastSeen = {};
+
+    function pollTriggeredAlerts() {
+        fetch('/api/alerts/triggered?since=' + encodeURIComponent(_alertToastSince), {credentials: 'same-origin'})
+        .then(r => r.json())
+        .then(data => {
+            (data.triggered || []).forEach(a => {
+                if (_alertToastSeen[a.id]) return;
+                _alertToastSeen[a.id] = true;
+                var msg;
+                if (a.alert_type === 'indicator') {
+                    msg = a.symbol + ': ' + (a.indicator || '').replace(/_/g, ' ') + ' → ' + a.target_state;
+                } else {
+                    var price = a.triggered_price || a.price || 0;
+                    msg = a.symbol + ' ' + a.condition + ' $' + Number(price).toLocaleString();
+                }
+                if (a.note) msg += ' — ' + a.note;
+                showToast(msg, 8000);
+                _alertToastSince = a.triggered_at > _alertToastSince ? a.triggered_at : _alertToastSince;
+            });
+        })
+        // SILENCE-OK: 60s poll (setInterval below) — a miss just delays the
+        // toast to the next cycle; the alert itself already triggered server-side.
+        .catch(() => {});
+    }
+
+    setInterval(pollTriggeredAlerts, 60000);
+    setTimeout(pollTriggeredAlerts, 5000);
+
+    // Long-press / right-click on table rows opens chart with alert panel
+    var longPressTimer = null;
+    var longPressDuration = 500;
+
+    function handleLongPressEnd() {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }
+
+    function handleLongPressStart(event) {
+        var row = event.target.closest('tr[data-symbol]');
+        if (!row) return;
+        longPressTimer = setTimeout(function() {
+            var symbol = row.dataset.symbol;
+            if (symbol) {
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (typeof openAdvancedChartModal === 'function') {
+                    openAdvancedChartModal(symbol);
+                    setTimeout(function() { if (typeof openAlertPanel === 'function') openAlertPanel(); }, 1500);
+                }
+            }
+        }, longPressDuration);
+    }
+
+    document.addEventListener('contextmenu', function(event) {
+        var row = event.target.closest('tr[data-symbol]');
+        if (row) {
+            event.preventDefault();
+            var symbol = row.dataset.symbol;
+            if (symbol && typeof openAdvancedChartModal === 'function') {
+                openAdvancedChartModal(symbol);
+                setTimeout(function() { if (typeof openAlertPanel === 'function') openAlertPanel(); }, 1500);
+            }
+        }
+    });
+
+    document.addEventListener('touchstart', function(event) {
+        if (event.target.closest('tr[data-symbol]')) handleLongPressStart(event);
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }, { passive: true });
+    document.addEventListener('touchmove', handleLongPressEnd, { passive: true });
+    document.addEventListener('touchcancel', handleLongPressEnd, { passive: true });
+
+    // Handle ?action= params from settings page
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var action = params.get('action');
+        if (action) {
+            history.replaceState(null, '', '/');
+            setTimeout(function() {
+                if (action === 'notify') togglePushNotifications();
+                else if (action === 'install') showInstallModal();
+                else if (action === 'apistatus') openApiStatusModal();
+            }, 500);
+        }
+    })();
+
+    </script>
+<script src="{{ url_for('static', filename='js/drawing-tools.js') }}?v={{ cache_version('js/drawing-tools.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+<script src="{{ url_for('static', filename='js/prefs-sync.js') }}?v={{ cache_version('js/prefs-sync.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+
+<!-- Full-page overlay for Report/Journal -->
+<div class="fullpage-overlay" id="fullpage-overlay" style="display:none" data-action="closeFullpageOverlay">
+    <div class="fullpage-panel" id="fullpage-panel" role="dialog" aria-modal="true" aria-labelledby="fullpage-title">
+        <div class="fullpage-header">
+            <span class="fullpage-title" id="fullpage-title"></span>
+            <button class="fullpage-close" data-action="closeFullpage" title="Close (Esc)" aria-label="Close"><i data-lucide="minimize-2" style="width:14px;height:14px" aria-hidden="true"></i> Exit</button>
+        </div>
+        <div class="fullpage-body" id="fullpage-body"></div>
+    </div>
+</div>
+</main>
+<script nonce="{{ csp_nonce }}">
+(function() {
+    var _fpActive = null;
+    var _urls = { journal: '/journal' };
+    var _titles = { journal: 'Trade Journal' };
+
+    window.toggleFullPage = function(mode) {
+        var overlay = document.getElementById('fullpage-overlay');
+        var body = document.getElementById('fullpage-body');
+        var title = document.getElementById('fullpage-title');
+        if (!overlay || !body) return;
+
+        if (!mode || _fpActive === mode) {
+            body.innerHTML = '';
+            overlay.style.display = 'none';
+            _fpActive = null;
+            return;
+        }
+
+        _fpActive = mode;
+        title.textContent = _titles[mode] || '';
+        body.innerHTML = '<iframe class="fullpage-iframe" src="' + _urls[mode] + '"></iframe>';
+        overlay.style.display = '';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && _fpActive) {
+            e.stopPropagation();
+            toggleFullPage(null);
+        }
+    });
+})();
+</script>
+<!-- identify() fires from _posthog_init.html's _cvxInitPostHog (right after
+     posthog.init), driven by the _inject_ph_identity context processor; this
+     page does not call it. -->
+<script src="{{ url_for('static', filename='js/consent-banner.js') }}?v={{ cache_version('js/consent-banner.js') }}" defer nonce="{{ csp_nonce | default('') }}"></script>
+</body>
+</html>

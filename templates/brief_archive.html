@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carrac — Daily Brief Archive</title>
+<meta name="description" content="Every past Carrac daily market brief — regime, breadth, liquidity and key levels across major assets, archived as originally published. Not financial advice.">
+<link rel="canonical" href="{{ site_url }}/brief/archive">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Carrac — Daily Brief Archive">
+<meta property="og:description" content="Every past Carrac daily market brief, archived as originally published. Not financial advice.">
+<meta property="og:url" content="{{ site_url }}/brief/archive">
+<meta property="og:image" content="{{ site_url }}/static/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carrac — Daily Brief Archive">
+<meta name="twitter:description" content="Every past Carrac daily market brief, archived as originally published. Not financial advice.">
+<meta name="twitter:image" content="{{ site_url }}/static/og-dashboard.png">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v={{ cache_version('favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-fonts.css') }}?v={{ cache_version('css/report-fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report-editorial.css') }}?v={{ cache_version('css/report-editorial.css') }}">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.brief-archive-list{list-style:none;margin:0 0 40px;padding:0;max-width:var(--measure);}
+.brief-archive-item{padding:18px 0;border-bottom:1px solid var(--rule);}
+.brief-archive-item:last-child{border-bottom:none;}
+.brief-archive-item a.date{font-family:"Fraunces";font-size:17px;font-weight:500;color:var(--gold);text-decoration:none;}
+.brief-archive-item a.date:hover{text-decoration:underline;}
+.brief-archive-item p{margin:8px 0 0;font-size:14.5px;line-height:1.6;color:var(--cream-2);}
+.brief-archive-empty{color:var(--muted);font-size:14px;padding:20px 0;}
+.brief-ctaband{max-width:var(--measure);border:1px solid var(--rule);border-radius:12px;background:var(--ink-2);
+  padding:18px 22px;margin:8px 0 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.brief-ctaband p{margin:0;font-size:13.5px;color:var(--cream-2);max-width:52ch;}
+.brief-cta-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.brief-cta-btn{font-family:"Inter",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);
+  background:var(--gold);border-radius:8px;padding:8px 15px;text-decoration:none;white-space:nowrap;}
+.brief-cta-btn:hover{background:#d4b87e;}
+.brief-cta-link{font-size:12.5px;color:var(--cream-2);text-decoration:none;border:1px solid var(--rule);
+  border-radius:7px;padding:7px 13px;white-space:nowrap;}
+.brief-cta-link:hover{border-color:var(--gold-dim);color:var(--gold);}
+.brief-paused{max-width:var(--measure);border:1px solid var(--gold-dim);border-radius:12px;background:var(--ink-2);
+  padding:16px 20px;margin:0 0 26px;font-size:14.5px;line-height:1.6;color:var(--cream-2);}
+.brief-paused b{color:var(--gold);}
+</style>
+{% include '_posthog_init.html' %}
+</head>
+<body class="ed-scope">
+
+<div class="topbar"><div class="row">
+  <div class="wm"><b>Carrac</b><span class="sep">·</span><span class="ed">Daily Brief Archive</span></div>
+  <div class="spacer"></div>
+  <div class="acts">
+    {% if not paused %}<a class="btn" href="/brief">Today&rsquo;s Brief</a>{% endif %}
+  </div>
+</div></div>
+<div class="ed-disclaim" role="note">AI-generated market analysis, archived exactly as originally published — <a href="{{ url_for('legal.disclaimer') }}">not financial advice</a>.</div>
+
+<div class="wrap">
+  <div class="lede">
+    <div class="kicker"><span class="tag">Daily Brief</span></div>
+    <h1 class="hl serif">Archive</h1>
+  </div>
+
+  {% if paused %}
+  <div class="brief-paused" role="note" data-brief-paused="1">
+    <b>Automated briefs are paused.</b> No new edition is being produced{% if reports %} &mdash; the last one is from {{ reports[0].date }}{% endif %}.
+    Every past edition below stays readable exactly as it was published.
+  </div>
+  {% endif %}
+
+  {% if reports %}
+  <ul class="brief-archive-list">
+    {% for r in reports %}
+    <li class="brief-archive-item">
+      <a class="date" href="/brief/{{ r.date }}">{{ r.date }}</a>
+      {% if r.tldr %}<p>{{ r.tldr }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif paused %}
+  <p class="brief-archive-empty">No archived briefs.</p>
+  {% else %}
+  <p class="brief-archive-empty">No archived briefs yet — check back after tomorrow&rsquo;s report.</p>
+  {% endif %}
+
+  {% set _utm = 'utm_source=brief&utm_medium=archive&utm_campaign=archive' %}
+  <div class="brief-ctaband">
+    <p>{% if paused %}The charts, scanner, alerts and plays behind these briefs are live and free.{% else %}Want this level of read on every asset you watch, every day?{% endif %}</p>
+    <div class="brief-cta-acts">
+      <a class="brief-cta-btn" href="/register?{{ _utm }}" target="_blank" rel="noopener">Create account →</a>
+      <a class="brief-cta-link" href="/?{{ _utm }}" target="_blank" rel="noopener">Open Carrac ↗</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

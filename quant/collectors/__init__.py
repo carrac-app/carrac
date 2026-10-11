@@ -1,0 +1,1 @@
+"""Quant DB data collectors."""
