@@ -18,6 +18,8 @@ git clone https://github.com/carrac-app/carrac.git && cd carrac && ./scripts/qui
 
 ![The Carrac cockpit: a daily BTC candlestick chart with Bollinger Bands, volume and RSI panes, a price ticker strip across the top, and a watchlist with Consensio scores on the right](static/img/landing/cockpit.png)
 
+https://github.com/user-attachments/assets/00853742-2f2f-4182-8414-008fb4d57b2e
+
 **At a glance** — 77 indicators · 77 MCP tools · 9 quantitative methods ·
 20 data providers · 9,395 tests
 
